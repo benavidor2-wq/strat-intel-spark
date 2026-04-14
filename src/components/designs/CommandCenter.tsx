@@ -9,9 +9,8 @@ import {
   vendorConsolidation,
   summaryStats,
 } from "@/data/mockData";
-import { Shield, TrendingDown, Zap, BarChart3, Users } from "lucide-react";
+import { Shield, TrendingDown, Zap, BarChart3, Users, Gift } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
-import PillarCard from "./command-center/PillarCard";
 import IntegrityDetail from "./command-center/IntegrityDetail";
 import PriceDriftDetail from "./command-center/PriceDriftDetail";
 import ArbitrageDetail from "./command-center/ArbitrageDetail";
@@ -26,13 +25,45 @@ const danger = "#ef4444";
 
 type Pillar = null | "integrity" | "priceDrift" | "arbitrage" | "inventory" | "spending" | "vendor";
 
+/* ── Semi-circular gauge SVG ── */
+function OpportunityGauge({ current, optimal }: { current: number; optimal: number }) {
+  const pct = Math.min(optimal / current, 1);
+  const r = 38;
+  const circumHalf = Math.PI * r;
+  const offset = circumHalf * (1 - pct);
+  return (
+    <svg viewBox="0 0 100 58" className="w-full max-w-[120px] mx-auto">
+      <path d={`M 10 54 A ${r} ${r} 0 0 1 90 54`} fill="none" stroke="#e5e7eb" strokeWidth="7" strokeLinecap="round" />
+      <path d={`M 10 54 A ${r} ${r} 0 0 1 90 54`} fill="none" stroke={green} strokeWidth="7" strokeLinecap="round"
+        strokeDasharray={circumHalf} strokeDashoffset={offset} />
+      <text x="50" y="48" textAnchor="middle" fontSize="10" fontWeight="700" fill="#374151">
+        {Math.round(pct * 100)}%
+      </text>
+      <text x="50" y="56" textAnchor="middle" fontSize="5" fill="#9ca3af">optimal</text>
+    </svg>
+  );
+}
+
 export default function CommandCenter() {
   const [activePillar, setActivePillar] = useState<Pillar>(null);
   const goBack = () => setActivePillar(null);
 
   const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
-  const alertDriftCount = priceDriftItems.filter((p) => p.status === "alert").length;
-  const urgentInventory = inventoryItems.filter((i) => i.daysRemaining <= 7).length;
+  const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
+
+  // Arbitrage calcs
+  const totalCurrentSpend = arbitrageOpportunities.reduce((s, o) => s + o.currentPrice * 480, 0); // approximate annual units
+  const totalOptimalSpend = arbitrageOpportunities.reduce((s, o) => s + o.bestPrice * 480, 0);
+  const top3Savings = [...arbitrageOpportunities].sort((a, b) => b.annualSavings - a.annualSavings).slice(0, 3);
+  const totalAnnualSavings = arbitrageOpportunities.reduce((s, o) => s + o.annualSavings, 0);
+
+  // Spending margin
+  const latestMargin = spendingTrends[spendingTrends.length - 1].margin;
+  const prevMargin = spendingTrends[spendingTrends.length - 2].margin;
+  const marginTrend = latestMargin - prevMargin;
+
+  // Vendor consolidation total savings
+  const totalConsolidationSavings = vendorConsolidation.reduce((s, v) => s + v.potentialSavings, 0);
 
   return (
     <AnimatePresence mode="wait">
@@ -73,7 +104,8 @@ export default function CommandCenter() {
 
           {/* Summary Cards Grid */}
           <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 grid-rows-2 gap-3">
-            {/* 1. Cross-Vendor Arbitrage & Best Price Discovery */}
+
+            {/* ═══ 1. ARBITRAGE & BEST PRICE ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("arbitrage")}>
@@ -82,24 +114,36 @@ export default function CommandCenter() {
                 <Zap size={15} style={{ color: green }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Arbitrage & Best Price</span>
               </div>
-              <div className="flex-1 flex flex-col justify-evenly">
-                {arbitrageOpportunities.map((opp) => (
-                  <div key={opp.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
-                    <span className="text-gray-700 truncate max-w-[140px]">{opp.product}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-gray-400 line-through">${opp.currentPrice}</span>
-                      <span className="font-mono font-semibold" style={{ color: green }}>${opp.bestPrice}</span>
-                    </div>
+              <div className="flex-1 flex flex-col">
+                {/* Gauge + Top 3 */}
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="flex flex-col items-center w-[120px] shrink-0">
+                    <OpportunityGauge current={totalCurrentSpend} optimal={totalOptimalSpend} />
+                    <span className="text-[8px] text-gray-400 mt-0.5">Current vs Optimal</span>
                   </div>
-                ))}
+                  <div className="flex-1 flex flex-col justify-center gap-1.5">
+                    {top3Savings.map((opp) => (
+                      <div key={opp.id} className="flex items-center justify-between text-[10px] py-1 px-2 rounded-lg bg-gray-50">
+                        <span className="text-gray-700 truncate max-w-[100px]">{opp.product}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-gray-400 line-through text-[9px]">${opp.currentPrice}</span>
+                          <span className="font-mono font-bold" style={{ color: green }}>${opp.bestPrice}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>Total savings: <span style={{ color: green }} className="font-semibold">${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K/yr</span></span>
-                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
+              {/* Total Annual Savings Badge */}
+              <div className="mt-2 flex items-center justify-between">
+                <div className="px-3 py-1 rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: green }}>
+                  ${(totalAnnualSavings / 1000).toFixed(0)}K/yr savings
+                </div>
+                <span className="text-[10px] text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
-            {/* 2. Price Drift */}
+            {/* ═══ 2. PRICE DRIFT ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("priceDrift")}>
@@ -110,25 +154,42 @@ export default function CommandCenter() {
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {priceDriftItems.slice(0, 5).map((item) => {
+                  const isWarning = item.driftPercent > 5;
                   const barColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
+                  // Weighted sparkline - thicker bars for higher drift
+                  const barHeight = Math.max(3, Math.min(item.driftPercent * 0.8, 8));
                   return (
-                    <div key={item.id} className="flex items-center gap-2 text-[11px]">
-                      <span className="text-gray-600 truncate w-[90px]">{item.product}</span>
-                      <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${Math.min(item.driftPercent * 6, 100)}%`, backgroundColor: barColor }} />
+                    <div key={item.id} className="flex items-center gap-2 text-[10px]">
+                      <span className="text-gray-600 truncate w-[75px]">{item.product}</span>
+                      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden relative">
+                        <motion.div
+                          className="h-full rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(item.driftPercent * 6, 100)}%` }}
+                          transition={{ delay: 0.4, duration: 0.6 }}
+                          style={{ backgroundColor: barColor, height: barHeight }}
+                        />
                       </div>
-                      <span className="font-mono font-semibold w-10 text-right" style={{ color: barColor }}>+{item.driftPercent}%</span>
+                      <span
+                        className="font-mono font-bold w-12 text-right text-[10px] px-1 py-0.5 rounded"
+                        style={{
+                          color: isWarning ? "white" : barColor,
+                          backgroundColor: isWarning ? purple : "transparent",
+                        }}
+                      >
+                        +{item.driftPercent}%
+                      </span>
                     </div>
                   );
                 })}
               </div>
               <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>{priceDriftItems.length} products tracked</span>
+                <span>{priceDriftItems.filter(p => p.driftPercent > 5).length} items &gt;5% drift</span>
                 <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
-            {/* 3. Predictive Ordering */}
+            {/* ═══ 3. PREDICTIVE ORDERING ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("inventory")}>
@@ -142,31 +203,42 @@ export default function CommandCenter() {
                   const urgColor = item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green;
                   return (
                     <div key={item.id}>
-                      <div className="flex justify-between text-[11px] mb-0.5">
-                        <span className="text-gray-600">{item.product}</span>
-                        <span className="font-mono font-semibold" style={{ color: urgColor }}>{item.daysRemaining}d</span>
+                      <div className="flex justify-between items-center text-[10px] mb-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-600">{item.product}</span>
+                          {item.bulkDiscount > 0 && (
+                            <Gift size={10} style={{ color: green }} className="shrink-0" />
+                          )}
+                        </div>
+                        <span className="font-mono font-bold" style={{ color: urgColor }}>{item.daysRemaining}d</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${Math.min((item.daysRemaining / 40) * 100, 100)}%`, backgroundColor: urgColor }} />
+                      <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min((item.daysRemaining / 40) * 100, 100)}%` }}
+                          transition={{ delay: 0.5, duration: 0.5 }}
+                          style={{ backgroundColor: urgColor }}
+                        />
                       </div>
                     </div>
                   );
                 })}
               </div>
               <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>{inventoryItems.length} items monitored</span>
+                <span><Gift size={9} className="inline" style={{ color: green }} /> = bulk discount available</span>
                 <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
-            {/* 4. Spending Patterns & Trends */}
+            {/* ═══ 4. SPENDING PATTERNS & TRENDS ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("spending")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>1</div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-1">
                 <TrendingDown size={15} style={{ color: purple }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns & Trends</span>
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
               <div className="flex-1 mt-1">
                 <ResponsiveContainer width="100%" height="100%">
@@ -184,13 +256,30 @@ export default function CommandCenter() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-[10px] text-gray-400 mt-1 flex justify-between">
-                <span>Revenue vs Costs · 5 quarters</span>
-                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
+              {/* Margin Efficiency Score */}
+              <div className="mt-1 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-400">Margin</span>
+                  <motion.span
+                    className="text-sm font-bold font-mono px-2 py-0.5 rounded-md"
+                    style={{
+                      color: marginTrend >= 0 ? green : danger,
+                      backgroundColor: marginTrend >= 0 ? `${green}15` : `${danger}15`,
+                    }}
+                    animate={marginTrend < 0 ? { opacity: [1, 0.6, 1] } : {}}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                  >
+                    {latestMargin}%
+                  </motion.span>
+                  <span className="text-[9px] font-mono" style={{ color: marginTrend >= 0 ? green : danger }}>
+                    {marginTrend >= 0 ? "+" : ""}{marginTrend}pp
+                  </span>
+                </div>
+                <span className="text-[10px] text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
-            {/* 5. Vendor Consolidation & Benchmarking */}
+            {/* ═══ 5. VENDOR CONSOLIDATION ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("vendor")}>
@@ -202,47 +291,93 @@ export default function CommandCenter() {
               <div className="flex-1 flex flex-col justify-evenly">
                 {vendorConsolidation.map((v, i) => {
                   const scoreColor = v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green;
+                  const maxCount = 16;
                   return (
-                    <div key={i} className="flex items-center gap-2 text-[11px]">
-                      <span className="text-gray-600 truncate w-[80px]">{v.category}</span>
-                      <div className="flex-1 flex gap-0.5 items-end h-3">
-                        <div className="flex-1 rounded-sm" style={{ height: `${(v.vendorCount / 16) * 100}%`, backgroundColor: scoreColor, minHeight: 3 }} />
-                        <div className="flex-1 rounded-sm" style={{ height: `${(v.industryAvg / 16) * 100}%`, backgroundColor: "#e5e7eb", minHeight: 3 }} />
+                    <div key={i} className="flex items-center gap-2 text-[10px]">
+                      <span className="text-gray-600 truncate w-[70px]">{v.category}</span>
+                      <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden relative">
+                        <motion.div
+                          className="h-full rounded-full absolute left-0 top-0"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(v.vendorCount / maxCount) * 100}%` }}
+                          transition={{ delay: 0.6, duration: 0.5 }}
+                          style={{ backgroundColor: scoreColor }}
+                        />
+                        {/* Industry avg marker */}
+                        <div className="absolute top-0 h-full w-0.5 bg-gray-400" style={{ left: `${(v.industryAvg / maxCount) * 100}%` }} />
                       </div>
-                      <span className="font-mono w-6 text-right" style={{ color: scoreColor }}>{v.vendorCount}</span>
-                      <span className="font-mono w-4 text-right text-gray-300">{v.industryAvg}</span>
+                      <span className="font-mono font-bold w-5 text-right" style={{ color: scoreColor }}>{v.vendorCount}</span>
                     </div>
                   );
                 })}
               </div>
-              <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>{summaryStats.activeVendors} vendors · avg {summaryStats.industryAvgVendors}</span>
-                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[10px] text-gray-500">Avg savings: <span className="font-mono font-semibold" style={{ color: green }}>${(totalConsolidationSavings / 1000).toFixed(0)}K</span></span>
+                <span className="text-[10px] text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
-            {/* 6. Anomaly & Risk Mitigation */}
+            {/* ═══ 6. ANOMALY & RISK MITIGATION ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative overflow-hidden"
               onClick={() => setActivePillar("integrity")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
+              
+              {/* Risk Pulse background animation */}
+              <motion.div
+                className="absolute inset-0 rounded-xl pointer-events-none"
+                style={{ border: `2px solid ${purple}` }}
+                animate={{ opacity: [0, 0.3, 0] }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+              />
+
               <div className="flex items-center gap-2 mb-2">
                 <Shield size={15} style={{ color: danger }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: danger }}>Anomaly & Risk Mitigation</span>
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: danger }}>Anomaly & Risk</span>
               </div>
+
+              {/* Severity Counters */}
+              <div className="flex gap-2 mb-2">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ backgroundColor: `${danger}12` }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: danger }} />
+                  <span className="text-[10px] font-bold" style={{ color: danger }}>{criticalCount} Critical</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ backgroundColor: `${warn}12` }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: warn }} />
+                  <span className="text-[10px] font-bold" style={{ color: warn }}>{highCount} High</span>
+                </div>
+              </div>
+
+              {/* Top 4 flagged entities */}
               <div className="flex-1 flex flex-col justify-evenly">
                 {integrityAlerts.slice(0, 4).map((a) => (
-                  <div key={a.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
+                  <div key={a.id} className="flex items-center justify-between text-[10px] py-1 px-2 rounded-lg bg-gray-50">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: a.severity === "critical" ? danger : warn }} />
-                      <span className="text-gray-700 truncate max-w-[140px]">{a.vendor}</span>
+                      <motion.span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: a.severity === "critical" ? danger : warn }}
+                        animate={a.severity === "critical" ? { scale: [1, 1.3, 1] } : {}}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      />
+                      <span className="text-gray-700 truncate max-w-[130px]">{a.vendor}</span>
                     </div>
-                    <span className="font-mono font-semibold" style={{ color: a.severity === "critical" ? danger : warn }}>${(a.amount / 1000).toFixed(1)}K</span>
+                    <span className="font-mono font-bold" style={{ color: a.severity === "critical" ? danger : warn }}>
+                      ${(a.amount / 1000).toFixed(1)}K
+                    </span>
                   </div>
                 ))}
               </div>
-              <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>{criticalCount} critical · {integrityAlerts.length - criticalCount} high</span>
+
+              <div className="text-[10px] text-gray-400 mt-2 flex justify-between items-center">
+                <div className="flex items-center gap-1">
+                  <motion.span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: purple }}
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                  />
+                  <span style={{ color: purple }} className="font-semibold">Auditing active</span>
+                </div>
                 <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
