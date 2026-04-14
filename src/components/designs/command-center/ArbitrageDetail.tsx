@@ -8,7 +8,7 @@ const purple = "#6366f1";
 
 export default function ArbitrageDetail({ onBack }: { onBack: () => void }) {
   return (
-    <DetailView icon={Zap} iconColor={green} title="Cross-Vendor Arbitrage" onBack={onBack}>
+    <DetailView icon={Zap} iconColor={green} title="Arbitrage & Best Price" onBack={onBack}>
       <div className="grid gap-4">
         {arbitrageOpportunities.map((opp) => (
           <div key={opp.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">

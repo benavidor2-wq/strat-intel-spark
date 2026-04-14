@@ -10,7 +10,7 @@ const green = "#22c55e";
 
 export default function VendorDetail({ onBack }: { onBack: () => void }) {
   return (
-    <DetailView icon={Users} iconColor={purple} title="Vendor Bloat Index" onBack={onBack}>
+    <DetailView icon={Users} iconColor={purple} title="Vendor Consolidation" onBack={onBack}>
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-4">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Vendor Count vs Industry Average</h3>
         <div className="h-64">

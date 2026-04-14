@@ -8,7 +8,7 @@ const purple = "#6366f1";
 
 export default function IntegrityDetail({ onBack }: { onBack: () => void }) {
   return (
-    <DetailView icon={Shield} iconColor={danger} title="Integrity Layer" onBack={onBack}>
+    <DetailView icon={Shield} iconColor={danger} title="Anomaly & Risk" onBack={onBack}>
       <div className="grid gap-4">
         {integrityAlerts.map((a) => (
           <div key={a.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
