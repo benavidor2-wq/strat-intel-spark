@@ -251,7 +251,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: warn }}>{summaryStats.vendorBloatScore}%</span>
               </div>
-              <div className="flex-1 space-y-2 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {vendorConsolidation.map((v, i) => {
                   const scoreColor = v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green;
                   return (
