@@ -68,20 +68,8 @@ export default function CommandCenter() {
                   MyCFO — Autonomous Financial Oversight
                 </p>
               </div>
-              <div className="flex gap-6 text-xs uppercase tracking-wider">
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: danger }}>{summaryStats.criticalAlerts}</div>
-                  <div className="text-gray-500">Critical</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: warn }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K</div>
-                  <div className="text-gray-500">Lazy Tax</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: green }}>${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K</div>
-                  <div className="text-gray-500">Savings</div>
-                </div>
-              </div>
+            </div>
+          </div>
             </div>
           </div>
 
