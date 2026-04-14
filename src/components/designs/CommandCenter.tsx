@@ -55,7 +55,7 @@ export default function CommandCenter() {
           style={{ background: "#f8f9fc", color: "#1e1b4b" }}
         >
           {/* Header */}
-          <div className="border-b border-gray-200 px-6 py-3 bg-white">
+          <div className="border-b border-gray-200 px-6 py-2 bg-white">
             <div className="flex items-center justify-between max-w-[1600px] mx-auto">
               <div>
                 <h1 className="text-xl font-bold tracking-wide" style={{ color: purple }}>
