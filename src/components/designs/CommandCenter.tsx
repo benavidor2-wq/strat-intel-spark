@@ -10,7 +10,7 @@ import {
   summaryStats,
 } from "@/data/mockData";
 import { Shield, TrendingDown, Zap, BarChart3, Users, Gift } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import IntegrityDetail from "./command-center/IntegrityDetail";
 import PriceDriftDetail from "./command-center/PriceDriftDetail";
 import ArbitrageDetail from "./command-center/ArbitrageDetail";
