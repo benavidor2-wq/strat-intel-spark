@@ -36,7 +36,7 @@ export default function PillarCard({ icon: Icon, iconColor, title, subtitle, met
         <span className="text-2xl font-bold" style={{ color: metricColor }}>{metric}</span>
         <span className="text-[10px] uppercase tracking-wider text-gray-400">{metricLabel}</span>
       </div>
-      <p className="text-[11px] text-gray-500 mb-3">{subtitle}</p>
+      <p className="text-[11px] text-gray-500 mb-3 flex-1">{subtitle}</p>
       {children}
     </motion.div>
   );
