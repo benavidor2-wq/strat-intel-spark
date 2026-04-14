@@ -224,20 +224,44 @@ export default function CommandCenter() {
                 <TrendingDown size={19} style={{ color: purple }} />
                 <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
-              {/* Chart on top */}
+              {/* Legend */}
+              <div className="flex items-center gap-4 mb-1">
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-0.5 rounded-full" style={{ backgroundColor: purple }} />
+                  <span className="text-[9px] text-gray-500">Revenue</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-0.5 rounded-full border-t border-dashed" style={{ borderColor: danger }} />
+                  <span className="text-[9px] text-gray-500">Costs</span>
+                </div>
+                <div className="flex items-center gap-1 ml-auto">
+                  <span className="text-[9px] font-mono font-bold" style={{ color: danger }}>Margin {spendingTrends[spendingTrends.length - 1].margin}%</span>
+                  <span className="text-[9px]" style={{ color: marginTrend < 0 ? danger : green }}>({marginTrend > 0 ? '+' : ''}{marginTrend}pp)</span>
+                </div>
+              </div>
+              {/* Chart */}
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={spendingTrends}>
+                  <AreaChart data={spendingTrends} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                     <defs>
                       <linearGradient id="cc-mini-rev" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={purple} stopOpacity={0.15} />
                         <stop offset="100%" stopColor={purple} stopOpacity={0} />
                       </linearGradient>
+                      <linearGradient id="cc-mini-cost" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={danger} stopOpacity={0.08} />
+                        <stop offset="100%" stopColor={danger} stopOpacity={0} />
+                      </linearGradient>
                     </defs>
                     <XAxis dataKey="period" tick={{ fontSize: 8, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                    <YAxis hide />
+                    <YAxis tick={{ fontSize: 7, fill: "#c4c4c4" }} axisLine={false} tickLine={false} width={32} tickFormatter={(v: number) => `$${(v / 1000000).toFixed(1)}M`} />
+                    <RechartsTooltip
+                      contentStyle={{ fontSize: 10, borderRadius: 8, border: "1px solid #e5e7eb", padding: "6px 10px" }}
+                      formatter={(value: number, name: string) => [`$${(value / 1000000).toFixed(2)}M`, name === "revenue" ? "Revenue" : "Costs"]}
+                      labelStyle={{ fontSize: 9, color: "#9ca3af" }}
+                    />
                     <Area type="monotone" dataKey="revenue" stroke={purple} fill="url(#cc-mini-rev)" strokeWidth={1.5} />
-                    <Area type="monotone" dataKey="costs" stroke={danger} fill="none" strokeWidth={1.5} strokeDasharray="3 3" />
+                    <Area type="monotone" dataKey="costs" stroke={danger} fill="url(#cc-mini-cost)" strokeWidth={1.5} strokeDasharray="3 3" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
