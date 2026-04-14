@@ -83,7 +83,7 @@ export default function CommandCenter() {
                   <Shield size={15} style={{ color: danger }} />
                   <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: danger }}>Integrity Layer</span>
                 </div>
-                <span className="text-xl font-bold" style={{ color: danger }}>${(integrityAlerts.reduce((s, a) => s + a.amount, 0) / 1000).toFixed(0)}K</span>
+                
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {integrityAlerts.slice(0, 4).map((a) => (
@@ -112,7 +112,7 @@ export default function CommandCenter() {
                   <TrendingDown size={15} style={{ color: purple }} />
                   <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
                 </div>
-                <span className="text-xl font-bold" style={{ color: danger }}>{alertDriftCount} <span className="text-[10px] font-normal text-gray-400">alerts</span></span>
+                
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {priceDriftItems.slice(0, 5).map((item) => {
@@ -144,7 +144,7 @@ export default function CommandCenter() {
                   <Zap size={15} style={{ color: green }} />
                   <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Arbitrage</span>
                 </div>
-                <span className="text-xl font-bold" style={{ color: warn }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K <span className="text-[10px] font-normal text-gray-400">/yr</span></span>
+                
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {arbitrageOpportunities.map((opp) => (
@@ -173,7 +173,7 @@ export default function CommandCenter() {
                   <BarChart3 size={15} style={{ color: green }} />
                   <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Predictive Ordering</span>
                 </div>
-                <span className="text-xl font-bold" style={{ color: danger }}>{urgentInventory} <span className="text-[10px] font-normal text-gray-400">urgent</span></span>
+                
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {inventoryItems.slice(0, 4).map((item) => {
@@ -207,7 +207,7 @@ export default function CommandCenter() {
                   <TrendingDown size={15} style={{ color: purple }} />
                   <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Margin Erosion</span>
                 </div>
-                <span className="text-xl font-bold" style={{ color: danger }}>{summaryStats.marginErosion}pp</span>
+                
               </div>
               <div className="flex-1 mt-1">
                 <ResponsiveContainer width="100%" height="100%">
@@ -241,7 +241,7 @@ export default function CommandCenter() {
                   <Users size={15} style={{ color: purple }} />
                   <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Bloat</span>
                 </div>
-                <span className="text-xl font-bold" style={{ color: warn }}>{summaryStats.vendorBloatScore}%</span>
+                
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {vendorConsolidation.map((v, i) => {
