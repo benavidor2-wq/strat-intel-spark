@@ -103,7 +103,7 @@ export default function CommandCenter() {
           </div>
 
           {/* Summary Cards Grid */}
-          <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 grid-rows-2 gap-3">
+          <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 auto-rows-fr gap-3 overflow-hidden">
 
             {/* ═══ 1. ARBITRAGE & BEST PRICE ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
