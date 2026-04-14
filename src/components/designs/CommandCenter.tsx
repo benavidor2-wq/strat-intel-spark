@@ -8,14 +8,16 @@ import {
   vendorConsolidation,
   summaryStats,
 } from "@/data/mockData";
-import { AlertTriangle, Shield, TrendingDown, Zap, BarChart3, Users } from "lucide-react";
+import { Shield, TrendingDown, Zap, BarChart3, Users } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
 
-const card = "bg-[#0a0a1a] border border-[#1e1e3a] rounded-lg p-5";
+const card = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm";
 const purple = "#6366f1";
 const green = "#22c55e";
 const warn = "#f59e0b";
 const danger = "#ef4444";
+const textPrimary = "#1e1b4b";
+const textSecondary = "#6b7280";
 
 const SeverityDot = ({ severity }: { severity: string }) => (
   <span
@@ -26,28 +28,28 @@ const SeverityDot = ({ severity }: { severity: string }) => (
 
 export default function CommandCenter() {
   return (
-    <div className="min-h-screen" style={{ background: "#050510", color: "#c8cde5" }}>
+    <div className="min-h-screen" style={{ background: "#f8f9fc", color: textPrimary }}>
       {/* Header */}
-      <div className="border-b px-6 py-4" style={{ borderColor: "#1e1e3a" }}>
+      <div className="border-b border-gray-200 px-6 py-4 bg-white">
         <div className="flex items-center justify-between max-w-[1600px] mx-auto">
           <div>
             <h1 className="text-xl font-bold tracking-wide" style={{ color: purple, fontFamily: "'Inter', sans-serif" }}>
               STRATEGIC INTELLIGENCE ENGINE
             </h1>
-            <p className="text-xs mt-1 opacity-60 tracking-widest uppercase">MyCFO — Autonomous Financial Oversight</p>
+            <p className="text-xs mt-1 tracking-widest uppercase" style={{ color: textSecondary }}>MyCFO — Autonomous Financial Oversight</p>
           </div>
           <div className="flex gap-6 text-xs uppercase tracking-wider">
             <div className="text-center">
               <div className="text-2xl font-bold" style={{ color: danger }}>{summaryStats.criticalAlerts}</div>
-              <div className="opacity-50">Critical</div>
+              <div style={{ color: textSecondary }}>Critical</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold" style={{ color: warn }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K</div>
-              <div className="opacity-50">Lazy Tax</div>
+              <div style={{ color: textSecondary }}>Lazy Tax</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold" style={{ color: green }}>${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K</div>
-              <div className="opacity-50">Savings</div>
+              <div style={{ color: textSecondary }}>Savings</div>
             </div>
           </div>
         </div>
@@ -65,12 +67,12 @@ export default function CommandCenter() {
               <div key={a.id} className="border-l-2 pl-3 py-1" style={{ borderColor: a.severity === "critical" ? danger : warn }}>
                 <div className="flex items-center text-xs">
                   <SeverityDot severity={a.severity} />
-                  <span className="font-semibold" style={{ color: "#e8edf2" }}>{a.vendor}</span>
+                  <span className="font-semibold" style={{ color: textPrimary }}>{a.vendor}</span>
                   <span className="ml-auto font-mono" style={{ color: a.severity === "critical" ? danger : warn }}>
                     ${a.amount.toLocaleString()}
                   </span>
                 </div>
-                <p className="text-[10px] opacity-50 mt-0.5">{a.description}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: textSecondary }}>{a.description}</p>
               </div>
             ))}
           </div>
@@ -85,8 +87,8 @@ export default function CommandCenter() {
           <div className="space-y-2">
             {priceDriftItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between text-xs">
-                <span className="truncate max-w-[120px]" style={{ color: "#e8edf2" }}>{item.product}</span>
-                <div className="flex-1 mx-3 h-1 rounded-full bg-[#1e1e3a] overflow-hidden">
+                <span className="truncate max-w-[120px]" style={{ color: textPrimary }}>{item.product}</span>
+                <div className="flex-1 mx-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{
@@ -95,7 +97,7 @@ export default function CommandCenter() {
                     }}
                   />
                 </div>
-                <span className="font-mono w-12 text-right" style={{ color: item.status === "alert" ? danger : item.status === "warning" ? warn : green }}>
+                <span className="font-mono w-12 text-right font-semibold" style={{ color: item.status === "alert" ? danger : item.status === "warning" ? warn : green }}>
                   +{item.driftPercent}%
                 </span>
               </div>
@@ -112,17 +114,17 @@ export default function CommandCenter() {
           <div className="space-y-3">
             {arbitrageOpportunities.map((opp) => (
               <div key={opp.id} className="flex items-center gap-3 text-xs">
-                <div className="flex-1 truncate" style={{ color: "#e8edf2" }}>{opp.product}</div>
-                <div className="font-mono" style={{ color: warn }}>
+                <div className="flex-1 truncate" style={{ color: textPrimary }}>{opp.product}</div>
+                <div className="font-mono font-semibold" style={{ color: warn }}>
                   ${opp.lazyTax.toFixed(1)}
                 </div>
-                <div className="font-mono text-[10px] opacity-50">
+                <div className="font-mono text-[10px]" style={{ color: textSecondary }}>
                   ${(opp.annualSavings / 1000).toFixed(0)}K/yr
                 </div>
               </div>
             ))}
-            <div className="border-t pt-2 flex justify-between text-xs" style={{ borderColor: "#1e1e3a" }}>
-              <span className="opacity-50">Total Lazy Tax (Annual)</span>
+            <div className="border-t border-gray-100 pt-2 flex justify-between text-xs">
+              <span style={{ color: textSecondary }}>Total Lazy Tax (Annual)</span>
               <span className="font-mono font-bold" style={{ color: green }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K</span>
             </div>
           </div>
@@ -138,12 +140,12 @@ export default function CommandCenter() {
             {inventoryItems.slice(0, 4).map((item) => (
               <div key={item.id}>
                 <div className="flex justify-between text-xs mb-1">
-                  <span style={{ color: "#e8edf2" }}>{item.product}</span>
-                  <span className="font-mono" style={{ color: item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green }}>
+                  <span style={{ color: textPrimary }}>{item.product}</span>
+                  <span className="font-mono font-semibold" style={{ color: item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green }}>
                     {item.daysRemaining}d
                   </span>
                 </div>
-                <div className="h-1 rounded-full bg-[#1e1e3a] overflow-hidden">
+                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
@@ -152,7 +154,7 @@ export default function CommandCenter() {
                     }}
                   />
                 </div>
-                <p className="text-[10px] opacity-40 mt-1">{item.suggestedAction}</p>
+                <p className="text-[10px] mt-1" style={{ color: textSecondary }}>{item.suggestedAction}</p>
               </div>
             ))}
           </div>
@@ -169,22 +171,22 @@ export default function CommandCenter() {
               <AreaChart data={spendingTrends}>
                 <defs>
                   <linearGradient id="cc-rev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={purple} stopOpacity={0.3} />
+                    <stop offset="0%" stopColor={purple} stopOpacity={0.15} />
                     <stop offset="100%" stopColor={purple} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="cc-cost" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={danger} stopOpacity={0.3} />
+                    <stop offset="0%" stopColor={danger} stopOpacity={0.15} />
                     <stop offset="100%" stopColor={danger} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="period" tick={{ fontSize: 9, fill: "#5a5e82" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: "#5a5e82" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1e6}M`} />
+                <XAxis dataKey="period" tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1e6}M`} />
                 <Area type="monotone" dataKey="revenue" stroke={purple} fill="url(#cc-rev)" strokeWidth={2} />
                 <Area type="monotone" dataKey="costs" stroke={danger} fill="url(#cc-cost)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-between text-[10px] mt-2 opacity-50">
+          <div className="flex justify-between text-[10px] mt-2" style={{ color: textSecondary }}>
             <span>Revenue vs Costs — Margin: {summaryStats.marginErosion}pp over 5Q</span>
           </div>
         </motion.div>
@@ -198,20 +200,20 @@ export default function CommandCenter() {
           <div className="h-36">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={vendorConsolidation} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 9, fill: "#5a5e82" }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="category" tick={{ fontSize: 9, fill: "#5a5e82" }} axisLine={false} tickLine={false} width={80} />
+                <XAxis type="number" tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="category" tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} width={80} />
                 <Bar dataKey="vendorCount" radius={[0, 4, 4, 0]} barSize={10}>
                   {vendorConsolidation.map((entry, i) => (
                     <Cell key={i} fill={entry.redundancyScore > 70 ? danger : entry.redundancyScore > 50 ? warn : green} />
                   ))}
                 </Bar>
-                <Bar dataKey="industryAvg" radius={[0, 4, 4, 0]} barSize={10} fill="#1e1e3a" />
+                <Bar dataKey="industryAvg" radius={[0, 4, 4, 0]} barSize={10} fill="#e5e7eb" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-between text-[10px] mt-1">
-            <span className="opacity-50">Your vendors: {summaryStats.activeVendors}</span>
-            <span className="opacity-50">Industry avg: {summaryStats.industryAvgVendors}</span>
+          <div className="flex justify-between text-[10px] mt-1" style={{ color: textSecondary }}>
+            <span>Your vendors: {summaryStats.activeVendors}</span>
+            <span>Industry avg: {summaryStats.industryAvgVendors}</span>
           </div>
         </motion.div>
       </div>

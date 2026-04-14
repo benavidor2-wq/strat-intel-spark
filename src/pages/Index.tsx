@@ -15,18 +15,18 @@ export default function Index() {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="sticky top-0 z-[100] flex items-center gap-1 px-4 py-2 overflow-x-auto"
-        style={{ background: "rgba(0,0,0,0.95)", borderBottom: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}>
-        <span className="text-[10px] uppercase tracking-widest mr-3 shrink-0" style={{ color: "#666" }}>Design:</span>
+        style={{ background: "rgba(255,255,255,0.95)", borderBottom: "1px solid rgba(0,0,0,0.08)", backdropFilter: "blur(12px)" }}>
+        <span className="text-[10px] uppercase tracking-widest mr-3 shrink-0" style={{ color: "#9ca3af" }}>Design:</span>
         {designs.map((d, i) => (
           <button
             key={d.id}
             onClick={() => setActive(i)}
             className="text-xs px-3 py-1.5 rounded-full transition-all shrink-0"
             style={{
-              background: active === i ? "#fff" : "transparent",
-              color: active === i ? "#000" : "#888",
+              background: active === i ? "#6366f1" : "transparent",
+              color: active === i ? "#fff" : "#6b7280",
               fontWeight: active === i ? 600 : 400,
-              border: active === i ? "none" : "1px solid rgba(255,255,255,0.1)",
+              border: active === i ? "none" : "1px solid rgba(0,0,0,0.1)",
             }}
           >
             {d.label}
