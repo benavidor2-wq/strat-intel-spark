@@ -77,6 +77,7 @@ export default function CommandCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("integrity")}>
+              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Shield size={15} style={{ color: danger }} />
