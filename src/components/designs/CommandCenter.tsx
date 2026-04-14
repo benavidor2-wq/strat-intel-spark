@@ -1,222 +1,183 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   integrityAlerts,
   priceDriftItems,
   arbitrageOpportunities,
   inventoryItems,
-  spendingTrends,
-  vendorConsolidation,
   summaryStats,
 } from "@/data/mockData";
 import { Shield, TrendingDown, Zap, BarChart3, Users } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
+import PillarCard from "./command-center/PillarCard";
+import IntegrityDetail from "./command-center/IntegrityDetail";
+import PriceDriftDetail from "./command-center/PriceDriftDetail";
+import ArbitrageDetail from "./command-center/ArbitrageDetail";
+import InventoryDetail from "./command-center/InventoryDetail";
+import SpendingDetail from "./command-center/SpendingDetail";
+import VendorDetail from "./command-center/VendorDetail";
 
-const card = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm";
 const purple = "#6366f1";
 const green = "#22c55e";
 const warn = "#f59e0b";
 const danger = "#ef4444";
-const textPrimary = "#1e1b4b";
-const textSecondary = "#6b7280";
 
-const SeverityDot = ({ severity }: { severity: string }) => (
-  <span
-    className="inline-block w-2 h-2 rounded-full mr-2"
-    style={{ backgroundColor: severity === "critical" ? danger : severity === "high" ? warn : purple }}
-  />
-);
+type Pillar = null | "integrity" | "priceDrift" | "arbitrage" | "inventory" | "spending" | "vendor";
 
 export default function CommandCenter() {
+  const [activePillar, setActivePillar] = useState<Pillar>(null);
+  const goBack = () => setActivePillar(null);
+
+  const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
+  const alertDriftCount = priceDriftItems.filter((p) => p.status === "alert").length;
+  const urgentInventory = inventoryItems.filter((i) => i.daysRemaining <= 7).length;
+
   return (
-    <div className="min-h-screen" style={{ background: "#f8f9fc", color: textPrimary }}>
-      {/* Header */}
-      <div className="border-b border-gray-200 px-6 py-4 bg-white">
-        <div className="flex items-center justify-between max-w-[1600px] mx-auto">
-          <div>
-            <h1 className="text-xl font-bold tracking-wide" style={{ color: purple, fontFamily: "'Inter', sans-serif" }}>
-              STRATEGIC INTELLIGENCE ENGINE
-            </h1>
-            <p className="text-xs mt-1 tracking-widest uppercase" style={{ color: textSecondary }}>MyCFO — Autonomous Financial Oversight</p>
+    <AnimatePresence mode="wait">
+      {activePillar === "integrity" ? (
+        <IntegrityDetail key="integrity" onBack={goBack} />
+      ) : activePillar === "priceDrift" ? (
+        <PriceDriftDetail key="priceDrift" onBack={goBack} />
+      ) : activePillar === "arbitrage" ? (
+        <ArbitrageDetail key="arbitrage" onBack={goBack} />
+      ) : activePillar === "inventory" ? (
+        <InventoryDetail key="inventory" onBack={goBack} />
+      ) : activePillar === "spending" ? (
+        <SpendingDetail key="spending" onBack={goBack} />
+      ) : activePillar === "vendor" ? (
+        <VendorDetail key="vendor" onBack={goBack} />
+      ) : (
+        <motion.div
+          key="overview"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, x: -40 }}
+          className="min-h-screen"
+          style={{ background: "#f8f9fc", color: "#1e1b4b" }}
+        >
+          {/* Header */}
+          <div className="border-b border-gray-200 px-6 py-4 bg-white">
+            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+              <div>
+                <h1 className="text-xl font-bold tracking-wide" style={{ color: purple }}>
+                  STRATEGIC INTELLIGENCE ENGINE
+                </h1>
+                <p className="text-xs mt-1 tracking-widest uppercase text-gray-500">
+                  MyCFO — Autonomous Financial Oversight
+                </p>
+              </div>
+              <div className="flex gap-6 text-xs uppercase tracking-wider">
+                <div className="text-center">
+                  <div className="text-2xl font-bold" style={{ color: danger }}>{summaryStats.criticalAlerts}</div>
+                  <div className="text-gray-500">Critical</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold" style={{ color: warn }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K</div>
+                  <div className="text-gray-500">Lazy Tax</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold" style={{ color: green }}>${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K</div>
+                  <div className="text-gray-500">Savings</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-6 text-xs uppercase tracking-wider">
-            <div className="text-center">
-              <div className="text-2xl font-bold" style={{ color: danger }}>{summaryStats.criticalAlerts}</div>
-              <div style={{ color: textSecondary }}>Critical</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold" style={{ color: warn }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K</div>
-              <div style={{ color: textSecondary }}>Lazy Tax</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold" style={{ color: green }}>${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K</div>
-              <div style={{ color: textSecondary }}>Savings</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-[1600px] mx-auto p-6 grid grid-cols-3 gap-4">
-        {/* Pillar 1: Integrity */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={card}>
-          <div className="flex items-center gap-2 mb-4">
-            <Shield size={16} style={{ color: danger }} />
-            <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: danger }}>Integrity Layer</span>
-          </div>
-          <div className="space-y-3">
-            {integrityAlerts.slice(0, 4).map((a) => (
-              <div key={a.id} className="border-l-2 pl-3 py-1" style={{ borderColor: a.severity === "critical" ? danger : warn }}>
-                <div className="flex items-center text-xs">
-                  <SeverityDot severity={a.severity} />
-                  <span className="font-semibold" style={{ color: textPrimary }}>{a.vendor}</span>
-                  <span className="ml-auto font-mono" style={{ color: a.severity === "critical" ? danger : warn }}>
-                    ${a.amount.toLocaleString()}
+          {/* Summary Cards Grid */}
+          <div className="max-w-[1600px] mx-auto p-6 grid grid-cols-3 gap-4">
+            <PillarCard
+              icon={Shield} iconColor={danger}
+              title="Integrity Layer" subtitle={`${criticalCount} critical alerts requiring immediate review`}
+              metric={`$${(integrityAlerts.reduce((s, a) => s + a.amount, 0) / 1000).toFixed(0)}K`}
+              metricColor={danger} metricLabel="at risk"
+              onClick={() => setActivePillar("integrity")} delay={0.1}
+            >
+              <div className="flex gap-1">
+                {integrityAlerts.slice(0, 3).map((a) => (
+                  <span key={a.id} className="text-[9px] px-2 py-0.5 rounded-full"
+                    style={{ background: a.severity === "critical" ? `${danger}15` : `${warn}15`, color: a.severity === "critical" ? danger : warn }}>
+                    {a.vendor.split(" ")[0]}
                   </span>
-                </div>
-                <p className="text-[10px] mt-0.5" style={{ color: textSecondary }}>{a.description}</p>
+                ))}
               </div>
-            ))}
-          </div>
-        </motion.div>
+            </PillarCard>
 
-        {/* Pillar 2: Price Drift */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={card}>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingDown size={16} style={{ color: purple }} />
-            <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift Monitor</span>
-          </div>
-          <div className="space-y-2">
-            {priceDriftItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-xs">
-                <span className="truncate max-w-[120px]" style={{ color: textPrimary }}>{item.product}</span>
-                <div className="flex-1 mx-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${Math.min(item.driftPercent * 6, 100)}%`,
-                      backgroundColor: item.status === "alert" ? danger : item.status === "warning" ? warn : green,
-                    }}
-                  />
-                </div>
-                <span className="font-mono w-12 text-right font-semibold" style={{ color: item.status === "alert" ? danger : item.status === "warning" ? warn : green }}>
-                  +{item.driftPercent}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Pillar 3: Arbitrage */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={card}>
-          <div className="flex items-center gap-2 mb-4">
-            <Zap size={16} style={{ color: green }} />
-            <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: green }}>Cross-Vendor Arbitrage</span>
-          </div>
-          <div className="space-y-3">
-            {arbitrageOpportunities.map((opp) => (
-              <div key={opp.id} className="flex items-center gap-3 text-xs">
-                <div className="flex-1 truncate" style={{ color: textPrimary }}>{opp.product}</div>
-                <div className="font-mono font-semibold" style={{ color: warn }}>
-                  ${opp.lazyTax.toFixed(1)}
-                </div>
-                <div className="font-mono text-[10px]" style={{ color: textSecondary }}>
-                  ${(opp.annualSavings / 1000).toFixed(0)}K/yr
-                </div>
-              </div>
-            ))}
-            <div className="border-t border-gray-100 pt-2 flex justify-between text-xs">
-              <span style={{ color: textSecondary }}>Total Lazy Tax (Annual)</span>
-              <span className="font-mono font-bold" style={{ color: green }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Pillar 4: Inventory */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={card}>
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 size={16} style={{ color: green }} />
-            <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: green }}>Predictive Ordering</span>
-          </div>
-          <div className="space-y-3">
-            {inventoryItems.slice(0, 4).map((item) => (
-              <div key={item.id}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span style={{ color: textPrimary }}>{item.product}</span>
-                  <span className="font-mono font-semibold" style={{ color: item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green }}>
-                    {item.daysRemaining}d
+            <PillarCard
+              icon={TrendingDown} iconColor={purple}
+              title="Price Drift" subtitle={`${alertDriftCount} products with significant price increases`}
+              metric={`${alertDriftCount}`}
+              metricColor={danger} metricLabel="alerts"
+              onClick={() => setActivePillar("priceDrift")} delay={0.2}
+            >
+              <div className="flex gap-1">
+                {priceDriftItems.filter(p => p.status === "alert").slice(0, 3).map((p) => (
+                  <span key={p.id} className="text-[9px] px-2 py-0.5 rounded-full"
+                    style={{ background: `${danger}15`, color: danger }}>
+                    +{p.driftPercent}%
                   </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min((item.daysRemaining / 40) * 100, 100)}%`,
-                      backgroundColor: item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green,
-                    }}
-                  />
-                </div>
-                <p className="text-[10px] mt-1" style={{ color: textSecondary }}>{item.suggestedAction}</p>
+                ))}
               </div>
-            ))}
-          </div>
-        </motion.div>
+            </PillarCard>
 
-        {/* Pillar 5: Spending Trends */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className={card}>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingDown size={16} style={{ color: purple }} />
-            <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: purple }}>Margin Erosion Tracker</span>
-          </div>
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={spendingTrends}>
-                <defs>
-                  <linearGradient id="cc-rev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={purple} stopOpacity={0.15} />
-                    <stop offset="100%" stopColor={purple} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="cc-cost" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={danger} stopOpacity={0.15} />
-                    <stop offset="100%" stopColor={danger} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="period" tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1e6}M`} />
-                <Area type="monotone" dataKey="revenue" stroke={purple} fill="url(#cc-rev)" strokeWidth={2} />
-                <Area type="monotone" dataKey="costs" stroke={danger} fill="url(#cc-cost)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-between text-[10px] mt-2" style={{ color: textSecondary }}>
-            <span>Revenue vs Costs — Margin: {summaryStats.marginErosion}pp over 5Q</span>
-          </div>
-        </motion.div>
+            <PillarCard
+              icon={Zap} iconColor={green}
+              title="Arbitrage" subtitle="Savings from switching to lower-cost vendors"
+              metric={`$${(summaryStats.totalLazyTax / 1000).toFixed(0)}K`}
+              metricColor={warn} metricLabel="lazy tax / yr"
+              onClick={() => setActivePillar("arbitrage")} delay={0.3}
+            >
+              <div className="flex gap-1">
+                {arbitrageOpportunities.slice(0, 3).map((o) => (
+                  <span key={o.id} className="text-[9px] px-2 py-0.5 rounded-full"
+                    style={{ background: `${green}15`, color: green }}>
+                    ${(o.annualSavings / 1000).toFixed(0)}K
+                  </span>
+                ))}
+              </div>
+            </PillarCard>
 
-        {/* Pillar 6: Vendor Consolidation */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className={card}>
-          <div className="flex items-center gap-2 mb-4">
-            <Users size={16} style={{ color: purple }} />
-            <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Bloat Index</span>
-          </div>
-          <div className="h-36">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={vendorConsolidation} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="category" tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} width={80} />
-                <Bar dataKey="vendorCount" radius={[0, 4, 4, 0]} barSize={10}>
-                  {vendorConsolidation.map((entry, i) => (
-                    <Cell key={i} fill={entry.redundancyScore > 70 ? danger : entry.redundancyScore > 50 ? warn : green} />
-                  ))}
-                </Bar>
-                <Bar dataKey="industryAvg" radius={[0, 4, 4, 0]} barSize={10} fill="#e5e7eb" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-between text-[10px] mt-1" style={{ color: textSecondary }}>
-            <span>Your vendors: {summaryStats.activeVendors}</span>
-            <span>Industry avg: {summaryStats.industryAvgVendors}</span>
+            <PillarCard
+              icon={BarChart3} iconColor={green}
+              title="Predictive Ordering" subtitle={`${urgentInventory} items critically low on stock`}
+              metric={`${urgentInventory}`}
+              metricColor={danger} metricLabel="urgent"
+              onClick={() => setActivePillar("inventory")} delay={0.4}
+            >
+              <div className="flex gap-1">
+                {inventoryItems.filter(i => i.daysRemaining <= 7).map((i) => (
+                  <span key={i.id} className="text-[9px] px-2 py-0.5 rounded-full"
+                    style={{ background: `${danger}15`, color: danger }}>
+                    {i.product}
+                  </span>
+                ))}
+              </div>
+            </PillarCard>
+
+            <PillarCard
+              icon={TrendingDown} iconColor={purple}
+              title="Margin Erosion" subtitle="Costs outpacing revenue growth over 5 quarters"
+              metric={`${summaryStats.marginErosion}pp`}
+              metricColor={danger} metricLabel="margin loss"
+              onClick={() => setActivePillar("spending")} delay={0.5}
+            >
+              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${Math.abs(summaryStats.marginErosion) * 8}%`, backgroundColor: danger }} />
+              </div>
+            </PillarCard>
+
+            <PillarCard
+              icon={Users} iconColor={purple}
+              title="Vendor Bloat" subtitle={`${summaryStats.activeVendors} active vendors vs ${summaryStats.industryAvgVendors} industry avg`}
+              metric={`${summaryStats.vendorBloatScore}%`}
+              metricColor={warn} metricLabel="bloat score"
+              onClick={() => setActivePillar("vendor")} delay={0.6}
+            >
+              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${summaryStats.vendorBloatScore}%`, backgroundColor: warn }} />
+              </div>
+            </PillarCard>
           </div>
         </motion.div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }
