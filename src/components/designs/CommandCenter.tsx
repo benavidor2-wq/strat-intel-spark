@@ -32,7 +32,7 @@ function OpportunityGauge({ current, optimal }: { current: number; optimal: numb
   const circumHalf = Math.PI * r;
   const offset = circumHalf * (1 - pct);
   return (
-    <svg viewBox="0 0 100 58" className="w-full max-w-[120px] mx-auto">
+    <svg viewBox="0 0 100 58" className="w-full max-w-[100px] mx-auto">
       <path d={`M 10 54 A ${r} ${r} 0 0 1 90 54`} fill="none" stroke="#e5e7eb" strokeWidth="7" strokeLinecap="round" />
       <path d={`M 10 54 A ${r} ${r} 0 0 1 90 54`} fill="none" stroke={green} strokeWidth="7" strokeLinecap="round"
         strokeDasharray={circumHalf} strokeDashoffset={offset} />
@@ -103,7 +103,7 @@ export default function CommandCenter() {
           </div>
 
           {/* Summary Cards Grid */}
-          <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 grid-rows-2 gap-3">
+          <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 auto-rows-fr gap-3 overflow-hidden">
 
             {/* ═══ 1. ARBITRAGE & BEST PRICE ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
@@ -238,7 +238,7 @@ export default function CommandCenter() {
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
               {/* Chart on top */}
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 max-h-[120px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={spendingTrends}>
                     <defs>
