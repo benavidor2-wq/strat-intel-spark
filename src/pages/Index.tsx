@@ -34,7 +34,7 @@ export default function Index() {
         ))}
         <span className="text-[10px] ml-4 shrink-0" style={{ color: "#555" }}>{designs[active].description}</span>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-h-0 overflow-auto">
         <ActiveComponent />
       </div>
     </div>
