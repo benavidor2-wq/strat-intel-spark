@@ -10,6 +10,7 @@ import {
   summaryStats,
 } from "@/data/mockData";
 import { Shield, TrendingDown, Zap, BarChart3, Users } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import PillarCard from "./command-center/PillarCard";
 import IntegrityDetail from "./command-center/IntegrityDetail";
 import PriceDriftDetail from "./command-center/PriceDriftDetail";
