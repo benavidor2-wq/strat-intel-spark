@@ -51,7 +51,8 @@ export default function CommandCenter() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, x: -40 }}
-          className="h-[calc(100vh-40px)] flex flex-col overflow-hidden"
+          className="flex flex-col overflow-hidden"
+          style={{ background: "#f8f9fc", color: "#1e1b4b", height: "calc(100vh - 41px)" }}
           style={{ background: "#f8f9fc", color: "#1e1b4b" }}
         >
           {/* Header */}
