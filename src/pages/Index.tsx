@@ -23,10 +23,10 @@ export default function Index() {
             onClick={() => setActive(i)}
             className="text-xs px-3 py-1.5 rounded-full transition-all shrink-0"
             style={{
-              background: active === i ? "#fff" : "transparent",
-              color: active === i ? "#000" : "#888",
+              background: active === i ? "#6366f1" : "transparent",
+              color: active === i ? "#fff" : "#6b7280",
               fontWeight: active === i ? 600 : 400,
-              border: active === i ? "none" : "1px solid rgba(255,255,255,0.1)",
+              border: active === i ? "none" : "1px solid rgba(0,0,0,0.1)",
             }}
           >
             {d.label}
