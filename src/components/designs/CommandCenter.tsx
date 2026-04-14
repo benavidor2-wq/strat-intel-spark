@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Tooltip as RechartsTooltip } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   integrityAlerts,
