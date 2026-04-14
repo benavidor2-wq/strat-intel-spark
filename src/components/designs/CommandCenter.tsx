@@ -73,46 +73,40 @@ export default function CommandCenter() {
 
           {/* Summary Cards Grid */}
           <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 grid-rows-2 gap-3">
-            {/* Integrity */}
+            {/* 1. Cross-Vendor Arbitrage & Best Price Discovery */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
-              onClick={() => setActivePillar("integrity")}>
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Shield size={15} style={{ color: danger }} />
-                  <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: danger }}>Integrity Layer</span>
-                </div>
-                
+              onClick={() => setActivePillar("arbitrage")}>
+              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: green }}>4</div>
+              <div className="flex items-center gap-2 mb-2">
+                <Zap size={15} style={{ color: green }} />
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Arbitrage & Best Price</span>
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
-                {integrityAlerts.slice(0, 4).map((a) => (
-                  <div key={a.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: a.severity === "critical" ? danger : warn }} />
-                      <span className="text-gray-700 truncate max-w-[140px]">{a.vendor}</span>
+                {arbitrageOpportunities.map((opp) => (
+                  <div key={opp.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
+                    <span className="text-gray-700 truncate max-w-[140px]">{opp.product}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-gray-400 line-through">${opp.currentPrice}</span>
+                      <span className="font-mono font-semibold" style={{ color: green }}>${opp.bestPrice}</span>
                     </div>
-                    <span className="font-mono font-semibold" style={{ color: a.severity === "critical" ? danger : warn }}>${(a.amount / 1000).toFixed(1)}K</span>
                   </div>
                 ))}
               </div>
               <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>{criticalCount} critical · {integrityAlerts.length - criticalCount} high</span>
+                <span>Total savings: <span style={{ color: green }} className="font-semibold">${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K/yr</span></span>
                 <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
-            {/* Price Drift */}
+            {/* 2. Price Drift */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("priceDrift")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <TrendingDown size={15} style={{ color: purple }} />
-                  <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
-                </div>
-                
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown size={15} style={{ color: purple }} />
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {priceDriftItems.slice(0, 5).map((item) => {
@@ -134,46 +128,14 @@ export default function CommandCenter() {
               </div>
             </motion.div>
 
-            {/* Arbitrage */}
+            {/* 3. Predictive Ordering */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
-              onClick={() => setActivePillar("arbitrage")}>
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: green }}>4</div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Zap size={15} style={{ color: green }} />
-                  <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Arbitrage</span>
-                </div>
-                
-              </div>
-              <div className="flex-1 flex flex-col justify-evenly">
-                {arbitrageOpportunities.map((opp) => (
-                  <div key={opp.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
-                    <span className="text-gray-700 truncate max-w-[140px]">{opp.product}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-gray-400 line-through">${opp.currentPrice}</span>
-                      <span className="font-mono font-semibold" style={{ color: green }}>${opp.bestPrice}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>Total savings: <span style={{ color: green }} className="font-semibold">${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K/yr</span></span>
-                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
-              </div>
-            </motion.div>
-
-            {/* Predictive Ordering */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("inventory")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={15} style={{ color: green }} />
-                  <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Predictive Ordering</span>
-                </div>
-                
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 size={15} style={{ color: green }} />
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Predictive Ordering</span>
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {inventoryItems.slice(0, 4).map((item) => {
@@ -197,17 +159,14 @@ export default function CommandCenter() {
               </div>
             </motion.div>
 
-            {/* Margin Erosion */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            {/* 4. Spending Patterns & Trends */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("spending")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>1</div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <TrendingDown size={15} style={{ color: purple }} />
-                  <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Margin Erosion</span>
-                </div>
-                
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown size={15} style={{ color: purple }} />
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns & Trends</span>
               </div>
               <div className="flex-1 mt-1">
                 <ResponsiveContainer width="100%" height="100%">
@@ -231,17 +190,14 @@ export default function CommandCenter() {
               </div>
             </motion.div>
 
-            {/* Vendor Bloat */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+            {/* 5. Vendor Consolidation & Benchmarking */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
               onClick={() => setActivePillar("vendor")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Users size={15} style={{ color: purple }} />
-                  <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Bloat</span>
-                </div>
-                
+              <div className="flex items-center gap-2 mb-2">
+                <Users size={15} style={{ color: purple }} />
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Consolidation</span>
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {vendorConsolidation.map((v, i) => {
@@ -261,6 +217,32 @@ export default function CommandCenter() {
               </div>
               <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
                 <span>{summaryStats.activeVendors} vendors · avg {summaryStats.industryAvgVendors}</span>
+                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
+              </div>
+            </motion.div>
+
+            {/* 6. Anomaly & Risk Mitigation */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
+              onClick={() => setActivePillar("integrity")}>
+              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
+              <div className="flex items-center gap-2 mb-2">
+                <Shield size={15} style={{ color: danger }} />
+                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: danger }}>Anomaly & Risk Mitigation</span>
+              </div>
+              <div className="flex-1 flex flex-col justify-evenly">
+                {integrityAlerts.slice(0, 4).map((a) => (
+                  <div key={a.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: a.severity === "critical" ? danger : warn }} />
+                      <span className="text-gray-700 truncate max-w-[140px]">{a.vendor}</span>
+                    </div>
+                    <span className="font-mono font-semibold" style={{ color: a.severity === "critical" ? danger : warn }}>${(a.amount / 1000).toFixed(1)}K</span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
+                <span>{criticalCount} critical · {integrityAlerts.length - criticalCount} high</span>
                 <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
