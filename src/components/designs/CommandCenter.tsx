@@ -107,7 +107,7 @@ export default function CommandCenter() {
 
             {/* ═══ 1. ARBITRAGE & BEST PRICE ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("arbitrage")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: green }}>4</div>
               <div className="flex items-center gap-2 mb-2">
@@ -122,7 +122,7 @@ export default function CommandCenter() {
                 </div>
               </div>
               {/* Line items below */}
-              <div className="flex-1 flex flex-col gap-1.5">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {top3Savings.map((opp) => (
                   <div key={opp.id} className="flex items-center justify-between text-[10px] py-1.5 px-2 rounded-lg bg-gray-50">
                     <span className="text-gray-700 truncate max-w-[120px]">{opp.product}</span>
@@ -143,14 +143,14 @@ export default function CommandCenter() {
 
             {/* ═══ 2. PRICE DRIFT ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("priceDrift")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
               <div className="flex items-center gap-2 mb-2">
                 <TrendingDown size={15} style={{ color: purple }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
               </div>
-              <div className="flex-1 flex flex-col gap-2">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {priceDriftItems.slice(0, 5).map((item) => {
                   const isWarning = item.driftPercent > 5;
                   const barColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
@@ -188,14 +188,14 @@ export default function CommandCenter() {
 
             {/* ═══ 3. PREDICTIVE ORDERING ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("inventory")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
               <div className="flex items-center gap-2 mb-2">
                 <BarChart3 size={15} style={{ color: green }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Predictive Ordering</span>
               </div>
-              <div className="flex-1 flex flex-col gap-2">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {inventoryItems.slice(0, 5).map((item) => {
                   const urgColor = item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green;
                   return (
@@ -230,7 +230,7 @@ export default function CommandCenter() {
 
             {/* ═══ 4. SPENDING PATTERNS & TRENDS ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("spending")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>1</div>
               <div className="flex items-center gap-2 mb-1">
@@ -238,7 +238,7 @@ export default function CommandCenter() {
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
               {/* Chart on top */}
-              <div className="flex-1 min-h-0 max-h-[120px]">
+              <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={spendingTrends}>
                     <defs>
@@ -279,14 +279,14 @@ export default function CommandCenter() {
 
             {/* ═══ 5. VENDOR CONSOLIDATION ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative"
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("vendor")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
               <div className="flex items-center gap-2 mb-2">
                 <Users size={15} style={{ color: purple }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Consolidation</span>
               </div>
-              <div className="flex-1 flex flex-col gap-2">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {vendorConsolidation.map((v, i) => {
                   const scoreColor = v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green;
                   const maxCount = 16;
@@ -316,7 +316,7 @@ export default function CommandCenter() {
 
             {/* ═══ 6. ANOMALY & RISK MITIGATION ═══ */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative overflow-hidden"
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative overflow-hidden"
               onClick={() => setActivePillar("integrity")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
               <motion.div
@@ -341,7 +341,7 @@ export default function CommandCenter() {
                 </div>
               </div>
               {/* Flagged entities */}
-              <div className="flex-1 flex flex-col gap-1.5">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {integrityAlerts.slice(0, 4).map((a) => (
                   <div key={a.id} className="flex items-center justify-between text-[10px] py-1.5 px-2 rounded-lg bg-gray-50">
                     <div className="flex items-center gap-1.5">
