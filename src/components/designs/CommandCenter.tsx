@@ -70,8 +70,6 @@ export default function CommandCenter() {
               </div>
             </div>
           </div>
-            </div>
-          </div>
 
           {/* Summary Cards Grid */}
           <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 grid-rows-2 gap-3">
