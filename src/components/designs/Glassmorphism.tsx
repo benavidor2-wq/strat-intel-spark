@@ -12,15 +12,19 @@ import { Shield, TrendingDown, Zap, BarChart3, Activity, Users } from "lucide-re
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
 const glass = "backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-lg";
+const purple = "#6366f1";
+const green = "#22c55e";
+const warn = "#f59e0b";
+const danger = "#ef4444";
 
 export default function Glassmorphism() {
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)", color: "#e8e8f0" }}>
+    <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0f0c29 0%, #1a1145 50%, #16132e 100%)", color: "#e8e8f0" }}>
       {/* Background orbs */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-20 left-20 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)" }} />
-        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 70%)" }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.15) 0%, transparent 70%)" }} />
+        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(34,197,94,0.2) 0%, transparent 70%)" }} />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)" }} />
       </div>
 
       <div className="relative z-10">
@@ -34,10 +38,10 @@ export default function Glassmorphism() {
           {/* Summary Cards */}
           <div className="flex gap-4 mt-6">
             {[
-              { label: "Critical Alerts", value: summaryStats.criticalAlerts, icon: Shield, color: "#f87171" },
-              { label: "Inflation Leaks", value: summaryStats.inflationLeaks, icon: TrendingDown, color: "#fbbf24" },
-              { label: "Lazy Tax / Year", value: `$${(summaryStats.totalLazyTax / 1000).toFixed(0)}K`, icon: Zap, color: "#60a5fa" },
-              { label: "Total Savings", value: `$${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K`, icon: Activity, color: "#34d399" },
+              { label: "Critical Alerts", value: summaryStats.criticalAlerts, icon: Shield, color: danger },
+              { label: "Inflation Leaks", value: summaryStats.inflationLeaks, icon: TrendingDown, color: warn },
+              { label: "Lazy Tax / Year", value: `$${(summaryStats.totalLazyTax / 1000).toFixed(0)}K`, icon: Zap, color: purple },
+              { label: "Total Savings", value: `$${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K`, icon: Activity, color: green },
             ].map((s, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                 className={`${glass} flex-1 flex items-center gap-4`}>
@@ -58,14 +62,14 @@ export default function Glassmorphism() {
           {/* Integrity */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className={glass}>
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-              <Shield size={14} style={{ color: "#f87171" }} /> Integrity Layer
+              <Shield size={14} style={{ color: danger }} /> Integrity Layer
             </h3>
             <div className="space-y-3">
               {integrityAlerts.slice(0, 4).map((a) => (
                 <div key={a.id} className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
                   <div className="flex justify-between text-xs">
                     <span className="font-medium">{a.vendor}</span>
-                    <span style={{ color: a.severity === "critical" ? "#f87171" : "#fbbf24" }}>${a.amount.toLocaleString()}</span>
+                    <span style={{ color: a.severity === "critical" ? danger : warn }}>${a.amount.toLocaleString()}</span>
                   </div>
                   <p className="text-[10px] mt-1 opacity-40">{a.description}</p>
                 </div>
@@ -76,7 +80,7 @@ export default function Glassmorphism() {
           {/* Price Drift */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className={glass}>
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-              <TrendingDown size={14} style={{ color: "#fbbf24" }} /> Price Drift Monitor
+              <TrendingDown size={14} style={{ color: purple }} /> Price Drift Monitor
             </h3>
             <div className="space-y-3">
               {priceDriftItems.map((item) => (
@@ -88,10 +92,10 @@ export default function Glassmorphism() {
                       animate={{ width: `${Math.min(item.driftPercent * 6, 100)}%` }}
                       transition={{ duration: 1, delay: 0.5 }}
                       className="h-full rounded-full"
-                      style={{ background: item.status === "alert" ? "linear-gradient(90deg, #f87171, #ef4444)" : item.status === "warning" ? "linear-gradient(90deg, #fbbf24, #f59e0b)" : "linear-gradient(90deg, #34d399, #10b981)" }}
+                      style={{ background: item.status === "alert" ? `linear-gradient(90deg, ${danger}, #dc2626)` : item.status === "warning" ? `linear-gradient(90deg, ${warn}, #d97706)` : `linear-gradient(90deg, ${green}, #16a34a)` }}
                     />
                   </div>
-                  <span className="text-xs font-mono w-12 text-right" style={{ color: item.status === "alert" ? "#f87171" : item.status === "warning" ? "#fbbf24" : "#34d399" }}>
+                  <span className="text-xs font-mono w-12 text-right" style={{ color: item.status === "alert" ? danger : item.status === "warning" ? warn : green }}>
                     +{item.driftPercent}%
                   </span>
                 </div>
@@ -102,7 +106,7 @@ export default function Glassmorphism() {
           {/* Arbitrage */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className={glass}>
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-              <Zap size={14} style={{ color: "#60a5fa" }} /> Cross-Vendor Arbitrage
+              <Zap size={14} style={{ color: purple }} /> Cross-Vendor Arbitrage
             </h3>
             {arbitrageOpportunities.map((opp) => (
               <div key={opp.id} className="mb-3 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
@@ -110,40 +114,40 @@ export default function Glassmorphism() {
                 <div className="flex gap-1 mb-2">
                   {opp.vendors.map((v, i) => (
                     <span key={i} className="text-[10px] px-2 py-1 rounded-lg" style={{
-                      background: v.price === opp.bestPrice ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.05)",
-                      border: v.price === opp.bestPrice ? "1px solid rgba(52,211,153,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                      background: v.price === opp.bestPrice ? `${green}22` : "rgba(255,255,255,0.05)",
+                      border: v.price === opp.bestPrice ? `1px solid ${green}44` : "1px solid rgba(255,255,255,0.1)",
                     }}>
                       {v.name}: ${v.price}
                     </span>
                   ))}
                 </div>
                 <div className="flex justify-between text-[10px] opacity-60">
-                  <span>Lazy Tax: <span style={{ color: "#f87171" }}>${opp.lazyTax}/unit</span></span>
-                  <span style={{ color: "#34d399" }}>${(opp.annualSavings / 1000).toFixed(0)}K/yr savings</span>
+                  <span>Lazy Tax: <span style={{ color: danger }}>${opp.lazyTax}/unit</span></span>
+                  <span style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K/yr savings</span>
                 </div>
               </div>
             ))}
           </motion.div>
 
-          {/* Spending Trends + Inventory */}
+          {/* Spending Trends + Vendor Bloat */}
           <div className="space-y-6">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} className={glass}>
               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <Activity size={14} style={{ color: "#a78bfa" }} /> Margin Erosion
+                <Activity size={14} style={{ color: purple }} /> Margin Erosion
               </h3>
               <div className="h-44">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={spendingTrends}>
                     <defs>
                       <linearGradient id="gl-rev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#60a5fa" stopOpacity={0} />
+                        <stop offset="0%" stopColor={purple} stopOpacity={0.3} />
+                        <stop offset="100%" stopColor={purple} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="period" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1e6}M`} />
-                    <Area type="monotone" dataKey="revenue" stroke="#60a5fa" fill="url(#gl-rev)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="costs" stroke="#f87171" fill="none" strokeWidth={2} strokeDasharray="4 4" />
+                    <Area type="monotone" dataKey="revenue" stroke={purple} fill="url(#gl-rev)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="costs" stroke={danger} fill="none" strokeWidth={2} strokeDasharray="4 4" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -151,12 +155,12 @@ export default function Glassmorphism() {
 
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} className={glass}>
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <Users size={14} style={{ color: "#c084fc" }} /> Vendor Bloat
+                <Users size={14} style={{ color: purple }} /> Vendor Bloat
               </h3>
               <div className="flex gap-2">
                 {vendorConsolidation.map((v, i) => (
                   <div key={i} className="flex-1 text-center p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
-                    <div className="text-lg font-semibold" style={{ color: v.redundancyScore > 70 ? "#f87171" : v.redundancyScore > 50 ? "#fbbf24" : "#34d399" }}>{v.vendorCount}</div>
+                    <div className="text-lg font-semibold" style={{ color: v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green }}>{v.vendorCount}</div>
                     <div className="text-[9px] opacity-40 mt-0.5">{v.category}</div>
                     <div className="text-[9px] opacity-30">avg: {v.industryAvg}</div>
                   </div>
