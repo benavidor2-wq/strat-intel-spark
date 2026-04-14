@@ -133,12 +133,6 @@ export default function CommandCenter() {
                   </div>
                 ))}
               </div>
-              <div className="mt-2 flex items-center justify-between">
-                <div className="px-3 py-1 rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: green }}>
-                  ${(totalAnnualSavings / 1000).toFixed(0)}K/yr savings
-                </div>
-                <span className="text-[10px] text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
-              </div>
             </motion.div>
 
             {/* ═══ 2. PRICE DRIFT ═══ */}
@@ -180,10 +174,6 @@ export default function CommandCenter() {
                   );
                 })}
               </div>
-              <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span>{priceDriftItems.filter(p => p.driftPercent > 5).length} items &gt;5% drift</span>
-                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
-              </div>
             </motion.div>
 
             {/* ═══ 3. PREDICTIVE ORDERING ═══ */}
@@ -222,10 +212,6 @@ export default function CommandCenter() {
                   );
                 })}
               </div>
-              <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span><Gift size={9} className="inline" style={{ color: green }} /> = bulk discount</span>
-                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
-              </div>
             </motion.div>
 
             {/* ═══ 4. SPENDING PATTERNS & TRENDS ═══ */}
@@ -253,27 +239,6 @@ export default function CommandCenter() {
                     <Area type="monotone" dataKey="costs" stroke={danger} fill="none" strokeWidth={1.5} strokeDasharray="3 3" />
                   </AreaChart>
                 </ResponsiveContainer>
-              </div>
-              {/* Margin below */}
-              <div className="mt-1 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-gray-400">Margin</span>
-                  <motion.span
-                    className="text-sm font-bold font-mono px-2 py-0.5 rounded-md"
-                    style={{
-                      color: marginTrend >= 0 ? green : danger,
-                      backgroundColor: marginTrend >= 0 ? `${green}15` : `${danger}15`,
-                    }}
-                    animate={marginTrend < 0 ? { opacity: [1, 0.6, 1] } : {}}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                  >
-                    {latestMargin}%
-                  </motion.span>
-                  <span className="text-[9px] font-mono" style={{ color: marginTrend >= 0 ? green : danger }}>
-                    {marginTrend >= 0 ? "+" : ""}{marginTrend}pp
-                  </span>
-                </div>
-                <span className="text-[10px] text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
@@ -307,10 +272,6 @@ export default function CommandCenter() {
                     </div>
                   );
                 })}
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-[10px] text-gray-500">Avg savings: <span className="font-mono font-semibold" style={{ color: green }}>${(totalConsolidationSavings / 1000).toFixed(0)}K</span></span>
-                <span className="text-[10px] text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
 
@@ -358,18 +319,6 @@ export default function CommandCenter() {
                     </span>
                   </div>
                 ))}
-              </div>
-              <div className="text-[10px] text-gray-400 mt-2 flex justify-between items-center">
-                <div className="flex items-center gap-1">
-                  <motion.span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: purple }}
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                  />
-                  <span style={{ color: purple }} className="font-semibold">Auditing active</span>
-                </div>
-                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
           </div>
