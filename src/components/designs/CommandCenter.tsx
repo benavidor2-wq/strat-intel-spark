@@ -51,11 +51,11 @@ export default function CommandCenter() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, x: -40 }}
-          className="min-h-screen"
+          className="h-full flex flex-col overflow-hidden"
           style={{ background: "#f8f9fc", color: "#1e1b4b" }}
         >
           {/* Header */}
-          <div className="border-b border-gray-200 px-6 py-4 bg-white">
+          <div className="border-b border-gray-200 px-6 py-2 bg-white">
             <div className="flex items-center justify-between max-w-[1600px] mx-auto">
               <div>
                 <h1 className="text-xl font-bold tracking-wide" style={{ color: purple }}>
@@ -83,7 +83,7 @@ export default function CommandCenter() {
           </div>
 
           {/* Summary Cards Grid */}
-          <div className="max-w-[1600px] mx-auto p-6 grid grid-cols-3 gap-4">
+          <div className="flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-6 pt-3 pb-2 grid grid-cols-3 grid-rows-2 gap-3">
             <PillarCard
               icon={Shield} iconColor={danger}
               title="Integrity Layer" subtitle={`${criticalCount} critical alerts requiring immediate review`}

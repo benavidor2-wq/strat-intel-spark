@@ -14,7 +14,7 @@ interface PillarCardProps {
   delay?: number;
 }
 
-const card = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group";
+const card = "bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group h-full flex flex-col";
 
 export default function PillarCard({ icon: Icon, iconColor, title, subtitle, metric, metricColor, metricLabel, children, onClick, delay = 0 }: PillarCardProps) {
   return (
@@ -36,7 +36,7 @@ export default function PillarCard({ icon: Icon, iconColor, title, subtitle, met
         <span className="text-2xl font-bold" style={{ color: metricColor }}>{metric}</span>
         <span className="text-[10px] uppercase tracking-wider text-gray-400">{metricLabel}</span>
       </div>
-      <p className="text-[11px] text-gray-500 mb-3">{subtitle}</p>
+      <p className="text-[11px] text-gray-500 mb-3 flex-1">{subtitle}</p>
       {children}
     </motion.div>
   );
