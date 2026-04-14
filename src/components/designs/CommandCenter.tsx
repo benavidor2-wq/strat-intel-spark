@@ -185,7 +185,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: danger }}>{urgentInventory} <span className="text-[10px] font-normal text-gray-400">urgent</span></span>
               </div>
-              <div className="flex-1 space-y-2 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {inventoryItems.slice(0, 4).map((item) => {
                   const urgColor = item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green;
                   return (
