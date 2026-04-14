@@ -98,7 +98,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: danger }}>${(integrityAlerts.reduce((s, a) => s + a.amount, 0) / 1000).toFixed(0)}K</span>
               </div>
-              <div className="flex-1 space-y-1.5 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {integrityAlerts.slice(0, 4).map((a) => (
                   <div key={a.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
                     <div className="flex items-center gap-1.5">
@@ -126,7 +126,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: danger }}>{alertDriftCount} <span className="text-[10px] font-normal text-gray-400">alerts</span></span>
               </div>
-              <div className="flex-1 space-y-2 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {priceDriftItems.slice(0, 5).map((item) => {
                   const barColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
                   return (
@@ -157,7 +157,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: warn }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K <span className="text-[10px] font-normal text-gray-400">/yr</span></span>
               </div>
-              <div className="flex-1 space-y-1.5 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {arbitrageOpportunities.map((opp) => (
                   <div key={opp.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
                     <span className="text-gray-700 truncate max-w-[140px]">{opp.product}</span>
@@ -185,7 +185,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: danger }}>{urgentInventory} <span className="text-[10px] font-normal text-gray-400">urgent</span></span>
               </div>
-              <div className="flex-1 space-y-2 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {inventoryItems.slice(0, 4).map((item) => {
                   const urgColor = item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green;
                   return (
@@ -251,7 +251,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: warn }}>{summaryStats.vendorBloatScore}%</span>
               </div>
-              <div className="flex-1 space-y-2 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {vendorConsolidation.map((v, i) => {
                   const scoreColor = v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green;
                   return (
