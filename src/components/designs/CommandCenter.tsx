@@ -126,7 +126,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: danger }}>{alertDriftCount} <span className="text-[10px] font-normal text-gray-400">alerts</span></span>
               </div>
-              <div className="flex-1 space-y-2 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {priceDriftItems.slice(0, 5).map((item) => {
                   const barColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
                   return (
