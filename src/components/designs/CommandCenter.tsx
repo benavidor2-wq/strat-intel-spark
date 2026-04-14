@@ -238,7 +238,7 @@ export default function CommandCenter() {
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
               {/* Chart on top */}
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 max-h-[120px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={spendingTrends}>
                     <defs>
