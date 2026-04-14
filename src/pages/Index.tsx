@@ -3,8 +3,8 @@ import CommandCenter from "@/components/designs/CommandCenter";
 import Glassmorphism from "@/components/designs/Glassmorphism";
 
 const designs = [
-  { id: "command", label: "Command Center", description: "Dark military ops — neon cyan/amber on deep navy", component: CommandCenter },
-  { id: "glass", label: "Glassmorphism", description: "Frosted translucent cards over gradient backgrounds", component: Glassmorphism },
+  { id: "command", label: "Command Center", description: "Dark ops — indigo & emerald on deep navy", component: CommandCenter },
+  { id: "glass", label: "Glassmorphism", description: "Frosted translucent cards — indigo & emerald palette", component: Glassmorphism },
 ] as const;
 
 export default function Index() {
