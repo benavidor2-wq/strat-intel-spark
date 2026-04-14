@@ -111,8 +111,8 @@ export default function CommandCenter() {
               onClick={() => setActivePillar("arbitrage")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: green }}>4</div>
               <div className="flex items-center gap-2 mb-2">
-                <Zap size={15} style={{ color: green }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Arbitrage & Best Price</span>
+                <Zap size={19} style={{ color: purple }} />
+                <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Arbitrage & Best Price</span>
               </div>
               {/* Gauge centered on top */}
               <div className="flex justify-center mb-2">
@@ -141,8 +141,8 @@ export default function CommandCenter() {
               onClick={() => setActivePillar("priceDrift")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
               <div className="flex items-center gap-2 mb-2">
-                <TrendingDown size={15} style={{ color: purple }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
+                <TrendingDown size={19} style={{ color: purple }} />
+                <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {priceDriftItems.slice(0, 5).map((item) => {
@@ -182,8 +182,8 @@ export default function CommandCenter() {
               onClick={() => setActivePillar("inventory")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
               <div className="flex items-center gap-2 mb-2">
-                <BarChart3 size={15} style={{ color: green }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Predictive Ordering</span>
+                <BarChart3 size={19} style={{ color: purple }} />
+                <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Predictive Ordering</span>
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {inventoryItems.slice(0, 5).map((item) => {
@@ -220,8 +220,8 @@ export default function CommandCenter() {
               onClick={() => setActivePillar("spending")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>1</div>
               <div className="flex items-center gap-2 mb-1">
-                <TrendingDown size={15} style={{ color: purple }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
+                <TrendingDown size={19} style={{ color: purple }} />
+                <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
               {/* Chart on top */}
               <div className="flex-1 min-h-0">
@@ -248,8 +248,8 @@ export default function CommandCenter() {
               onClick={() => setActivePillar("vendor")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
               <div className="flex items-center gap-2 mb-2">
-                <Users size={15} style={{ color: purple }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Consolidation</span>
+                <Users size={19} style={{ color: purple }} />
+                <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Consolidation</span>
               </div>
               <div className="flex-1 flex flex-col justify-evenly">
                 {vendorConsolidation.map((v, i) => {
@@ -287,8 +287,8 @@ export default function CommandCenter() {
                 transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
               />
               <div className="flex items-center gap-2 mb-2">
-                <Shield size={15} style={{ color: danger }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: danger }}>Anomaly & Risk</span>
+                <Shield size={19} style={{ color: purple }} />
+                <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Anomaly & Risk</span>
               </div>
               {/* Severity Counters */}
               <div className="flex gap-2 mb-2">
