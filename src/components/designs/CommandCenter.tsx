@@ -157,7 +157,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: warn }}>${(summaryStats.totalLazyTax / 1000).toFixed(0)}K <span className="text-[10px] font-normal text-gray-400">/yr</span></span>
               </div>
-              <div className="flex-1 space-y-1.5 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {arbitrageOpportunities.map((opp) => (
                   <div key={opp.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
                     <span className="text-gray-700 truncate max-w-[140px]">{opp.product}</span>
