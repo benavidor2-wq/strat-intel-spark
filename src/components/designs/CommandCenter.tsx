@@ -83,7 +83,7 @@ export default function CommandCenter() {
           </div>
 
           {/* Summary Cards Grid */}
-          <div className="max-w-[1600px] mx-auto p-6 grid grid-cols-3 gap-4">
+          <div className="flex-1 max-w-[1600px] mx-auto p-6 grid grid-cols-3 grid-rows-2 gap-4">
             <PillarCard
               icon={Shield} iconColor={danger}
               title="Integrity Layer" subtitle={`${criticalCount} critical alerts requiring immediate review`}
