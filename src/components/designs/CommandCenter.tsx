@@ -216,12 +216,12 @@ export default function CommandCenter() {
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("spending")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>1</div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-3">
                 <TrendingDown size={19} style={{ color: purple }} />
                 <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
               {/* Legend */}
-              <div className="flex items-center gap-4 mb-1">
+              <div className="flex items-center gap-4 mb-2">
                 <div className="flex items-center gap-1">
                   <span className="w-3 h-0.5 rounded-full" style={{ backgroundColor: purple }} />
                   <span className="text-[9px] text-gray-500">Total Spend</span>
