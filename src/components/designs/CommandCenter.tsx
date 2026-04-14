@@ -5,6 +5,8 @@ import {
   priceDriftItems,
   arbitrageOpportunities,
   inventoryItems,
+  spendingTrends,
+  vendorConsolidation,
   summaryStats,
 } from "@/data/mockData";
 import { Shield, TrendingDown, Zap, BarChart3, Users } from "lucide-react";
