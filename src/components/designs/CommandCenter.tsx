@@ -114,27 +114,25 @@ export default function CommandCenter() {
                 <Zap size={15} style={{ color: green }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Arbitrage & Best Price</span>
               </div>
-              <div className="flex-1 flex flex-col">
-                {/* Gauge + Top 3 */}
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="flex flex-col items-center w-[120px] shrink-0">
-                    <OpportunityGauge current={totalCurrentSpend} optimal={totalOptimalSpend} />
-                    <span className="text-[8px] text-gray-400 mt-0.5">Current vs Optimal</span>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center gap-1.5">
-                    {top3Savings.map((opp) => (
-                      <div key={opp.id} className="flex items-center justify-between text-[10px] py-1 px-2 rounded-lg bg-gray-50">
-                        <span className="text-gray-700 truncate max-w-[100px]">{opp.product}</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-gray-400 line-through text-[9px]">${opp.currentPrice}</span>
-                          <span className="font-mono font-bold" style={{ color: green }}>${opp.bestPrice}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {/* Gauge centered on top */}
+              <div className="flex justify-center mb-2">
+                <div className="flex flex-col items-center">
+                  <OpportunityGauge current={totalCurrentSpend} optimal={totalOptimalSpend} />
+                  <span className="text-[8px] text-gray-400 mt-0.5">Current vs Optimal</span>
                 </div>
               </div>
-              {/* Total Annual Savings Badge */}
+              {/* Line items below */}
+              <div className="flex-1 flex flex-col gap-1.5">
+                {top3Savings.map((opp) => (
+                  <div key={opp.id} className="flex items-center justify-between text-[10px] py-1.5 px-2 rounded-lg bg-gray-50">
+                    <span className="text-gray-700 truncate max-w-[120px]">{opp.product}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-gray-400 line-through text-[9px]">${opp.currentPrice}</span>
+                      <span className="font-mono font-bold" style={{ color: green }}>${opp.bestPrice}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
               <div className="mt-2 flex items-center justify-between">
                 <div className="px-3 py-1 rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: green }}>
                   ${(totalAnnualSavings / 1000).toFixed(0)}K/yr savings
@@ -152,11 +150,10 @@ export default function CommandCenter() {
                 <TrendingDown size={15} style={{ color: purple }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
               </div>
-              <div className="flex-1 flex flex-col justify-evenly">
+              <div className="flex-1 flex flex-col gap-2">
                 {priceDriftItems.slice(0, 5).map((item) => {
                   const isWarning = item.driftPercent > 5;
                   const barColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
-                  // Weighted sparkline - thicker bars for higher drift
                   const barHeight = Math.max(3, Math.min(item.driftPercent * 0.8, 8));
                   return (
                     <div key={item.id} className="flex items-center gap-2 text-[10px]">
@@ -198,8 +195,8 @@ export default function CommandCenter() {
                 <BarChart3 size={15} style={{ color: green }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: green }}>Predictive Ordering</span>
               </div>
-              <div className="flex-1 flex flex-col justify-evenly">
-                {inventoryItems.slice(0, 4).map((item) => {
+              <div className="flex-1 flex flex-col gap-2">
+                {inventoryItems.slice(0, 5).map((item) => {
                   const urgColor = item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green;
                   return (
                     <div key={item.id}>
@@ -226,7 +223,7 @@ export default function CommandCenter() {
                 })}
               </div>
               <div className="text-[10px] text-gray-400 mt-2 flex justify-between">
-                <span><Gift size={9} className="inline" style={{ color: green }} /> = bulk discount available</span>
+                <span><Gift size={9} className="inline" style={{ color: green }} /> = bulk discount</span>
                 <span className="text-gray-300 group-hover:text-gray-500 transition-colors">View all →</span>
               </div>
             </motion.div>
@@ -240,7 +237,8 @@ export default function CommandCenter() {
                 <TrendingDown size={15} style={{ color: purple }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Spending Patterns</span>
               </div>
-              <div className="flex-1 mt-1">
+              {/* Chart on top */}
+              <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={spendingTrends}>
                     <defs>
@@ -256,7 +254,7 @@ export default function CommandCenter() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-              {/* Margin Efficiency Score */}
+              {/* Margin below */}
               <div className="mt-1 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-400">Margin</span>
@@ -288,7 +286,7 @@ export default function CommandCenter() {
                 <Users size={15} style={{ color: purple }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Consolidation</span>
               </div>
-              <div className="flex-1 flex flex-col justify-evenly">
+              <div className="flex-1 flex flex-col gap-2">
                 {vendorConsolidation.map((v, i) => {
                   const scoreColor = v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green;
                   const maxCount = 16;
@@ -303,7 +301,6 @@ export default function CommandCenter() {
                           transition={{ delay: 0.6, duration: 0.5 }}
                           style={{ backgroundColor: scoreColor }}
                         />
-                        {/* Industry avg marker */}
                         <div className="absolute top-0 h-full w-0.5 bg-gray-400" style={{ left: `${(v.industryAvg / maxCount) * 100}%` }} />
                       </div>
                       <span className="font-mono font-bold w-5 text-right" style={{ color: scoreColor }}>{v.vendorCount}</span>
@@ -322,20 +319,16 @@ export default function CommandCenter() {
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col relative overflow-hidden"
               onClick={() => setActivePillar("integrity")}>
               <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
-              
-              {/* Risk Pulse background animation */}
               <motion.div
                 className="absolute inset-0 rounded-xl pointer-events-none"
                 style={{ border: `2px solid ${purple}` }}
                 animate={{ opacity: [0, 0.3, 0] }}
                 transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
               />
-
               <div className="flex items-center gap-2 mb-2">
                 <Shield size={15} style={{ color: danger }} />
                 <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: danger }}>Anomaly & Risk</span>
               </div>
-
               {/* Severity Counters */}
               <div className="flex gap-2 mb-2">
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ backgroundColor: `${danger}12` }}>
@@ -347,11 +340,10 @@ export default function CommandCenter() {
                   <span className="text-[10px] font-bold" style={{ color: warn }}>{highCount} High</span>
                 </div>
               </div>
-
-              {/* Top 4 flagged entities */}
-              <div className="flex-1 flex flex-col justify-evenly">
+              {/* Flagged entities */}
+              <div className="flex-1 flex flex-col gap-1.5">
                 {integrityAlerts.slice(0, 4).map((a) => (
-                  <div key={a.id} className="flex items-center justify-between text-[10px] py-1 px-2 rounded-lg bg-gray-50">
+                  <div key={a.id} className="flex items-center justify-between text-[10px] py-1.5 px-2 rounded-lg bg-gray-50">
                     <div className="flex items-center gap-1.5">
                       <motion.span
                         className="w-2 h-2 rounded-full shrink-0"
@@ -367,7 +359,6 @@ export default function CommandCenter() {
                   </div>
                 ))}
               </div>
-
               <div className="text-[10px] text-gray-400 mt-2 flex justify-between items-center">
                 <div className="flex items-center gap-1">
                   <motion.span
