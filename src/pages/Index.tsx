@@ -13,7 +13,7 @@ export default function Index() {
   const ActiveComponent = designs[safeIndex].component;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <div className="sticky top-0 z-[100] flex items-center gap-1 px-4 py-2 overflow-x-auto"
         style={{ background: "rgba(255,255,255,0.95)", borderBottom: "1px solid rgba(0,0,0,0.08)", backdropFilter: "blur(12px)" }}>
         <span className="text-[10px] uppercase tracking-widest mr-3 shrink-0" style={{ color: "#9ca3af" }}>Design:</span>
