@@ -53,7 +53,6 @@ export default function CommandCenter() {
           exit={{ opacity: 0, x: -40 }}
           className="flex flex-col overflow-hidden"
           style={{ background: "#f8f9fc", color: "#1e1b4b", height: "calc(100vh - 41px)" }}
-          style={{ background: "#f8f9fc", color: "#1e1b4b" }}
         >
           {/* Header */}
           <div className="border-b border-gray-200 px-6 py-2 bg-white">
