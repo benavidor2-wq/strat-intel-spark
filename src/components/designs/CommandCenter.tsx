@@ -109,7 +109,7 @@ export default function CommandCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("arbitrage")}>
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: green }}>4</div>
+              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>4</div>
               <div className="flex items-center gap-2 mb-2">
                 <Zap size={19} style={{ color: purple }} />
                 <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Arbitrage & Best Price</span>
@@ -139,7 +139,7 @@ export default function CommandCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("priceDrift")}>
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
+              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>3</div>
               <div className="flex items-center gap-2 mb-2">
                 <TrendingDown size={19} style={{ color: purple }} />
                 <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Price Drift</span>
@@ -180,7 +180,7 @@ export default function CommandCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("inventory")}>
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
+              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>2</div>
               <div className="flex items-center gap-2 mb-2">
                 <BarChart3 size={19} style={{ color: purple }} />
                 <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Predictive Ordering</span>
@@ -246,7 +246,7 @@ export default function CommandCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative"
               onClick={() => setActivePillar("vendor")}>
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: warn }}>3</div>
+              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>3</div>
               <div className="flex items-center gap-2 mb-2">
                 <Users size={19} style={{ color: purple }} />
                 <span className="text-[12.5px] uppercase tracking-widest font-semibold" style={{ color: purple }}>Vendor Consolidation</span>
@@ -279,7 +279,7 @@ export default function CommandCenter() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
               className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group flex flex-col justify-between relative overflow-hidden"
               onClick={() => setActivePillar("integrity")}>
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: danger }}>2</div>
+              <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md" style={{ backgroundColor: purple }}>2</div>
               <motion.div
                 className="absolute inset-0 rounded-xl pointer-events-none"
                 style={{ border: `2px solid ${purple}` }}
