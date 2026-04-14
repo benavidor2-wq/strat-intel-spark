@@ -162,11 +162,8 @@ export default function CommandCenter() {
                         />
                       </div>
                       <span
-                        className="font-mono font-bold w-12 text-right text-[10px] px-1 py-0.5 rounded"
-                        style={{
-                          color: isWarning ? "white" : barColor,
-                          backgroundColor: isWarning ? barColor : "transparent",
-                        }}
+                        className="font-mono font-bold w-12 text-right text-[10px]"
+                        style={{ color: barColor }}
                       >
                         +{item.driftPercent}%
                       </span>
