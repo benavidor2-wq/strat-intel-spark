@@ -98,7 +98,7 @@ export default function CommandCenter() {
                 </div>
                 <span className="text-xl font-bold" style={{ color: danger }}>${(integrityAlerts.reduce((s, a) => s + a.amount, 0) / 1000).toFixed(0)}K</span>
               </div>
-              <div className="flex-1 space-y-1.5 mt-1">
+              <div className="flex-1 flex flex-col justify-evenly">
                 {integrityAlerts.slice(0, 4).map((a) => (
                   <div key={a.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)" }}>
                     <div className="flex items-center gap-1.5">
