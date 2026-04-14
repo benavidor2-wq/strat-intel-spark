@@ -9,7 +9,7 @@ const green = "#22c55e";
 
 export default function PriceDriftDetail({ onBack }: { onBack: () => void }) {
   return (
-    <DetailView icon={TrendingDown} iconColor={purple} title="Price Drift Monitor" onBack={onBack}>
+    <DetailView icon={TrendingDown} iconColor={purple} title="Price Drift" onBack={onBack}>
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead>

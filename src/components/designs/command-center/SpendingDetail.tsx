@@ -9,7 +9,7 @@ const green = "#22c55e";
 
 export default function SpendingDetail({ onBack }: { onBack: () => void }) {
   return (
-    <DetailView icon={TrendingDown} iconColor={purple} title="Margin Erosion Tracker" onBack={onBack}>
+    <DetailView icon={TrendingDown} iconColor={purple} title="Spending Patterns" onBack={onBack}>
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-4">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Revenue vs Costs Over Time</h3>
         <div className="h-72">
