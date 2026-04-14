@@ -9,7 +9,8 @@ const designs = [
 
 export default function Index() {
   const [active, setActive] = useState(0);
-  const ActiveComponent = designs[active].component;
+  const safeIndex = active < designs.length ? active : 0;
+  const ActiveComponent = designs[safeIndex].component;
 
   return (
     <div className="min-h-screen flex flex-col">
