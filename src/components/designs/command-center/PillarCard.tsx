@@ -14,7 +14,7 @@ interface PillarCardProps {
   delay?: number;
 }
 
-const card = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group";
+const card = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group h-full flex flex-col";
 
 export default function PillarCard({ icon: Icon, iconColor, title, subtitle, metric, metricColor, metricLabel, children, onClick, delay = 0 }: PillarCardProps) {
   return (
