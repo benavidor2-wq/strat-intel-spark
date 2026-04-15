@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   integrityAlerts,
   priceDriftItems,
@@ -8,8 +9,8 @@ import {
   vendorConsolidation,
   summaryStats,
 } from "@/data/mockData";
-import { Shield, TrendingDown, Zap, BarChart3, Activity, Users } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Shield, TrendingDown, Zap, BarChart3, Users, Gift } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell } from "recharts";
 
 const purple = "#6366f1";
 const green = "#22c55e";
@@ -18,9 +19,25 @@ const danger = "#ef4444";
 const textPrimary = "#1e1b4b";
 const textSecondary = "#6b7280";
 
-const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl p-6 shadow-lg shadow-indigo-500/5";
+const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl shadow-lg shadow-indigo-500/5";
+
+type PillarKey = "arbitrage" | "priceDrift" | "inventory" | "spending" | "vendor" | "integrity";
+
+const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string; badge: number | string }[] = [
+  { key: "arbitrage", label: "Arbitrage & Best Price", icon: Zap, color: purple, badge: 4 },
+  { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple, badge: 3 },
+  { key: "inventory", label: "Predictive Ordering", icon: BarChart3, color: purple, badge: 2 },
+  { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple, badge: 1 },
+  { key: "vendor", label: "Vendor Consolidation", icon: Users, color: purple, badge: 3 },
+  { key: "integrity", label: "Anomaly & Risk", icon: Shield, color: purple, badge: 2 },
+];
 
 export default function Glassmorphism() {
+  const [active, setActive] = useState<PillarKey>("arbitrage");
+
+  const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
+  const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
+
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f0fdf4 50%, #eef2ff 100%)", color: textPrimary }}>
       {/* Background orbs */}
@@ -32,147 +49,296 @@ export default function Glassmorphism() {
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="px-8 pt-10 pb-6 max-w-[1400px] mx-auto">
-          <h1 className="text-3xl font-light tracking-tight" style={{ color: textPrimary, fontFamily: "'Inter', sans-serif" }}>
+        <div className="px-8 pt-8 pb-4 max-w-[1400px] mx-auto">
+          <h1 className="text-3xl font-light tracking-tight" style={{ color: textPrimary }}>
             Strategic Intelligence
           </h1>
           <p className="text-sm mt-1" style={{ color: textSecondary }}>MyCFO Autonomous Oversight</p>
+        </div>
 
-          {/* Summary Cards */}
-          <div className="flex gap-4 mt-6">
-            {[
-              { label: "Critical Alerts", value: summaryStats.criticalAlerts, icon: Shield, color: danger },
-              { label: "Inflation Leaks", value: summaryStats.inflationLeaks, icon: TrendingDown, color: warn },
-              { label: "Lazy Tax / Year", value: `$${(summaryStats.totalLazyTax / 1000).toFixed(0)}K`, icon: Zap, color: purple },
-              { label: "Total Savings", value: `$${(summaryStats.totalPotentialSavings / 1000).toFixed(0)}K`, icon: Activity, color: green },
-            ].map((s, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                className={`${glass} flex-1 flex items-center gap-4`}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${s.color}15` }}>
-                  <s.icon size={18} style={{ color: s.color }} />
+        {/* 6 Pillar Cards */}
+        <div className="max-w-[1400px] mx-auto px-8 grid grid-cols-6 gap-3 mb-6">
+          {pillars.map((p, i) => {
+            const isActive = active === p.key;
+            return (
+              <motion.button
+                key={p.key}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                onClick={() => setActive(p.key)}
+                className={`${glass} p-4 text-left cursor-pointer transition-all relative ${isActive ? "ring-2 ring-indigo-400 bg-white/90" : "hover:bg-white/80"}`}
+              >
+                <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: purple }}>
+                  {p.badge}
+                </div>
+                <p.icon size={16} style={{ color: purple }} />
+                <div className="text-[10px] uppercase tracking-widest font-semibold mt-2" style={{ color: isActive ? purple : textSecondary }}>
+                  {p.label}
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Detail Content */}
+        <div className="max-w-[1400px] mx-auto px-8 pb-12">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {active === "arbitrage" && <ArbitrageReport />}
+              {active === "priceDrift" && <PriceDriftReport />}
+              {active === "inventory" && <InventoryReport />}
+              {active === "spending" && <SpendingReport />}
+              {active === "vendor" && <VendorReport />}
+              {active === "integrity" && <IntegrityReport />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Report Components ── */
+
+function ArbitrageReport() {
+  const totalAnnualSavings = arbitrageOpportunities.reduce((s, o) => s + o.annualSavings, 0);
+  return (
+    <div className={`${glass} p-6`}>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-sm font-semibold flex items-center gap-2"><Zap size={14} style={{ color: purple }} /> Arbitrage & Best Price</h3>
+        <span className="text-sm font-bold font-mono" style={{ color: green }}>${(totalAnnualSavings / 1000).toFixed(0)}K/yr total savings</span>
+      </div>
+      <div className="grid gap-4">
+        {arbitrageOpportunities.map((opp) => (
+          <div key={opp.id} className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
+            <div className="flex items-start justify-between mb-3">
+              <h4 className="text-sm font-semibold" style={{ color: textPrimary }}>{opp.product}</h4>
+              <div className="text-right">
+                <div className="text-base font-bold font-mono" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K/yr</div>
+                <div className="text-[10px]" style={{ color: textSecondary }}>potential savings</div>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap mb-3">
+              {opp.vendors.map((v, i) => (
+                <span key={i} className="text-[10px] px-2 py-1 rounded-lg" style={{
+                  background: v.price === opp.bestPrice ? `${green}15` : "rgba(0,0,0,0.03)",
+                  border: v.price === opp.bestPrice ? `1px solid ${green}44` : "1px solid rgba(0,0,0,0.06)",
+                  color: v.price === opp.bestPrice ? "#166534" : textSecondary,
+                }}>
+                  {v.name}: ${v.price} {v.price === opp.bestPrice && "✓"}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-4 text-[10px]" style={{ color: textSecondary }}>
+              <span>Current: <span className="font-mono" style={{ color: textPrimary }}>${opp.currentPrice}</span></span>
+              <span>Lazy Tax: <span className="font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}/unit</span></span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PriceDriftReport() {
+  return (
+    <div className={`${glass} p-6`}>
+      <h3 className="text-sm font-semibold mb-5 flex items-center gap-2"><TrendingDown size={14} style={{ color: purple }} /> Price Drift Monitor</h3>
+      <div className="overflow-hidden rounded-xl" style={{ background: "rgba(0,0,0,0.02)" }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200/50 text-left text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>
+              <th className="px-5 py-3">Product</th>
+              <th className="px-5 py-3">Vendor</th>
+              <th className="px-5 py-3 text-right">Current</th>
+              <th className="px-5 py-3 text-right">90-Day Avg</th>
+              <th className="px-5 py-3 text-right">Drift</th>
+              <th className="px-5 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {priceDriftItems.map((item) => {
+              const statusColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
+              return (
+                <tr key={item.id} className="border-b border-gray-100/50">
+                  <td className="px-5 py-3.5 font-medium" style={{ color: textPrimary }}>{item.product}</td>
+                  <td className="px-5 py-3.5" style={{ color: textSecondary }}>{item.vendor}</td>
+                  <td className="px-5 py-3.5 text-right font-mono">${item.currentPrice}</td>
+                  <td className="px-5 py-3.5 text-right font-mono" style={{ color: textSecondary }}>${item.avg90Day}</td>
+                  <td className="px-5 py-3.5 text-right font-mono font-semibold" style={{ color: statusColor }}>+{item.driftPercent}%</td>
+                  <td className="px-5 py-3.5">
+                    <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full" style={{ background: `${statusColor}15`, color: statusColor }}>{item.status}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function InventoryReport() {
+  return (
+    <div className={`${glass} p-6`}>
+      <h3 className="text-sm font-semibold mb-5 flex items-center gap-2"><BarChart3 size={14} style={{ color: purple }} /> Predictive Ordering</h3>
+      <div className="grid gap-4">
+        {inventoryItems.map((item) => {
+          const urgencyColor = item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green;
+          return (
+            <div key={item.id} className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
+              <div className="flex items-start justify-between mb-3">
+                <h4 className="text-sm font-semibold" style={{ color: textPrimary }}>{item.product}</h4>
+                <span className="text-lg font-bold font-mono" style={{ color: urgencyColor }}>{item.daysRemaining}d</span>
+              </div>
+              <div className="grid grid-cols-3 gap-4 mb-3 text-xs">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>Burn Rate</div>
+                  <div className="font-mono font-semibold" style={{ color: textPrimary }}>{item.burnRate}/day</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>{s.label}</div>
+                  <div className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>Stock</div>
+                  <div className="font-mono font-semibold" style={{ color: textPrimary }}>{item.currentStock} units</div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Grid */}
-        <div className="max-w-[1400px] mx-auto px-8 pb-12 grid grid-cols-2 gap-6">
-          {/* Integrity */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className={glass}>
-            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-              <Shield size={14} style={{ color: danger }} /> Integrity Layer
-            </h3>
-            <div className="space-y-3">
-              {integrityAlerts.slice(0, 4).map((a) => (
-                <div key={a.id} className="p-3 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-                  <div className="flex justify-between text-xs">
-                    <span className="font-medium" style={{ color: textPrimary }}>{a.vendor}</span>
-                    <span style={{ color: a.severity === "critical" ? danger : warn }}>${a.amount.toLocaleString()}</span>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>Bulk Discount</div>
+                  <div className="font-mono font-semibold" style={{ color: item.bulkDiscount > 0 ? green : "#9ca3af" }}>
+                    {item.bulkDiscount > 0 ? `${item.bulkDiscount}%` : "—"}
                   </div>
-                  <p className="text-[10px] mt-1" style={{ color: textSecondary }}>{a.description}</p>
                 </div>
-              ))}
+              </div>
+              <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: "rgba(0,0,0,0.06)" }}>
+                <div className="h-full rounded-full" style={{ width: `${Math.min((item.daysRemaining / 40) * 100, 100)}%`, backgroundColor: urgencyColor }} />
+              </div>
+              <p className="text-xs rounded-lg px-3 py-2" style={{ color: textSecondary, background: "rgba(0,0,0,0.03)" }}>{item.suggestedAction}</p>
             </div>
-          </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-          {/* Price Drift */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className={glass}>
-            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-              <TrendingDown size={14} style={{ color: purple }} /> Price Drift Monitor
-            </h3>
-            <div className="space-y-3">
-              {priceDriftItems.map((item) => (
-                <div key={item.id} className="flex items-center gap-3">
-                  <span className="text-xs w-28 truncate" style={{ color: textPrimary }}>{item.product}</span>
-                  <div className="flex-1 h-2 rounded-full overflow-hidden bg-gray-100">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(item.driftPercent * 6, 100)}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                      className="h-full rounded-full"
-                      style={{ background: item.status === "alert" ? `linear-gradient(90deg, ${danger}, #dc2626)` : item.status === "warning" ? `linear-gradient(90deg, ${warn}, #d97706)` : `linear-gradient(90deg, ${green}, #16a34a)` }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono w-12 text-right font-semibold" style={{ color: item.status === "alert" ? danger : item.status === "warning" ? warn : green }}>
-                    +{item.driftPercent}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Arbitrage */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className={glass}>
-            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-              <Zap size={14} style={{ color: purple }} /> Cross-Vendor Arbitrage
-            </h3>
-            {arbitrageOpportunities.map((opp) => (
-              <div key={opp.id} className="mb-3 p-3 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-                <div className="text-xs font-medium mb-2" style={{ color: textPrimary }}>{opp.product}</div>
-                <div className="flex gap-1 mb-2">
-                  {opp.vendors.map((v, i) => (
-                    <span key={i} className="text-[10px] px-2 py-1 rounded-lg" style={{
-                      background: v.price === opp.bestPrice ? `${green}15` : "rgba(0,0,0,0.03)",
-                      border: v.price === opp.bestPrice ? `1px solid ${green}44` : "1px solid rgba(0,0,0,0.06)",
-                      color: v.price === opp.bestPrice ? "#166534" : textSecondary,
-                    }}>
-                      {v.name}: ${v.price}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex justify-between text-[10px]" style={{ color: textSecondary }}>
-                  <span>Lazy Tax: <span style={{ color: danger }}>${opp.lazyTax}/unit</span></span>
-                  <span style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K/yr savings</span>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Spending Trends + Vendor Bloat */}
-          <div className="space-y-6">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} className={glass}>
-              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <Activity size={14} style={{ color: purple }} /> Margin Erosion
-              </h3>
-              <div className="h-44">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={spendingTrends}>
-                    <defs>
-                      <linearGradient id="gl-rev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={purple} stopOpacity={0.15} />
-                        <stop offset="100%" stopColor={purple} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="period" tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: textSecondary }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1e6}M`} />
-                    <Area type="monotone" dataKey="revenue" stroke={purple} fill="url(#gl-rev)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="costs" stroke={danger} fill="none" strokeWidth={2} strokeDasharray="4 4" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} className={glass}>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <Users size={14} style={{ color: purple }} /> Vendor Bloat
-              </h3>
-              <div className="flex gap-2">
-                {vendorConsolidation.map((v, i) => (
-                  <div key={i} className="flex-1 text-center p-3 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-                    <div className="text-lg font-semibold" style={{ color: v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green }}>{v.vendorCount}</div>
-                    <div className="text-[9px] mt-0.5" style={{ color: textSecondary }}>{v.category}</div>
-                    <div className="text-[9px]" style={{ color: "#9ca3af" }}>avg: {v.industryAvg}</div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+function SpendingReport() {
+  const latestMargin = spendingTrends[spendingTrends.length - 1].margin;
+  return (
+    <div className={`${glass} p-6`}>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-sm font-semibold flex items-center gap-2"><TrendingDown size={14} style={{ color: purple }} /> Spending Patterns</h3>
+        <span className="text-sm" style={{ color: danger }}>Margin erosion: {summaryStats.marginErosion}pp</span>
+      </div>
+      <div className="h-72 mb-6">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={spendingTrends}>
+            <defs>
+              <linearGradient id="gl-spend" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={purple} stopOpacity={0.15} />
+                <stop offset="100%" stopColor={purple} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="period" tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1e6}M`} />
+            <RechartsTooltip formatter={(v: number) => `$${(v / 1e6).toFixed(2)}M`} />
+            <Area type="monotone" dataKey="costs" stroke={purple} fill="url(#gl-spend)" strokeWidth={2} name="Total Spend" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="grid grid-cols-5 gap-3">
+        {spendingTrends.map((t) => (
+          <div key={t.period} className="text-center p-3 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
+            <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: textSecondary }}>{t.period}</div>
+            <div className="text-lg font-bold" style={{ color: t.margin >= 28 ? green : t.margin >= 24 ? warn : danger }}>{t.margin}%</div>
+            <div className="text-[10px]" style={{ color: textSecondary }}>margin</div>
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VendorReport() {
+  const totalSavings = vendorConsolidation.reduce((s, v) => s + v.potentialSavings, 0);
+  return (
+    <div className={`${glass} p-6`}>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-sm font-semibold flex items-center gap-2"><Users size={14} style={{ color: purple }} /> Vendor Consolidation</h3>
+        <span className="text-sm font-mono font-bold" style={{ color: green }}>${(totalSavings / 1000).toFixed(0)}K potential savings</span>
+      </div>
+      <div className="h-56 mb-6">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={vendorConsolidation} layout="vertical">
+            <XAxis type="number" tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="category" tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} width={100} />
+            <RechartsTooltip />
+            <Bar dataKey="vendorCount" radius={[0, 6, 6, 0]} barSize={14} name="Your Vendors">
+              {vendorConsolidation.map((entry, i) => (
+                <Cell key={i} fill={entry.redundancyScore > 70 ? danger : entry.redundancyScore > 50 ? warn : green} />
+              ))}
+            </Bar>
+            <Bar dataKey="industryAvg" radius={[0, 6, 6, 0]} barSize={14} fill="#e5e7eb" name="Industry Avg" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="grid gap-3">
+        {vendorConsolidation.map((v, i) => {
+          const scoreColor = v.redundancyScore > 70 ? danger : v.redundancyScore > 50 ? warn : green;
+          return (
+            <div key={i} className="flex justify-between items-center p-3 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
+              <span className="text-xs font-medium" style={{ color: textPrimary }}>{v.category}</span>
+              <div className="flex items-center gap-4 text-[10px]">
+                <span style={{ color: textSecondary }}>Yours: <span className="font-mono font-semibold" style={{ color: scoreColor }}>{v.vendorCount}</span></span>
+                <span style={{ color: textSecondary }}>Avg: <span className="font-mono">{v.industryAvg}</span></span>
+                <span className="font-mono font-bold" style={{ color: green }}>${(v.potentialSavings / 1000).toFixed(0)}K</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function IntegrityReport() {
+  const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
+  const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
+  return (
+    <div className={`${glass} p-6`}>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-sm font-semibold flex items-center gap-2"><Shield size={14} style={{ color: danger }} /> Anomaly & Risk</h3>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: danger }} /> {criticalCount} Critical</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: warn }} /> {highCount} High</span>
         </div>
+      </div>
+      <div className="grid gap-4">
+        {integrityAlerts.map((a) => (
+          <div key={a.id} className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: a.severity === "critical" ? `${danger}15` : a.severity === "high" ? `${warn}15` : `${purple}15`,
+                      color: a.severity === "critical" ? danger : a.severity === "high" ? warn : purple,
+                    }}>{a.severity}</span>
+                  <span className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>{a.type.replace(/_/g, " ")}</span>
+                </div>
+                <h4 className="text-sm font-semibold" style={{ color: textPrimary }}>{a.vendor}</h4>
+              </div>
+              <span className="text-base font-bold font-mono" style={{ color: a.severity === "critical" ? danger : warn }}>${a.amount.toLocaleString()}</span>
+            </div>
+            <p className="text-xs mb-1" style={{ color: textSecondary }}>{a.description}</p>
+            <div className="text-[10px]" style={{ color: "#9ca3af" }}>Detected: {a.date}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
