@@ -48,13 +48,6 @@ export default function Glassmorphism() {
       </div>
 
       <div className="relative z-10">
-        {/* Header */}
-        <div className="px-8 pt-8 pb-4 max-w-[1400px] mx-auto">
-          <h1 className="text-3xl font-light tracking-tight" style={{ color: textPrimary }}>
-            Strategic Intelligence
-          </h1>
-          <p className="text-sm mt-1" style={{ color: textSecondary }}>MyCFO Autonomous Oversight</p>
-        </div>
 
         {/* 6 Pillar Cards */}
         <div className="max-w-[1400px] mx-auto px-8 grid grid-cols-6 gap-3 mb-6">
