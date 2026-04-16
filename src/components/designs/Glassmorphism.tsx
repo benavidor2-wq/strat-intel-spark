@@ -235,27 +235,27 @@ function ArbitrageReport() {
             </div>
 
             {/* Right: Metrics */}
-            <div className="shrink-0 flex items-center gap-5">
+            <div className="shrink-0 flex items-center gap-6">
               {/* Annual savings - hero metric */}
-              <div className="text-center px-4 py-2.5 rounded-xl" style={{ background: `${green}08`, border: `1px solid ${green}20` }}>
-                <div className="text-lg font-bold font-mono leading-tight" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K</div>
-                <div className="text-[9px] uppercase tracking-widest" style={{ color: textSecondary }}>per year</div>
+              <div className="text-center px-5 py-3 rounded-xl" style={{ background: `${green}08`, border: `1px solid ${green}20` }}>
+                <div className="text-2xl font-bold font-mono leading-tight" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K</div>
+                <div className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: textSecondary }}>per year</div>
               </div>
 
               {/* Secondary metrics */}
-              <div className="grid grid-cols-2 gap-x-5 gap-y-1.5 text-[10px]">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-[11px]">
                 <div>
                   <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Monthly</div>
-                  <div className="text-xs font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
+                  <div className="text-base font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
                 </div>
                 <QtyPopover monthlyQty={opp.monthlyQty} vendors={opp.vendors} />
                 <div>
                   <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Lazy Tax</div>
-                  <div className="text-xs font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}<span className="text-[9px]">/unit</span></div>
+                  <div className="text-base font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}<span className="text-[10px]">/unit</span></div>
                 </div>
                 <div>
                   <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Overpaying</div>
-                  <div className="text-xs font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</div>
+                  <div className="text-base font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</div>
                 </div>
               </div>
             </div>
