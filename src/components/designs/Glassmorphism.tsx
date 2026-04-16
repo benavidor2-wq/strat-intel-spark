@@ -101,55 +101,64 @@ export default function Glassmorphism() {
 /* ── Report Components ── */
 
 function ArbitrageReport() {
-  const totalAnnualSavings = arbitrageOpportunities.reduce((s, o) => s + o.annualSavings, 0);
   return (
-    <div className={`${glass} p-6`}>
-      <div className="grid gap-4">
-        {arbitrageOpportunities.map((opp) => (
-          <div key={opp.id} className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-            <div className="flex gap-6">
-              {/* Left side: name + suppliers */}
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold mb-3" style={{ color: textPrimary }}>{opp.product}</h4>
-                <div className="flex gap-2 flex-wrap">
-                  {opp.vendors.map((v, i) => (
-                    <span key={i} className="text-[10px] px-2 py-1 rounded-lg" style={{
-                      background: v.price === opp.bestPrice ? `${green}15` : "rgba(0,0,0,0.03)",
-                      border: v.price === opp.bestPrice ? `1px solid ${green}44` : "1px solid rgba(0,0,0,0.06)",
-                      color: v.price === opp.bestPrice ? "#166534" : textSecondary,
-                    }}>
-                      {v.name}: ${v.price} {v.price === opp.bestPrice && "✓"}
-                    </span>
-                  ))}
+    <div className="grid gap-4">
+      {arbitrageOpportunities.map((opp) => (
+        <div key={opp.id} className={`${glass} p-5 transition-all hover:shadow-xl hover:shadow-indigo-500/10`}>
+          <div className="flex items-start gap-8">
+            {/* Left: Product + Vendors */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${purple}15` }}>
+                  <Zap size={14} style={{ color: purple }} />
                 </div>
+                <h4 className="text-sm font-semibold" style={{ color: textPrimary }}>{opp.product}</h4>
               </div>
-              {/* Right side: metrics */}
-              <div className="shrink-0 grid grid-cols-3 gap-x-6 gap-y-2 text-[10px] text-right">
+              <div className="flex gap-2 flex-wrap">
+                {opp.vendors.map((v, i) => (
+                  <span key={i} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all" style={{
+                    background: v.price === opp.bestPrice ? `${green}12` : "rgba(255,255,255,0.8)",
+                    border: v.price === opp.bestPrice ? `1.5px solid ${green}55` : "1px solid rgba(0,0,0,0.08)",
+                    color: v.price === opp.bestPrice ? "#166534" : textSecondary,
+                    boxShadow: v.price === opp.bestPrice ? `0 2px 8px ${green}20` : "none",
+                  }}>
+                    {v.name}: ${v.price} {v.price === opp.bestPrice && "✓"}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Metrics */}
+            <div className="shrink-0 flex items-start gap-5">
+              {/* Annual savings - hero metric */}
+              <div className="text-center px-4 py-3 rounded-xl" style={{ background: `${green}08`, border: `1px solid ${green}20` }}>
+                <div className="text-xl font-bold font-mono" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K</div>
+                <div className="text-[9px] uppercase tracking-widest mt-0.5" style={{ color: textSecondary }}>per year</div>
+              </div>
+
+              {/* Secondary metrics */}
+              <div className="grid grid-cols-2 gap-x-5 gap-y-3 text-[10px]">
                 <div>
-                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Annual Savings</div>
-                  <div className="font-mono font-bold" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K/yr</div>
+                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Monthly</div>
+                  <div className="text-sm font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
                 </div>
                 <div>
-                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Monthly Savings</div>
-                  <div className="font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
+                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Qty/Month</div>
+                  <div className="text-sm font-mono font-semibold" style={{ color: textPrimary }}>{opp.monthlyQty}</div>
                 </div>
                 <div>
-                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Lazy Tax</div>
-                  <div className="font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}/unit</div>
+                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Lazy Tax</div>
+                  <div className="text-sm font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}<span className="text-[9px]">/unit</span></div>
                 </div>
                 <div>
-                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Monthly Qty</div>
-                  <div className="font-mono font-semibold" style={{ color: textPrimary }}>{opp.monthlyQty} {opp.unit}</div>
-                </div>
-                <div>
-                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Overpaying</div>
-                  <div className="font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</div>
+                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Overpaying</div>
+                  <div className="text-sm font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</div>
                 </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
