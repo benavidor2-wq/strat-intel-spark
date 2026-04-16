@@ -161,6 +161,56 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
   );
 }
 
+function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { name: string; price: number; invoiceNo: string; invoiceDate: string; qty: number; total: number }[] }) {
+  const [open, setOpen] = useState(false);
+  const totalFromInvoices = vendors.reduce((s, v) => s + v.qty, 0);
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)} className="text-left cursor-pointer">
+        <div className="uppercase tracking-wider mb-0.5 text-[10px]" style={{ color: textSecondary }}>Qty/Month</div>
+        <div className="text-sm font-mono font-semibold" style={{ color: textPrimary }}>{monthlyQty}</div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute right-0 top-full mt-2 z-50 w-72 p-4 rounded-xl shadow-xl shadow-black/10"
+              style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.08)" }}
+            >
+              <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Qty Sources — All Vendors</div>
+              <div className="space-y-2 text-xs">
+                {vendors.map((v, i) => (
+                  <div key={i} className="flex justify-between items-center p-2 rounded-lg" style={{ background: "rgba(0,0,0,0.03)" }}>
+                    <div>
+                      <div className="font-medium" style={{ color: textPrimary }}>{v.name}</div>
+                      <div className="text-[10px] font-mono" style={{ color: textSecondary }}>{v.invoiceNo} · {v.invoiceDate}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono font-semibold" style={{ color: textPrimary }}>{v.qty} units</div>
+                      <div className="text-[10px] font-mono" style={{ color: textSecondary }}>${v.total.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+                <div className="h-px" style={{ background: "rgba(0,0,0,0.06)" }} />
+                <div className="flex justify-between font-semibold pt-1">
+                  <span style={{ color: textSecondary }}>Total from invoices</span>
+                  <span className="font-mono" style={{ color: textPrimary }}>{totalFromInvoices} units</span>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ── Report Components ── */
 
 function ArbitrageReport() {
