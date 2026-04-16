@@ -622,9 +622,6 @@ function VendorReport() {
                   <h4 className="text-base font-semibold" style={{ color: textPrimary }}>{selectedVendor}</h4>
                   <p className="text-xs mt-1" style={{ color: textSecondary }}>Category: {vendorDetail.category} · Monthly spend: <span className="font-mono font-semibold" style={{ color: purple }}>${vendorSpend?.monthlySpend.toLocaleString()}</span></p>
                 </div>
-                <button onClick={() => setSelectedVendor(null)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-all">
-                  <X size={16} style={{ color: textSecondary }} />
-                </button>
               </div>
 
               <div className="grid grid-cols-3 gap-6">
@@ -702,9 +699,6 @@ function VendorReport() {
                   <h4 className="text-base font-semibold" style={{ color: textPrimary }}>{selectedCategory}</h4>
                   <p className="text-xs mt-1" style={{ color: textSecondary }}>{categoryDetail.description}</p>
                 </div>
-                <button onClick={() => setSelectedCategory(null)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-all">
-                  <X size={16} style={{ color: textSecondary }} />
-                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
