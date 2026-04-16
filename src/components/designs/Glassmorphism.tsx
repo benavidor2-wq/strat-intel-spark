@@ -509,7 +509,7 @@ function VendorReport() {
 
   const handleVendorClick = (_: unknown, index: number) => {
     const vendor = vendorMonthlySpend[index].vendor;
-    setSelectedVendor(selectedVendor === vendor ? null : vendor);
+    setSelectedVendor(vendor);
     setSelectedCategory(null);
   };
 
