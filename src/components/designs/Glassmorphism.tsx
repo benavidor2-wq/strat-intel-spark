@@ -10,6 +10,8 @@ import {
   vendorMonthlySpend,
   spendByCategory,
   summaryStats,
+  vendorProducts,
+  categoryVendors,
   type PriceDriftItem,
 } from "@/data/mockData";
 import { Shield, TrendingDown, Zap, BarChart3, Users, Gift, Send, X, FileText } from "lucide-react";

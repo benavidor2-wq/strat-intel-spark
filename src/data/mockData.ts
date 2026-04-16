@@ -183,3 +183,117 @@ export const summaryStats = {
   activeVendors: 48,
   industryAvgVendors: 19,
 };
+
+// Vendor-to-products mapping for drill-down
+export const vendorProducts: Record<string, { products: string[]; category: string; recentInvoices: { invoiceNo: string; date: string; product: string; amount: number; qty: number }[] }> = {
+  SteelCo: {
+    products: ['Steel Rebar', 'Steel Beams', 'Steel Plates'],
+    category: 'Raw Materials',
+    recentInvoices: [
+      { invoiceNo: 'SC-2026-1847', date: '2026-04-10', product: 'Steel Rebar', amount: 13380, qty: 15 },
+      { invoiceNo: 'SC-2026-1201', date: '2026-03-05', product: 'Steel Rebar', amount: 17100, qty: 20 },
+      { invoiceNo: 'SC-2026-1100', date: '2026-02-20', product: 'Steel Beams', amount: 24500, qty: 10 },
+    ],
+  },
+  ChemSupply: {
+    products: ['Hydraulic Fluid', 'Industrial Lubricant 5W-40', 'Cleaning Solvents'],
+    category: 'Raw Materials',
+    recentInvoices: [
+      { invoiceNo: 'CS-2026-0923', date: '2026-04-08', product: 'Hydraulic Fluid', amount: 2840, qty: 200 },
+      { invoiceNo: 'CS-2026-0847', date: '2026-03-28', product: 'Industrial Lubricant', amount: 5040, qty: 120 },
+    ],
+  },
+  SafetyFirst: {
+    products: ['Safety Helmets', 'Nitrile Gloves', 'Safety Goggles'],
+    category: 'Maintenance',
+    recentInvoices: [
+      { invoiceNo: 'SF-2026-3310', date: '2026-03-15', product: 'Nitrile Gloves', amount: 2560, qty: 200 },
+      { invoiceNo: 'SF-2026-2210', date: '2026-04-05', product: 'Safety Helmets', amount: 1700, qty: 50 },
+    ],
+  },
+  MetalWorks: {
+    products: ['Copper Wire', 'Aluminum Sheets', 'Brass Fittings'],
+    category: 'Raw Materials',
+    recentInvoices: [
+      { invoiceNo: 'MW-2026-3392', date: '2026-04-12', product: 'Copper Wire', amount: 5900, qty: 500 },
+      { invoiceNo: 'MW-2026-2901', date: '2026-03-08', product: 'Copper Wire', amount: 4725, qty: 450 },
+    ],
+  },
+  FuelDirect: {
+    products: ['Diesel Fuel', 'Petrol', 'Kerosene'],
+    category: 'Logistics',
+    recentInvoices: [
+      { invoiceNo: 'FD-2026-5510', date: '2026-04-11', product: 'Diesel Fuel', amount: 5670, qty: 3000 },
+      { invoiceNo: 'FD-2026-4820', date: '2026-03-12', product: 'Diesel Fuel', amount: 4900, qty: 2800 },
+    ],
+  },
+  BuildMat: {
+    products: ['Cement', 'Sand', 'Gravel', 'Bricks'],
+    category: 'Raw Materials',
+    recentInvoices: [
+      { invoiceNo: 'BM-2026-1190', date: '2026-04-09', product: 'Cement', amount: 3360, qty: 400 },
+      { invoiceNo: 'BM-2026-0880', date: '2026-03-02', product: 'Cement', amount: 2870, qty: 350 },
+    ],
+  },
+  OfficePro: {
+    products: ['A4 Copier Paper', 'Printer Toner', 'Desk Organizers'],
+    category: 'Office Supplies',
+    recentInvoices: [
+      { invoiceNo: 'OP-2026-0553', date: '2026-03-20', product: 'A4 Copier Paper', amount: 1920, qty: 300 },
+    ],
+  },
+  ElectroParts: {
+    products: ['Cable Ties', 'Circuit Breakers', 'Wiring Harness'],
+    category: 'IT Equipment',
+    recentInvoices: [
+      { invoiceNo: 'EP-2026-2290', date: '2026-03-18', product: 'Cable Ties', amount: 1200, qty: 50 },
+    ],
+  },
+};
+
+// Category-to-vendors mapping for drill-down
+export const categoryVendors: Record<string, { vendors: { name: string; spend: number }[]; description: string }> = {
+  'Raw Materials': {
+    vendors: [
+      { name: 'SteelCo', spend: 48000 },
+      { name: 'ChemSupply', spend: 32000 },
+      { name: 'MetalWorks', spend: 27000 },
+      { name: 'BuildMat', spend: 22000 },
+    ],
+    description: 'Core materials used in manufacturing and construction operations',
+  },
+  'Maintenance': {
+    vendors: [
+      { name: 'SafetyFirst', spend: 18500 },
+      { name: 'ToolMax', spend: 12000 },
+      { name: 'RepairCo', spend: 7500 },
+    ],
+    description: 'Safety equipment, repair materials, and maintenance supplies',
+  },
+  'IT Equipment': {
+    vendors: [
+      { name: 'ElectroParts', spend: 15000 },
+      { name: 'TechWorld', spend: 14000 },
+      { name: 'CompuGlobal', spend: 13000 },
+      { name: 'NetSolutions', spend: 10000 },
+    ],
+    description: 'Hardware, networking equipment, and electronic components',
+  },
+  'Office Supplies': {
+    vendors: [
+      { name: 'OfficePro', spend: 9500 },
+      { name: 'PaperDirect', spend: 5100 },
+      { name: 'BulkSupply', spend: 4800 },
+      { name: 'OfficeMax', spend: 1600 },
+    ],
+    description: 'Paper, stationery, printer consumables, and office sundries',
+  },
+  'Logistics': {
+    vendors: [
+      { name: 'FuelDirect', spend: 41000 },
+      { name: 'FreightLine', spend: 15000 },
+      { name: 'PackShip', spend: 8000 },
+    ],
+    description: 'Fuel, freight, shipping, and warehousing costs',
+  },
+};
