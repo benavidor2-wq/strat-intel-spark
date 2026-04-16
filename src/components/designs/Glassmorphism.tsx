@@ -8,8 +8,9 @@ import {
   spendingTrends,
   vendorConsolidation,
   summaryStats,
+  type PriceDriftItem,
 } from "@/data/mockData";
-import { Shield, TrendingDown, Zap, BarChart3, Users, Gift, Send } from "lucide-react";
+import { Shield, TrendingDown, Zap, BarChart3, Users, Gift, Send, X, FileText } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell } from "recharts";
 
 const purple = "#6366f1";
@@ -282,6 +283,8 @@ function ArbitrageReport() {
 }
 
 function PriceDriftReport() {
+  const [selectedItem, setSelectedItem] = useState<PriceDriftItem | null>(null);
+
   return (
     <div className={`${glass} p-6`}>
       <h3 className="text-sm font-semibold mb-5 flex items-center gap-2"><TrendingDown size={14} style={{ color: purple }} /> Price Drift Monitor</h3>
@@ -301,7 +304,7 @@ function PriceDriftReport() {
             {priceDriftItems.map((item) => {
               const statusColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
               return (
-                <tr key={item.id} className="border-b border-gray-100/50">
+                <tr key={item.id} className="border-b border-gray-100/50 cursor-pointer transition-all hover:bg-white/60" onClick={() => setSelectedItem(item)}>
                   <td className="px-5 py-3.5 font-medium" style={{ color: textPrimary }}>{item.product}</td>
                   <td className="px-5 py-3.5" style={{ color: textSecondary }}>{item.vendor}</td>
                   <td className="px-5 py-3.5 text-right font-mono">${item.currentPrice}</td>
@@ -316,6 +319,99 @@ function PriceDriftReport() {
           </tbody>
         </table>
       </div>
+
+      {/* Invoice Detail Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+              onClick={() => setSelectedItem(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] max-h-[80vh] overflow-y-auto rounded-2xl shadow-2xl p-6"
+              style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.08)" }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold" style={{ color: textPrimary }}>{selectedItem.product}</h3>
+                  <p className="text-xs mt-1" style={{ color: textSecondary }}>Vendor: {selectedItem.vendor} · Drift: <span className="font-mono font-semibold" style={{ color: selectedItem.status === "alert" ? danger : selectedItem.status === "warning" ? warn : green }}>+{selectedItem.driftPercent}%</span></p>
+                </div>
+                <button onClick={() => setSelectedItem(null)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-all">
+                  <X size={16} style={{ color: textSecondary }} />
+                </button>
+              </div>
+
+              {/* Most Recent Invoice */}
+              <div className="mb-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText size={14} style={{ color: danger }} />
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: danger }}>Most Recent Invoice</span>
+                </div>
+                <div className="p-4 rounded-xl" style={{ background: `${danger}06`, border: `1px solid ${danger}15` }}>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Invoice #</div>
+                      <div className="font-mono font-semibold mt-0.5" style={{ color: textPrimary }}>{selectedItem.recentInvoice.invoiceNo}</div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Date</div>
+                      <div className="font-mono mt-0.5" style={{ color: textPrimary }}>{selectedItem.recentInvoice.date}</div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Unit Price</div>
+                      <div className="font-mono font-bold text-base mt-0.5" style={{ color: danger }}>${selectedItem.recentInvoice.unitPrice}</div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Qty / Total</div>
+                      <div className="font-mono font-semibold mt-0.5" style={{ color: textPrimary }}>{selectedItem.recentInvoice.qty} units · ${selectedItem.recentInvoice.total.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Historical Invoices (90 days) */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText size={14} style={{ color: purple }} />
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: purple }}>Previous 90-Day Invoices</span>
+                </div>
+                <div className="space-y-2">
+                  {selectedItem.historicalInvoices.map((inv, i) => (
+                    <div key={i} className="p-3 rounded-xl flex items-center justify-between" style={{ background: "rgba(0,0,0,0.03)" }}>
+                      <div>
+                        <div className="font-mono text-xs font-semibold" style={{ color: textPrimary }}>{inv.invoiceNo}</div>
+                        <div className="text-[10px] font-mono mt-0.5" style={{ color: textSecondary }}>{inv.date}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-sm font-bold" style={{ color: green }}>${inv.unitPrice}</div>
+                        <div className="text-[10px] font-mono" style={{ color: textSecondary }}>{inv.qty} units · ${inv.total.toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price change summary */}
+              <div className="mt-5 p-3 rounded-xl text-xs" style={{ background: `${purple}08`, border: `1px solid ${purple}15` }}>
+                <span style={{ color: textSecondary }}>Price increased from </span>
+                <span className="font-mono font-bold" style={{ color: green }}>${selectedItem.historicalInvoices[selectedItem.historicalInvoices.length - 1]?.unitPrice}</span>
+                <span style={{ color: textSecondary }}> to </span>
+                <span className="font-mono font-bold" style={{ color: danger }}>${selectedItem.recentInvoice.unitPrice}</span>
+                <span style={{ color: textSecondary }}> over the past 90 days — use these invoices to negotiate back to previous rates.</span>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
