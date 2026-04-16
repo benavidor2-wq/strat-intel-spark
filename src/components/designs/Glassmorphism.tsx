@@ -74,6 +74,21 @@ export default function Glassmorphism() {
           })}
         </div>
 
+        {/* Chat Bar */}
+        <div className="max-w-[1400px] mx-auto px-8 mb-6">
+          <div className={`${glass} flex items-center gap-3 px-5 py-3`}>
+            <input
+              type="text"
+              placeholder="Ask MyCFO anything..."
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+              style={{ color: textPrimary }}
+            />
+            <button className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105" style={{ background: purple }}>
+              <Send size={14} className="text-white" />
+            </button>
+          </div>
+        </div>
+
         {/* Detail Content */}
         <div className="max-w-[1400px] mx-auto px-8 pb-12">
           <AnimatePresence mode="wait">
