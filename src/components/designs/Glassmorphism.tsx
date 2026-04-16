@@ -149,10 +149,6 @@ function ArbitrageReport() {
                   <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Overpaying</div>
                   <div className="font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</div>
                 </div>
-                <div>
-                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Contract Ends</div>
-                  <div className="font-mono font-semibold" style={{ color: textPrimary }}>{opp.contractEnd}</div>
-                </div>
               </div>
             </div>
           </div>
