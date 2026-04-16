@@ -506,13 +506,16 @@ function VendorReport() {
       <div className="h-56 mb-6">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={vendorConsolidation} dataKey="vendorCount" nameKey="category" cx="50%" cy="50%" outerRadius={80} innerRadius={40} paddingAngle={3} label={({ category, vendorCount }) => `${category}: ${vendorCount}`} style={{ fontSize: 10 }}>
-              {vendorConsolidation.map((entry, i) => {
-                const colors = [danger, purple, warn, green, "#60a5fa"];
+            <Pie data={vendorMonthlySpend} dataKey="monthlySpend" nameKey="vendor" cx="50%" cy="50%" outerRadius={80} innerRadius={40} paddingAngle={3} label={({ vendor, percent }) => `${vendor}: ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 9 }}>
+              {vendorMonthlySpend.map((_, i) => {
+                const colors = [danger, purple, warn, green, "#60a5fa", "#f472b6", "#fbbf24", "#34d399"];
                 return <Cell key={i} fill={colors[i % colors.length]} />;
               })}
             </Pie>
-            <RechartsTooltip />
+            <RechartsTooltip formatter={(value: number) => {
+              const total = vendorMonthlySpend.reduce((s, v) => s + v.monthlySpend, 0);
+              return [`$${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`, 'Monthly Spend'];
+            }} />
           </PieChart>
         </ResponsiveContainer>
       </div>
