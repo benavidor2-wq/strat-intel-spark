@@ -504,21 +504,42 @@ function VendorReport() {
         <h3 className="text-sm font-semibold flex items-center gap-2"><Users size={14} style={{ color: purple }} /> Vendor Consolidation</h3>
         
       </div>
-      <div className="h-56 mb-6">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={vendorMonthlySpend} dataKey="monthlySpend" nameKey="vendor" cx="50%" cy="50%" outerRadius={80} innerRadius={40} paddingAngle={3} label={({ vendor, percent }) => `${vendor}: ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 9 }}>
-              {vendorMonthlySpend.map((_, i) => {
-                const colors = [danger, purple, warn, green, "#60a5fa", "#f472b6", "#fbbf24", "#34d399"];
-                return <Cell key={i} fill={colors[i % colors.length]} />;
-              })}
-            </Pie>
-            <RechartsTooltip formatter={(value: number) => {
-              const total = vendorMonthlySpend.reduce((s, v) => s + v.monthlySpend, 0);
-              return [`$${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`, 'Monthly Spend'];
-            }} />
-          </PieChart>
-        </ResponsiveContainer>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div>
+          <p className="text-[10px] font-semibold text-center mb-1" style={{ color: textSecondary }}>Spend by Category</p>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={spendByCategory} dataKey="monthlySpend" nameKey="category" cx="50%" cy="50%" outerRadius={60} innerRadius={30} paddingAngle={3} label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 8 }}>
+                  {spendByCategory.map((_, i) => {
+                    const colors = [purple, warn, "#60a5fa", green, danger];
+                    return <Cell key={i} fill={colors[i % colors.length]} />;
+                  })}
+                </Pie>
+                <RechartsTooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Monthly Spend']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold text-center mb-1" style={{ color: textSecondary }}>Spend by Vendor</p>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={vendorMonthlySpend} dataKey="monthlySpend" nameKey="vendor" cx="50%" cy="50%" outerRadius={60} innerRadius={30} paddingAngle={3} label={({ vendor, percent }) => `${vendor}: ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 8 }}>
+                  {vendorMonthlySpend.map((_, i) => {
+                    const colors = [danger, purple, warn, green, "#60a5fa", "#f472b6", "#fbbf24", "#34d399"];
+                    return <Cell key={i} fill={colors[i % colors.length]} />;
+                  })}
+                </Pie>
+                <RechartsTooltip formatter={(value: number) => {
+                  const total = vendorMonthlySpend.reduce((s, v) => s + v.monthlySpend, 0);
+                  return [`$${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`, 'Monthly Spend'];
+                }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
       <div className="grid gap-3">
         {vendorConsolidation.map((v, i) => {
