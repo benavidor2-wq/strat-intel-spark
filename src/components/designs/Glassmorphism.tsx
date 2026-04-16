@@ -541,20 +541,6 @@ function VendorReport() {
           </div>
         </div>
       </div>
-      <div className="grid gap-3">
-        {vendorConsolidation.map((v, i) => {
-          return (
-            <div key={i} className="flex justify-between items-center p-3 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <span className="text-xs font-medium" style={{ color: textPrimary }}>{v.category}</span>
-              <div className="flex items-center gap-4 text-[10px]">
-                <span style={{ color: textPrimary }}>Yours: <span className="font-mono font-semibold" style={{ color: textPrimary }}>{v.vendorCount}</span></span>
-                
-                <span className="font-mono font-bold" style={{ color: textPrimary }}>${(v.potentialSavings / 1000).toFixed(0)}K</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
