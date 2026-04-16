@@ -98,6 +98,69 @@ export default function Glassmorphism() {
   );
 }
 
+/* ── Vendor Popover ── */
+
+function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: number; invoiceNo: string; invoiceDate: string; qty: number; total: number }; isBest: boolean }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer"
+        style={{
+          background: isBest ? `${green}12` : "rgba(255,255,255,0.8)",
+          border: isBest ? `1.5px solid ${green}55` : "1px solid rgba(0,0,0,0.08)",
+          color: isBest ? "#166534" : textSecondary,
+          boxShadow: isBest ? `0 2px 8px ${green}20` : "none",
+        }}
+      >
+        {vendor.name}: ${vendor.price} {isBest && "✓"}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute left-0 top-full mt-2 z-50 w-64 p-4 rounded-xl shadow-xl shadow-black/10"
+              style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.08)" }}
+            >
+              <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Source Invoice</div>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span style={{ color: textSecondary }}>Invoice #</span>
+                  <span className="font-mono font-semibold" style={{ color: textPrimary }}>{vendor.invoiceNo}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: textSecondary }}>Date</span>
+                  <span className="font-mono" style={{ color: textPrimary }}>{vendor.invoiceDate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: textSecondary }}>Unit Price</span>
+                  <span className="font-mono font-semibold" style={{ color: isBest ? green : textPrimary }}>${vendor.price}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: textSecondary }}>Quantity</span>
+                  <span className="font-mono" style={{ color: textPrimary }}>{vendor.qty}</span>
+                </div>
+                <div className="h-px my-1" style={{ background: "rgba(0,0,0,0.06)" }} />
+                <div className="flex justify-between">
+                  <span className="font-semibold" style={{ color: textSecondary }}>Total</span>
+                  <span className="font-mono font-bold" style={{ color: textPrimary }}>${vendor.total.toLocaleString()}</span>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ── Report Components ── */
 
 function ArbitrageReport() {
