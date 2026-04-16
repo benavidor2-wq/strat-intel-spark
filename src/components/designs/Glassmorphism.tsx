@@ -129,9 +129,32 @@ function ArbitrageReport() {
                 </span>
               ))}
             </div>
+            <div className="grid grid-cols-5 gap-3 mb-3 text-[10px]">
+              <div>
+                <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Monthly Qty</div>
+                <div className="font-mono font-semibold" style={{ color: textPrimary }}>{opp.monthlyQty} {opp.unit}</div>
+              </div>
+              <div>
+                <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Savings/Unit</div>
+                <div className="font-mono font-semibold" style={{ color: green }}>${opp.savingsPerUnit}</div>
+              </div>
+              <div>
+                <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Monthly Savings</div>
+                <div className="font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
+              </div>
+              <div>
+                <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Contract Ends</div>
+                <div className="font-mono font-semibold" style={{ color: textPrimary }}>{opp.contractEnd}</div>
+              </div>
+              <div>
+                <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Lazy Tax</div>
+                <div className="font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}/unit</div>
+              </div>
+            </div>
             <div className="flex items-center gap-4 text-[10px]" style={{ color: textSecondary }}>
               <span>Current: <span className="font-mono" style={{ color: textPrimary }}>${opp.currentPrice}</span></span>
-              <span>Lazy Tax: <span className="font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}/unit</span></span>
+              <span>Best: <span className="font-mono font-semibold" style={{ color: green }}>${opp.bestPrice}</span></span>
+              <span>Overpaying: <span className="font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</span> above best price</span>
             </div>
           </div>
         ))}
