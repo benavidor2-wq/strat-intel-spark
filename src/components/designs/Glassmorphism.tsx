@@ -9,7 +9,7 @@ import {
   vendorConsolidation,
   summaryStats,
 } from "@/data/mockData";
-import { Shield, TrendingDown, Zap, BarChart3, Users, Gift } from "lucide-react";
+import { Shield, TrendingDown, Zap, BarChart3, Users, Gift, Send } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell } from "recharts";
 
 const purple = "#6366f1";
