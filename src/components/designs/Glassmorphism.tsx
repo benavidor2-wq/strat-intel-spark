@@ -76,15 +76,15 @@ export default function Glassmorphism() {
 
         {/* Chat Bar */}
         <div className="max-w-[1400px] mx-auto px-8 mb-6">
-          <div className={`${glass} flex items-center gap-3 px-5 py-3`}>
+          <div className={`${glass} flex items-center gap-4 px-6 py-4`}>
             <input
               type="text"
-              placeholder="Ask MyCFO anything..."
+              placeholder='Ask your CFO... e.g. "Which vendor has the highest cost increase?"'
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
               style={{ color: textPrimary }}
             />
-            <button className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105" style={{ background: purple }}>
-              <Send size={14} className="text-white" />
+            <button className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105" style={{ background: `${purple}88` }}>
+              <Send size={18} className="text-white" />
             </button>
           </div>
         </div>
