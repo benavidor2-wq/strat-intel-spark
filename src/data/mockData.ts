@@ -150,6 +150,18 @@ export const vendorConsolidation: VendorConsolidation[] = [
   { category: 'Logistics', vendorCount: 9, industryAvg: 4, redundancyScore: 62, potentialSavings: 51000 },
 ];
 
+// Vendor monthly spend data
+export const vendorMonthlySpend = [
+  { vendor: 'SteelCo', monthlySpend: 48000 },
+  { vendor: 'ChemSupply', monthlySpend: 32000 },
+  { vendor: 'SafetyFirst', monthlySpend: 18500 },
+  { vendor: 'MetalWorks', monthlySpend: 27000 },
+  { vendor: 'FuelDirect', monthlySpend: 41000 },
+  { vendor: 'BuildMat', monthlySpend: 22000 },
+  { vendor: 'OfficePro', monthlySpend: 9500 },
+  { vendor: 'ElectroParts', monthlySpend: 15000 },
+];
+
 // Summary stats
 export const summaryStats = {
   totalAnomalies: 5,
