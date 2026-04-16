@@ -50,7 +50,7 @@ export default function Glassmorphism() {
       <div className="relative z-10">
 
         {/* 6 Pillar Cards */}
-        <div className="max-w-[1400px] mx-auto px-8 grid grid-cols-6 gap-3 mb-6">
+        <div className="max-w-[1400px] mx-auto px-8 pt-6 grid grid-cols-6 gap-3 mb-6">
           {pillars.map((p, i) => {
             const isActive = active === p.key;
             return (
