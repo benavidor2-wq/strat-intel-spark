@@ -499,50 +499,273 @@ function SpendingReport() {
 }
 
 function VendorReport() {
-  const totalSavings = vendorConsolidation.reduce((s, v) => s + v.potentialSavings, 0);
+  const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const vendorTotal = vendorMonthlySpend.reduce((s, v) => s + v.monthlySpend, 0);
+  const categoryTotal = spendByCategory.reduce((s, v) => s + v.monthlySpend, 0);
+  const vendorColors = [danger, purple, warn, green, "#60a5fa", "#f472b6", "#fbbf24", "#34d399"];
+  const categoryColors = [purple, warn, "#60a5fa", green, danger];
+
+  const handleVendorClick = (_: unknown, index: number) => {
+    const vendor = vendorMonthlySpend[index].vendor;
+    setSelectedVendor(selectedVendor === vendor ? null : vendor);
+    setSelectedCategory(null);
+  };
+
+  const handleCategoryClick = (_: unknown, index: number) => {
+    const category = spendByCategory[index].category;
+    setSelectedCategory(selectedCategory === category ? null : category);
+    setSelectedVendor(null);
+  };
+
+  const vendorDetail = selectedVendor ? vendorProducts[selectedVendor] : null;
+  const vendorSpend = selectedVendor ? vendorMonthlySpend.find(v => v.vendor === selectedVendor) : null;
+  const categoryDetail = selectedCategory ? categoryVendors[selectedCategory] : null;
+  const categoryConsolidation = selectedCategory ? vendorConsolidation.find(v => v.category === selectedCategory) : null;
+  const vendorDriftItems = selectedVendor ? priceDriftItems.filter(p => p.vendor === selectedVendor) : [];
+
   return (
-    <div className={`${glass} p-6`}>
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><Users size={14} style={{ color: purple }} /> Vendor Consolidation</h3>
-        
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div>
-          <p className="text-[10px] font-semibold text-center mb-1" style={{ color: textSecondary }}>Spend by Vendor</p>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={vendorMonthlySpend} dataKey="monthlySpend" nameKey="vendor" cx="50%" cy="50%" outerRadius={60} innerRadius={30} paddingAngle={3} label={({ vendor, percent }) => `${vendor}: ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 8 }}>
-                  {vendorMonthlySpend.map((_, i) => {
-                    const colors = [danger, purple, warn, green, "#60a5fa", "#f472b6", "#fbbf24", "#34d399"];
-                    return <Cell key={i} fill={colors[i % colors.length]} />;
-                  })}
-                </Pie>
-                <RechartsTooltip formatter={(value: number) => {
-                  const total = vendorMonthlySpend.reduce((s, v) => s + v.monthlySpend, 0);
-                  return [`$${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`, 'Monthly Spend'];
-                }} />
-              </PieChart>
-            </ResponsiveContainer>
+    <div>
+      <div className={`${glass} p-6`}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-sm font-semibold flex items-center gap-2"><Users size={14} style={{ color: purple }} /> Vendor Consolidation</h3>
+          <p className="text-xs" style={{ color: textSecondary }}>Click a slice to drill down</p>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          {/* Spend by Vendor */}
+          <div>
+            <p className="text-xs font-semibold text-center mb-2" style={{ color: textSecondary }}>Spend by Vendor</p>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={vendorMonthlySpend}
+                    dataKey="monthlySpend"
+                    nameKey="vendor"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={120}
+                    innerRadius={55}
+                    paddingAngle={3}
+                    label={({ vendor, percent }) => `${vendor}: ${(percent * 100).toFixed(0)}%`}
+                    style={{ fontSize: 10, cursor: 'pointer' }}
+                    onClick={handleVendorClick}
+                  >
+                    {vendorMonthlySpend.map((entry, i) => (
+                      <Cell
+                        key={i}
+                        fill={vendorColors[i % vendorColors.length]}
+                        opacity={selectedVendor && selectedVendor !== entry.vendor ? 0.3 : 1}
+                        stroke={selectedVendor === entry.vendor ? '#1e1b4b' : 'transparent'}
+                        strokeWidth={selectedVendor === entry.vendor ? 2 : 0}
+                      />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip formatter={(value: number) => [`$${value.toLocaleString()} (${((value / vendorTotal) * 100).toFixed(1)}%)`, 'Monthly Spend']} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Spend by Category */}
+          <div>
+            <p className="text-xs font-semibold text-center mb-2" style={{ color: textSecondary }}>Spend by Category</p>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={spendByCategory}
+                    dataKey="monthlySpend"
+                    nameKey="category"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={120}
+                    innerRadius={55}
+                    paddingAngle={3}
+                    label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`}
+                    style={{ fontSize: 10, cursor: 'pointer' }}
+                    onClick={handleCategoryClick}
+                  >
+                    {spendByCategory.map((entry, i) => (
+                      <Cell
+                        key={i}
+                        fill={categoryColors[i % categoryColors.length]}
+                        opacity={selectedCategory && selectedCategory !== entry.category ? 0.3 : 1}
+                        stroke={selectedCategory === entry.category ? '#1e1b4b' : 'transparent'}
+                        strokeWidth={selectedCategory === entry.category ? 2 : 0}
+                      />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip formatter={(value: number) => [`$${value.toLocaleString()} (${((value / categoryTotal) * 100).toFixed(1)}%)`, 'Monthly Spend']} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-        <div>
-          <p className="text-[10px] font-semibold text-center mb-1" style={{ color: textSecondary }}>Spend by Category</p>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={spendByCategory} dataKey="monthlySpend" nameKey="category" cx="50%" cy="50%" outerRadius={60} innerRadius={30} paddingAngle={3} label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 8 }}>
-                  {spendByCategory.map((_, i) => {
-                    const colors = [purple, warn, "#60a5fa", green, danger];
-                    return <Cell key={i} fill={colors[i % colors.length]} />;
-                  })}
-                </Pie>
-                <RechartsTooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Monthly Spend']} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
+
+      {/* Drill-down Panel */}
+      <AnimatePresence>
+        {selectedVendor && vendorDetail && (
+          <motion.div
+            key={`vendor-${selectedVendor}`}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className={`${glass} p-6 mt-4`}>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h4 className="text-base font-semibold" style={{ color: textPrimary }}>{selectedVendor}</h4>
+                  <p className="text-xs mt-1" style={{ color: textSecondary }}>Category: {vendorDetail.category} · Monthly spend: <span className="font-mono font-semibold" style={{ color: purple }}>${vendorSpend?.monthlySpend.toLocaleString()}</span></p>
+                </div>
+                <button onClick={() => setSelectedVendor(null)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-all">
+                  <X size={16} style={{ color: textSecondary }} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-6">
+                {/* Products */}
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Products Supplied</div>
+                  <div className="space-y-2">
+                    {vendorDetail.products.map((p, i) => (
+                      <div key={i} className="px-3 py-2 rounded-lg text-xs font-medium" style={{ background: 'rgba(0,0,0,0.03)', color: textPrimary }}>{p}</div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recent Invoices */}
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Recent Invoices</div>
+                  <div className="space-y-2">
+                    {vendorDetail.recentInvoices.map((inv, i) => (
+                      <div key={i} className="p-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                        <div className="flex justify-between text-xs">
+                          <span className="font-mono font-semibold" style={{ color: textPrimary }}>{inv.invoiceNo}</span>
+                          <span className="font-mono font-semibold" style={{ color: green }}>${inv.amount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] mt-1" style={{ color: textSecondary }}>
+                          <span>{inv.date}</span>
+                          <span>{inv.product} · {inv.qty} units</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price Drift Status */}
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Price Drift Status</div>
+                  {vendorDriftItems.length > 0 ? (
+                    <div className="space-y-2">
+                      {vendorDriftItems.map((item) => {
+                        const statusColor = item.status === 'alert' ? danger : item.status === 'warning' ? warn : green;
+                        return (
+                          <div key={item.id} className="p-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-medium" style={{ color: textPrimary }}>{item.product}</span>
+                              <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full" style={{ background: `${statusColor}15`, color: statusColor }}>{item.status}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] mt-1.5" style={{ color: textSecondary }}>
+                              <span>Current: <span className="font-mono font-semibold" style={{ color: statusColor }}>${item.currentPrice}</span></span>
+                              <span>Drift: <span className="font-mono font-semibold" style={{ color: statusColor }}>+{item.driftPercent}%</span></span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg text-xs" style={{ background: 'rgba(0,0,0,0.03)', color: textSecondary }}>No price drift alerts for this vendor</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {selectedCategory && categoryDetail && (
+          <motion.div
+            key={`category-${selectedCategory}`}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className={`${glass} p-6 mt-4`}>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h4 className="text-base font-semibold" style={{ color: textPrimary }}>{selectedCategory}</h4>
+                  <p className="text-xs mt-1" style={{ color: textSecondary }}>{categoryDetail.description}</p>
+                </div>
+                <button onClick={() => setSelectedCategory(null)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-all">
+                  <X size={16} style={{ color: textSecondary }} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                {/* Vendors in this category */}
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Vendors in Category</div>
+                  <div className="space-y-2">
+                    {categoryDetail.vendors.map((v, i) => {
+                      const catTotal = categoryDetail.vendors.reduce((s, x) => s + x.spend, 0);
+                      const pct = ((v.spend / catTotal) * 100).toFixed(1);
+                      return (
+                        <div key={i} className="p-3 rounded-lg flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                          <div>
+                            <div className="text-xs font-medium" style={{ color: textPrimary }}>{v.name}</div>
+                            <div className="text-[10px] mt-0.5" style={{ color: textSecondary }}>{pct}% of category spend</div>
+                          </div>
+                          <div className="text-sm font-mono font-semibold" style={{ color: purple }}>${v.spend.toLocaleString()}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Consolidation metrics */}
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Consolidation Analysis</div>
+                  {categoryConsolidation ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg text-center" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                          <div className="text-xl font-bold" style={{ color: categoryConsolidation.vendorCount > categoryConsolidation.industryAvg * 1.5 ? danger : textPrimary }}>{categoryConsolidation.vendorCount}</div>
+                          <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: textSecondary }}>Your Vendors</div>
+                        </div>
+                        <div className="p-3 rounded-lg text-center" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                          <div className="text-xl font-bold" style={{ color: green }}>{categoryConsolidation.industryAvg}</div>
+                          <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: textSecondary }}>Industry Avg</div>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)' }}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>Redundancy Score</span>
+                          <span className="text-sm font-bold font-mono" style={{ color: categoryConsolidation.redundancyScore > 60 ? danger : warn }}>{categoryConsolidation.redundancyScore}/100</span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${categoryConsolidation.redundancyScore}%`, backgroundColor: categoryConsolidation.redundancyScore > 60 ? danger : warn }} />
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-xl text-center" style={{ background: `${green}08`, border: `1px solid ${green}20` }}>
+                        <div className="text-2xl font-bold font-mono" style={{ color: green }}>${categoryConsolidation.potentialSavings.toLocaleString()}</div>
+                        <div className="text-[10px] uppercase tracking-widest mt-1" style={{ color: textSecondary }}>Potential Annual Savings</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg text-xs" style={{ background: 'rgba(0,0,0,0.03)', color: textSecondary }}>No consolidation data available</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
