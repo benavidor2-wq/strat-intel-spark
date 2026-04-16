@@ -25,7 +25,7 @@ const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl s
 type PillarKey = "arbitrage" | "priceDrift" | "inventory" | "spending" | "vendor" | "integrity";
 
 const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string; badge: number | string }[] = [
-  { key: "arbitrage", label: "Arbitrage & Best Price", icon: Zap, color: purple, badge: 4 },
+  { key: "arbitrage", label: "Vendor Arbitrage & Best Pricing", icon: Zap, color: purple, badge: 4 },
   { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple, badge: 3 },
   { key: "inventory", label: "Predictive Ordering", icon: BarChart3, color: purple, badge: 2 },
   { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple, badge: 1 },
