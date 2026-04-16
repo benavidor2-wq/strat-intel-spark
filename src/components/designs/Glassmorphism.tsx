@@ -515,7 +515,7 @@ function VendorReport() {
 
   const handleCategoryClick = (_: unknown, index: number) => {
     const category = spendByCategory[index].category;
-    setSelectedCategory(selectedCategory === category ? null : category);
+    setSelectedCategory(category);
     setSelectedVendor(null);
   };
 
