@@ -198,10 +198,7 @@ function ArbitrageReport() {
                   <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Monthly</div>
                   <div className="text-sm font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
                 </div>
-                <div>
-                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Qty/Month</div>
-                  <div className="text-sm font-mono font-semibold" style={{ color: textPrimary }}>{opp.monthlyQty}</div>
-                </div>
+                <QtyPopover monthlyQty={opp.monthlyQty} vendors={opp.vendors} />
                 <div>
                   <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Lazy Tax</div>
                   <div className="text-sm font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}<span className="text-[9px]">/unit</span></div>
