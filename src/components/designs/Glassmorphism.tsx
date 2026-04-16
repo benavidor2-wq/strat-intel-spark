@@ -11,7 +11,7 @@ import {
   type PriceDriftItem,
 } from "@/data/mockData";
 import { Shield, TrendingDown, Zap, BarChart3, Users, Gift, Send, X, FileText } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
 const purple = "#6366f1";
 const green = "#22c55e";
@@ -504,17 +504,15 @@ function VendorReport() {
       </div>
       <div className="h-56 mb-6">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={vendorConsolidation} layout="vertical">
-            <XAxis type="number" tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="category" tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} width={100} />
+          <PieChart>
+            <Pie data={vendorConsolidation} dataKey="vendorCount" nameKey="category" cx="50%" cy="50%" outerRadius={80} innerRadius={40} paddingAngle={3} label={({ category, vendorCount }) => `${category}: ${vendorCount}`} style={{ fontSize: 10 }}>
+              {vendorConsolidation.map((entry, i) => {
+                const colors = [danger, purple, warn, green, "#60a5fa"];
+                return <Cell key={i} fill={colors[i % colors.length]} />;
+              })}
+            </Pie>
             <RechartsTooltip />
-            <Bar dataKey="vendorCount" radius={[0, 6, 6, 0]} barSize={14} name="Your Vendors">
-              {vendorConsolidation.map((entry, i) => (
-                <Cell key={i} fill={entry.redundancyScore > 70 ? danger : entry.redundancyScore > 50 ? warn : green} />
-              ))}
-            </Bar>
-            <Bar dataKey="industryAvg" radius={[0, 6, 6, 0]} barSize={14} fill="#e5e7eb" name="Industry Avg" />
-          </BarChart>
+          </PieChart>
         </ResponsiveContainer>
       </div>
       <div className="grid gap-3">
