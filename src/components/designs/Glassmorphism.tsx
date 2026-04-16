@@ -168,8 +168,8 @@ function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { na
   return (
     <div className="relative">
       <button onClick={() => setOpen(!open)} className="text-left cursor-pointer">
-        <div className="uppercase tracking-wider mb-0.5 text-[10px]" style={{ color: textSecondary }}>Qty/Month</div>
-        <div className="text-sm font-mono font-semibold" style={{ color: textPrimary }}>{monthlyQty}</div>
+        <div className="uppercase tracking-wider text-[11px]" style={{ color: textSecondary }}>Qty/Month</div>
+        <div className="text-base font-mono font-semibold" style={{ color: textPrimary }}>{monthlyQty}</div>
       </button>
       <AnimatePresence>
         {open && (
