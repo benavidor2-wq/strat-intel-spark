@@ -23,7 +23,7 @@ export interface PriceDriftItem {
 export interface ArbitrageOpportunity {
   id: string;
   product: string;
-  vendors: { name: string; price: number }[];
+  vendors: { name: string; price: number; invoiceNo: string; invoiceDate: string; qty: number; total: number }[];
   bestPrice: number;
   currentPrice: number;
   lazyTax: number;
@@ -78,10 +78,10 @@ export const priceDriftItems: PriceDriftItem[] = [
 ];
 
 export const arbitrageOpportunities: ArbitrageOpportunity[] = [
-  { id: '1', product: 'Industrial Lubricant 5W-40', vendors: [{ name: 'ChemSupply', price: 42 }, { name: 'OilMax', price: 38 }, { name: 'LubeKing', price: 35.5 }], bestPrice: 35.5, currentPrice: 42, lazyTax: 6.5, annualSavings: 31200, monthlyQty: 400, unit: 'liters', contractEnd: '2026-08-15', savingsPerUnit: 6.5, monthlySavings: 2600 },
-  { id: '2', product: 'Nitrile Gloves (box/100)', vendors: [{ name: 'SafetyFirst', price: 12.8 }, { name: 'MedSupply', price: 9.2 }], bestPrice: 9.2, currentPrice: 12.8, lazyTax: 3.6, annualSavings: 17280, monthlyQty: 400, unit: 'boxes', contractEnd: '2026-06-01', savingsPerUnit: 3.6, monthlySavings: 1440 },
-  { id: '3', product: 'A4 Copier Paper (ream)', vendors: [{ name: 'OfficePro', price: 6.4 }, { name: 'PaperDirect', price: 5.1 }, { name: 'BulkSupply', price: 4.8 }], bestPrice: 4.8, currentPrice: 6.4, lazyTax: 1.6, annualSavings: 9600, monthlyQty: 500, unit: 'reams', contractEnd: '2026-09-30', savingsPerUnit: 1.6, monthlySavings: 800 },
-  { id: '4', product: 'Cable Ties (1000pk)', vendors: [{ name: 'ElectroParts', price: 24 }, { name: 'CableCo', price: 19.5 }], bestPrice: 19.5, currentPrice: 24, lazyTax: 4.5, annualSavings: 5400, monthlyQty: 100, unit: 'packs', contractEnd: '2026-07-20', savingsPerUnit: 4.5, monthlySavings: 450 },
+  { id: '1', product: 'Industrial Lubricant 5W-40', vendors: [{ name: 'ChemSupply', price: 42, invoiceNo: 'CS-2026-0847', invoiceDate: '2026-03-28', qty: 120, total: 5040 }, { name: 'OilMax', price: 38, invoiceNo: 'OM-26-1192', invoiceDate: '2026-04-02', qty: 80, total: 3040 }, { name: 'LubeKing', price: 35.5, invoiceNo: 'LK-4401', invoiceDate: '2026-04-08', qty: 200, total: 7100 }], bestPrice: 35.5, currentPrice: 42, lazyTax: 6.5, annualSavings: 31200, monthlyQty: 400, unit: 'liters', contractEnd: '2026-08-15', savingsPerUnit: 6.5, monthlySavings: 2600 },
+  { id: '2', product: 'Nitrile Gloves (box/100)', vendors: [{ name: 'SafetyFirst', price: 12.8, invoiceNo: 'SF-2026-3310', invoiceDate: '2026-03-15', qty: 200, total: 2560 }, { name: 'MedSupply', price: 9.2, invoiceNo: 'MS-7821', invoiceDate: '2026-04-01', qty: 200, total: 1840 }], bestPrice: 9.2, currentPrice: 12.8, lazyTax: 3.6, annualSavings: 17280, monthlyQty: 400, unit: 'boxes', contractEnd: '2026-06-01', savingsPerUnit: 3.6, monthlySavings: 1440 },
+  { id: '3', product: 'A4 Copier Paper (ream)', vendors: [{ name: 'OfficePro', price: 6.4, invoiceNo: 'OP-2026-0553', invoiceDate: '2026-03-20', qty: 300, total: 1920 }, { name: 'PaperDirect', price: 5.1, invoiceNo: 'PD-11042', invoiceDate: '2026-03-25', qty: 100, total: 510 }, { name: 'BulkSupply', price: 4.8, invoiceNo: 'BS-6620', invoiceDate: '2026-04-05', qty: 100, total: 480 }], bestPrice: 4.8, currentPrice: 6.4, lazyTax: 1.6, annualSavings: 9600, monthlyQty: 500, unit: 'reams', contractEnd: '2026-09-30', savingsPerUnit: 1.6, monthlySavings: 800 },
+  { id: '4', product: 'Cable Ties (1000pk)', vendors: [{ name: 'ElectroParts', price: 24, invoiceNo: 'EP-2026-2290', invoiceDate: '2026-03-18', qty: 50, total: 1200 }, { name: 'CableCo', price: 19.5, invoiceNo: 'CC-8834', invoiceDate: '2026-04-10', qty: 50, total: 975 }], bestPrice: 19.5, currentPrice: 24, lazyTax: 4.5, annualSavings: 5400, monthlyQty: 100, unit: 'packs', contractEnd: '2026-07-20', savingsPerUnit: 4.5, monthlySavings: 450 },
 ];
 
 export const inventoryItems: InventoryItem[] = [
