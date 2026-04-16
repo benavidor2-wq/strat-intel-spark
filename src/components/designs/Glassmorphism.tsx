@@ -179,7 +179,7 @@ function ArbitrageReport() {
               </div>
               <div className="flex gap-2 flex-wrap">
                 {opp.vendors.map((v, i) => (
-                  <Popover key={i} vendor={v} isBest={v.price === opp.bestPrice} />
+                  <VendorPopover key={i} vendor={v} isBest={v.price === opp.bestPrice} />
                 ))}
               </div>
             </div>
