@@ -104,10 +104,6 @@ function ArbitrageReport() {
   const totalAnnualSavings = arbitrageOpportunities.reduce((s, o) => s + o.annualSavings, 0);
   return (
     <div className={`${glass} p-6`}>
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><Zap size={14} style={{ color: purple }} /> Arbitrage & Best Price</h3>
-        <span className="text-sm font-bold font-mono" style={{ color: green }}>${(totalAnnualSavings / 1000).toFixed(0)}K/yr total savings</span>
-      </div>
       <div className="grid gap-4">
         {arbitrageOpportunities.map((opp) => (
           <div key={opp.id} className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
