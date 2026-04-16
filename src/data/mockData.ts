@@ -10,6 +10,14 @@ export interface IntegrityAlert {
   date: string;
 }
 
+export interface PriceDriftInvoice {
+  invoiceNo: string;
+  date: string;
+  unitPrice: number;
+  qty: number;
+  total: number;
+}
+
 export interface PriceDriftItem {
   id: string;
   product: string;
@@ -18,6 +26,8 @@ export interface PriceDriftItem {
   avg90Day: number;
   driftPercent: number;
   status: 'alert' | 'warning' | 'stable';
+  recentInvoice: PriceDriftInvoice;
+  historicalInvoices: PriceDriftInvoice[];
 }
 
 export interface ArbitrageOpportunity {
@@ -69,12 +79,44 @@ export const integrityAlerts: IntegrityAlert[] = [
 ];
 
 export const priceDriftItems: PriceDriftItem[] = [
-  { id: '1', product: 'Steel Rebar (ton)', vendor: 'SteelCo', currentPrice: 892, avg90Day: 845, driftPercent: 5.6, status: 'alert' },
-  { id: '2', product: 'Hydraulic Fluid (L)', vendor: 'ChemSupply', currentPrice: 14.2, avg90Day: 13.8, driftPercent: 2.9, status: 'warning' },
-  { id: '3', product: 'Safety Helmets', vendor: 'SafetyFirst', currentPrice: 34, avg90Day: 33.5, driftPercent: 1.5, status: 'stable' },
-  { id: '4', product: 'Copper Wire (kg)', vendor: 'MetalWorks', currentPrice: 11.8, avg90Day: 10.2, driftPercent: 15.7, status: 'alert' },
-  { id: '5', product: 'Diesel Fuel (L)', vendor: 'FuelDirect', currentPrice: 1.89, avg90Day: 1.72, driftPercent: 9.9, status: 'alert' },
-  { id: '6', product: 'Cement (bag)', vendor: 'BuildMat', currentPrice: 8.4, avg90Day: 8.2, driftPercent: 2.4, status: 'warning' },
+  { id: '1', product: 'Steel Rebar (ton)', vendor: 'SteelCo', currentPrice: 892, avg90Day: 845, driftPercent: 5.6, status: 'alert',
+    recentInvoice: { invoiceNo: 'SC-2026-1847', date: '2026-04-10', unitPrice: 892, qty: 15, total: 13380 },
+    historicalInvoices: [
+      { invoiceNo: 'SC-2026-1201', date: '2026-03-05', unitPrice: 855, qty: 20, total: 17100 },
+      { invoiceNo: 'SC-2026-0914', date: '2026-02-12', unitPrice: 840, qty: 18, total: 15120 },
+      { invoiceNo: 'SC-2025-4810', date: '2026-01-18', unitPrice: 838, qty: 22, total: 18436 },
+    ]},
+  { id: '2', product: 'Hydraulic Fluid (L)', vendor: 'ChemSupply', currentPrice: 14.2, avg90Day: 13.8, driftPercent: 2.9, status: 'warning',
+    recentInvoice: { invoiceNo: 'CS-2026-0923', date: '2026-04-08', unitPrice: 14.2, qty: 200, total: 2840 },
+    historicalInvoices: [
+      { invoiceNo: 'CS-2026-0671', date: '2026-03-10', unitPrice: 13.9, qty: 180, total: 2502 },
+      { invoiceNo: 'CS-2026-0402', date: '2026-02-05', unitPrice: 13.7, qty: 200, total: 2740 },
+    ]},
+  { id: '3', product: 'Safety Helmets', vendor: 'SafetyFirst', currentPrice: 34, avg90Day: 33.5, driftPercent: 1.5, status: 'stable',
+    recentInvoice: { invoiceNo: 'SF-2026-2210', date: '2026-04-05', unitPrice: 34, qty: 50, total: 1700 },
+    historicalInvoices: [
+      { invoiceNo: 'SF-2026-1880', date: '2026-03-01', unitPrice: 33.5, qty: 40, total: 1340 },
+      { invoiceNo: 'SF-2026-1550', date: '2026-01-28', unitPrice: 33.5, qty: 45, total: 1507.5 },
+    ]},
+  { id: '4', product: 'Copper Wire (kg)', vendor: 'MetalWorks', currentPrice: 11.8, avg90Day: 10.2, driftPercent: 15.7, status: 'alert',
+    recentInvoice: { invoiceNo: 'MW-2026-3392', date: '2026-04-12', unitPrice: 11.8, qty: 500, total: 5900 },
+    historicalInvoices: [
+      { invoiceNo: 'MW-2026-2901', date: '2026-03-08', unitPrice: 10.5, qty: 450, total: 4725 },
+      { invoiceNo: 'MW-2026-2440', date: '2026-02-02', unitPrice: 10.1, qty: 500, total: 5050 },
+      { invoiceNo: 'MW-2025-9821', date: '2026-01-10', unitPrice: 9.9, qty: 400, total: 3960 },
+    ]},
+  { id: '5', product: 'Diesel Fuel (L)', vendor: 'FuelDirect', currentPrice: 1.89, avg90Day: 1.72, driftPercent: 9.9, status: 'alert',
+    recentInvoice: { invoiceNo: 'FD-2026-5510', date: '2026-04-11', unitPrice: 1.89, qty: 3000, total: 5670 },
+    historicalInvoices: [
+      { invoiceNo: 'FD-2026-4820', date: '2026-03-12', unitPrice: 1.75, qty: 2800, total: 4900 },
+      { invoiceNo: 'FD-2026-4100', date: '2026-02-08', unitPrice: 1.70, qty: 3000, total: 5100 },
+    ]},
+  { id: '6', product: 'Cement (bag)', vendor: 'BuildMat', currentPrice: 8.4, avg90Day: 8.2, driftPercent: 2.4, status: 'warning',
+    recentInvoice: { invoiceNo: 'BM-2026-1190', date: '2026-04-09', unitPrice: 8.4, qty: 400, total: 3360 },
+    historicalInvoices: [
+      { invoiceNo: 'BM-2026-0880', date: '2026-03-02', unitPrice: 8.2, qty: 350, total: 2870 },
+      { invoiceNo: 'BM-2026-0510', date: '2026-01-25', unitPrice: 8.15, qty: 400, total: 3260 },
+    ]},
 ];
 
 export const arbitrageOpportunities: ArbitrageOpportunity[] = [
