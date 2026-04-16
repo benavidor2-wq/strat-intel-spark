@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   integrityAlerts,
@@ -116,14 +116,7 @@ function ArbitrageReport() {
               </div>
               <div className="flex gap-2 flex-wrap">
                 {opp.vendors.map((v, i) => (
-                  <span key={i} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all" style={{
-                    background: v.price === opp.bestPrice ? `${green}12` : "rgba(255,255,255,0.8)",
-                    border: v.price === opp.bestPrice ? `1.5px solid ${green}55` : "1px solid rgba(0,0,0,0.08)",
-                    color: v.price === opp.bestPrice ? "#166534" : textSecondary,
-                    boxShadow: v.price === opp.bestPrice ? `0 2px 8px ${green}20` : "none",
-                  }}>
-                    {v.name}: ${v.price} {v.price === opp.bestPrice && "✓"}
-                  </span>
+                  <Popover key={i} vendor={v} isBest={v.price === opp.bestPrice} />
                 ))}
               </div>
             </div>
