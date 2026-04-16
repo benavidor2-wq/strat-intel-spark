@@ -500,7 +500,7 @@ function VendorReport() {
     <div className={`${glass} p-6`}>
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-sm font-semibold flex items-center gap-2"><Users size={14} style={{ color: purple }} /> Vendor Consolidation</h3>
-        <span className="text-sm font-mono font-bold" style={{ color: green }}>${(totalSavings / 1000).toFixed(0)}K potential savings</span>
+        
       </div>
       <div className="h-56 mb-6">
         <ResponsiveContainer width="100%" height="100%">
@@ -525,7 +525,7 @@ function VendorReport() {
               <span className="text-xs font-medium" style={{ color: textPrimary }}>{v.category}</span>
               <div className="flex items-center gap-4 text-[10px]">
                 <span style={{ color: textSecondary }}>Yours: <span className="font-mono font-semibold" style={{ color: scoreColor }}>{v.vendorCount}</span></span>
-                <span style={{ color: textSecondary }}>Avg: <span className="font-mono">{v.industryAvg}</span></span>
+                
                 <span className="font-mono font-bold" style={{ color: green }}>${(v.potentialSavings / 1000).toFixed(0)}K</span>
               </div>
             </div>
