@@ -215,19 +215,19 @@ function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { na
 
 function ArbitrageReport() {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       {arbitrageOpportunities.map((opp) => (
-        <div key={opp.id} className={`${glass} p-5 transition-all hover:shadow-xl hover:shadow-indigo-500/10`}>
-          <div className="flex items-start gap-8">
+        <div key={opp.id} className={`${glass} px-5 py-4 transition-all hover:shadow-xl hover:shadow-indigo-500/10`}>
+          <div className="flex items-center gap-6">
             {/* Left: Product + Vendors */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${purple}15` }}>
-                  <Zap size={14} style={{ color: purple }} />
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${purple}15` }}>
+                  <Zap size={13} style={{ color: purple }} />
                 </div>
                 <h4 className="text-sm font-semibold" style={{ color: textPrimary }}>{opp.product}</h4>
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-1.5 flex-wrap">
                 {opp.vendors.map((v, i) => (
                   <VendorPopover key={i} vendor={v} isBest={v.price === opp.bestPrice} />
                 ))}
@@ -235,27 +235,27 @@ function ArbitrageReport() {
             </div>
 
             {/* Right: Metrics */}
-            <div className="shrink-0 flex items-start gap-5">
+            <div className="shrink-0 flex items-center gap-5">
               {/* Annual savings - hero metric */}
-              <div className="text-center px-4 py-3 rounded-xl" style={{ background: `${green}08`, border: `1px solid ${green}20` }}>
-                <div className="text-xl font-bold font-mono" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K</div>
-                <div className="text-[9px] uppercase tracking-widest mt-0.5" style={{ color: textSecondary }}>per year</div>
+              <div className="text-center px-4 py-2.5 rounded-xl" style={{ background: `${green}08`, border: `1px solid ${green}20` }}>
+                <div className="text-lg font-bold font-mono leading-tight" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K</div>
+                <div className="text-[9px] uppercase tracking-widest" style={{ color: textSecondary }}>per year</div>
               </div>
 
               {/* Secondary metrics */}
-              <div className="grid grid-cols-2 gap-x-5 gap-y-3 text-[10px]">
+              <div className="grid grid-cols-2 gap-x-5 gap-y-1.5 text-[10px]">
                 <div>
-                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Monthly</div>
-                  <div className="text-sm font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
+                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Monthly</div>
+                  <div className="text-xs font-mono font-semibold" style={{ color: green }}>${opp.monthlySavings.toLocaleString()}</div>
                 </div>
                 <QtyPopover monthlyQty={opp.monthlyQty} vendors={opp.vendors} />
                 <div>
-                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Lazy Tax</div>
-                  <div className="text-sm font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}<span className="text-[9px]">/unit</span></div>
+                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Lazy Tax</div>
+                  <div className="text-xs font-mono font-semibold" style={{ color: danger }}>${opp.lazyTax}<span className="text-[9px]">/unit</span></div>
                 </div>
                 <div>
-                  <div className="uppercase tracking-wider mb-0.5" style={{ color: textSecondary }}>Overpaying</div>
-                  <div className="text-sm font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</div>
+                  <div className="uppercase tracking-wider" style={{ color: textSecondary }}>Overpaying</div>
+                  <div className="text-xs font-mono font-semibold" style={{ color: danger }}>{((opp.lazyTax / opp.bestPrice) * 100).toFixed(1)}%</div>
                 </div>
               </div>
             </div>
