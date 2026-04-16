@@ -7,6 +7,7 @@ import {
   inventoryItems,
   spendingTrends,
   vendorConsolidation,
+  vendorMonthlySpend,
   summaryStats,
   type PriceDriftItem,
 } from "@/data/mockData";
