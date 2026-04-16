@@ -76,7 +76,7 @@ export default function Glassmorphism() {
 
         {/* Chat Bar */}
         <div className="max-w-[1400px] mx-auto px-8 mb-6">
-          <div className={`${glass} flex items-center gap-4 px-6 py-4`}>
+          <div className={`${glass} flex items-center gap-4 px-5 py-2.5`}>
             <input
               type="text"
               placeholder='Ask your CFO... e.g. "Which vendor has the highest cost increase?"'
