@@ -885,20 +885,6 @@ function IntegrityReport() {
                     ))}
                   </div>
                 </InfoBlock>
-                <div className="rounded-xl border border-border bg-muted p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground"><Shield size={15} className="text-primary" /> Recommended action</div>
-                  <p className="text-sm text-foreground">{getRecommendedAction(selectedAlert.type)}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    "Mark for Review",
-                    "Export Evidence",
-                    "Contact Vendor",
-                    "Dismiss Risk",
-                  ].map((action, index) => (
-                    <button key={action} className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${index === 0 ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : "border-border bg-card text-foreground hover:bg-accent"}`}>{action}</button>
-                  ))}
-                </div>
               </div>
             </div>
           </section>
