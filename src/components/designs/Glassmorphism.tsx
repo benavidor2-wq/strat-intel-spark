@@ -15,7 +15,7 @@ import {
   type IntegrityAlert,
   type PriceDriftItem,
 } from "@/data/mockData";
-import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, Cookie, CheckCircle2, CalendarDays } from "lucide-react";
+import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
 const purple = "#6366f1";
@@ -752,12 +752,13 @@ function getEvidenceItems(alert: IntegrityAlert) {
   return evidence[alert.type];
 }
 
-function getCookieCrumbTrail(alert: IntegrityAlert) {
+function getBackendHandoffSteps(alert: IntegrityAlert) {
+  // Claude backend cookie: persist these steps as investigation_events tied to anomaly_id for auditability.
   return [
     `${getAnomalyLabel(alert.type)} pattern detected`,
     "Vendor and invoice behavior checked",
     "Approval and payment controls reviewed",
-    "Claud’s recommendation generated",
+    "Recommended action generated",
   ];
 }
 
@@ -776,9 +777,6 @@ function IntegrityReport() {
       <section className={`${glass} p-6`}>
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cookie/20 bg-cookie/10 px-3 py-1 text-xs font-semibold text-cookie-foreground">
-              <Cookie size={14} className="text-cookie" /> Claud’s risk cookie jar
-            </div>
             <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground"><Shield size={18} className="text-risk-critical" /> Anomaly & Risk</h3>
             <p className="mt-1 text-sm text-muted-foreground">AI-detected invoice, vendor, and payment integrity risks.</p>
           </div>
@@ -798,9 +796,9 @@ function IntegrityReport() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h4 className="text-sm font-semibold text-foreground">Risk Queue</h4>
-              <p className="text-xs text-muted-foreground">Claud’s sorted batch of suspicious crumbs.</p>
+              <p className="text-xs text-muted-foreground">Prioritized anomaly cases for investigation.</p>
             </div>
-            <Cookie size={18} className="text-cookie" />
+            <Shield size={18} className="text-risk-critical" />
           </div>
 
           <div className="mb-4 flex flex-wrap gap-2">
@@ -817,7 +815,7 @@ function IntegrityReport() {
 
           <div className="grid gap-3">
             {filteredAlerts.length === 0 ? (
-              <div className="rounded-xl border border-cookie/20 bg-cookie/10 p-4 text-sm text-cookie-foreground">No crumbs in this cookie batch.</div>
+              <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">No risks match this filter.</div>
             ) : filteredAlerts.map((alert) => {
               const isSelected = selectedAlert?.id === alert.id;
               return (
@@ -851,7 +849,7 @@ function IntegrityReport() {
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getSeverityStyles(selectedAlert.severity)}`}>{selectedAlert.severity}</span>
-                    <span className="rounded-full border border-cookie/20 bg-cookie/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-cookie-foreground">Cookie crumb trail ready</span>
+                    <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Backend handoff ready</span>
                   </div>
                   <h4 className="text-xl font-semibold text-foreground">{selectedAlert.vendor}</h4>
                   <p className="mt-1 text-sm text-muted-foreground">{getAnomalyLabel(selectedAlert.type)} · detected {selectedAlert.date}</p>
@@ -870,25 +868,25 @@ function IntegrityReport() {
                 <InfoBlock title="Evidence checklist" icon={<CheckCircle2 size={15} className="text-risk-success" />}>
                   <ul className="space-y-2">
                     {getEvidenceItems(selectedAlert).map((item) => (
-                      <li key={item} className="flex gap-2 text-sm text-foreground"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-cookie" />{item}</li>
+                      <li key={item} className="flex gap-2 text-sm text-foreground"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-risk-success" />{item}</li>
                     ))}
                   </ul>
                 </InfoBlock>
               </div>
 
               <div className="space-y-5">
-                <InfoBlock title="Cookie crumb trail" icon={<Cookie size={15} className="text-cookie" />}>
+                <InfoBlock title="Investigation trail" icon={<FileText size={15} className="text-primary" />}>
                   <div className="space-y-3">
-                    {getCookieCrumbTrail(selectedAlert).map((crumb, index) => (
-                      <div key={crumb} className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cookie/15 font-mono text-xs font-bold text-cookie-foreground">{index + 1}</span>
-                        {crumb}
+                    {getBackendHandoffSteps(selectedAlert).map((step, index) => (
+                      <div key={step} className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-xs font-bold text-muted-foreground">{index + 1}</span>
+                        {step}
                       </div>
                     ))}
                   </div>
                 </InfoBlock>
-                <div className="rounded-xl border border-cookie/25 bg-cookie/10 p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-cookie-foreground"><Cookie size={15} className="text-cookie" /> Claud’s recommendation</div>
+                <div className="rounded-xl border border-border bg-muted p-4">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground"><Shield size={15} className="text-primary" /> Recommended action</div>
                   <p className="text-sm text-foreground">{getRecommendedAction(selectedAlert.type)}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -911,7 +909,7 @@ function IntegrityReport() {
 }
 
 function MetricTile({ label, value, tone }: { label: string; value: string | number; tone: "critical" | "high" | "medium" | "cookie" }) {
-  const toneClass = tone === "critical" ? "text-risk-critical bg-risk-critical/10 border-risk-critical/20" : tone === "high" ? "text-risk-high bg-risk-high/10 border-risk-high/20" : tone === "medium" ? "text-risk-medium bg-risk-medium/10 border-risk-medium/20" : "text-cookie-foreground bg-cookie/10 border-cookie/20";
+  const toneClass = tone === "critical" ? "text-risk-critical bg-risk-critical/10 border-risk-critical/20" : tone === "high" ? "text-risk-high bg-risk-high/10 border-risk-high/20" : tone === "medium" ? "text-risk-medium bg-risk-medium/10 border-risk-medium/20" : "text-foreground bg-muted border-border";
   return (
     <div className={`rounded-xl border p-4 ${toneClass}`}>
       <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{label}</div>

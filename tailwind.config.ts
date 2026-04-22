@@ -37,10 +37,6 @@ export default {
           medium: "hsl(var(--risk-medium))",
           success: "hsl(var(--risk-success))",
         },
-        cookie: {
-          DEFAULT: "hsl(var(--cookie))",
-          foreground: "hsl(var(--cookie-foreground))",
-        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
