@@ -143,31 +143,44 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 6, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute left-0 top-full mt-2 z-50 w-64 p-4 rounded-xl shadow-xl shadow-black/10"
-              style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.08)" }}
+              className="absolute left-0 top-full mt-2 z-50 w-80 overflow-hidden rounded-2xl border border-border bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl"
+              data-parsed-invoice-popover="invoiceNo invoiceDate total"
             >
-              <div className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: purple }}>Source Invoice</div>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span style={{ color: textSecondary }}>Invoice #</span>
-                  <span className="font-mono font-semibold" style={{ color: textPrimary }}>{vendor.invoiceNo}</span>
+              {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
+              <div className="border-b border-border bg-muted/60 px-4 py-3">
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Source Invoice</div>
+                <div className="mt-1 flex items-baseline justify-between gap-4">
+                  <span className="truncate font-mono text-sm font-bold text-foreground">{vendor.invoiceNo}</span>
+                  <span className="shrink-0 rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-primary-foreground">Parsed</span>
                 </div>
-                <div className="flex justify-between">
-                  <span style={{ color: textSecondary }}>Date</span>
-                  <span className="font-mono" style={{ color: textPrimary }}>{vendor.invoiceDate}</span>
+              </div>
+
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-border bg-background/70 p-3">
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Date</div>
+                    <div className="mt-1 font-mono text-sm font-semibold text-foreground">{vendor.invoiceDate}</div>
+                  </div>
+                  <div className="rounded-xl border border-border bg-background/70 p-3 text-right">
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Amount</div>
+                    <div className="mt-1 font-mono text-lg font-bold text-foreground">${vendor.total.toLocaleString()}</div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span style={{ color: textSecondary }}>Unit Price</span>
-                  <span className="font-mono font-semibold" style={{ color: isBest ? green : textPrimary }}>${vendor.price}</span>
+
+                <div className="mt-3 rounded-xl bg-muted/50 p-3 text-xs">
+                  <div className="flex items-center justify-between gap-4 py-1">
+                    <span className="text-muted-foreground">Unit Price</span>
+                    <span className="font-mono font-semibold text-foreground">${vendor.price}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-1">
+                    <span className="text-muted-foreground">Quantity</span>
+                    <span className="font-mono font-semibold text-foreground">{vendor.qty}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span style={{ color: textSecondary }}>Quantity</span>
-                  <span className="font-mono" style={{ color: textPrimary }}>{vendor.qty}</span>
-                </div>
-                <div className="h-px my-1" style={{ background: "rgba(0,0,0,0.06)" }} />
-                <div className="flex justify-between">
-                  <span className="font-semibold" style={{ color: textSecondary }}>Total</span>
-                  <span className="font-mono font-bold" style={{ color: textPrimary }}>${vendor.total.toLocaleString()}</span>
+
+                <div className="mt-3 flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs">
+                  <span className="font-medium text-muted-foreground">Invoice #</span>
+                  <span className="font-mono font-bold text-foreground">{vendor.invoiceNo}</span>
                 </div>
               </div>
             </motion.div>
