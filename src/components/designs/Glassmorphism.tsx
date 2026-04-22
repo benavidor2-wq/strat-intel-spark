@@ -519,7 +519,7 @@ function SpendingReport() {
         </div>
 
         <motion.aside
-          key={selectedStep.id}
+          key={selectedDriver.id}
           initial={{ opacity: 0, x: 18 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.18 }}
@@ -527,26 +527,26 @@ function SpendingReport() {
           style={{ background: "rgba(255,255,255,0.74)", borderColor: "rgba(99,102,241,0.16)" }}
         >
           <div className="mb-4">
-            <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Variance Analysis</div>
-            <h4 className="mt-1 text-base font-semibold" style={{ color: textPrimary }}>{selectedStep.label}</h4>
-            <p className="mt-1 text-xs" style={{ color: textSecondary }}>Semantic pivot across invoices, vendors, and discovered dimensions.</p>
+            <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Driver Analysis</div>
+            <h4 className="mt-1 text-base font-semibold" style={{ color: textPrimary }}>{selectedDriver.label}</h4>
+            <p className="mt-1 text-xs" style={{ color: textSecondary }}>Semantic pivot across behavioral drivers, invoices, and supplier benchmarks.</p>
           </div>
 
           <div className="space-y-3">
             <div className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <div className="mb-2 flex items-center justify-between text-xs"><span style={{ color: textSecondary }}>Volume variance</span><span className="font-mono font-bold" style={{ color: purple }}>${Math.abs(selectedStep.volume).toLocaleString()}</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(selectedStep.volume) / Math.max(Math.abs(selectedStep.delta), 1) * 100)}%`, background: purple }} /></div>
+              <div className="mb-2 flex items-center justify-between text-xs"><span style={{ color: textSecondary }}>Monthly impact</span><span className="font-mono font-bold" style={{ color: selectedDriver.kind === "increase" ? purple : green }}>{selectedDriver.kind === "increase" ? "+" : "-"}${Math.abs(selectedDriver.delta).toLocaleString()}</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(selectedDriver.delta) / maxAbsDelta * 100)}%`, background: selectedDriver.kind === "increase" ? purple : green }} /></div>
             </div>
             <div className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <div className="mb-2 flex items-center justify-between text-xs"><span style={{ color: textSecondary }}>Price Drift</span><span className="font-mono font-bold" style={{ color: selectedStep.price > 0 ? warn : green }}>${Math.abs(selectedStep.price).toLocaleString()}</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(selectedStep.price) / Math.max(Math.abs(selectedStep.delta), 1) * 100)}%`, background: selectedStep.price > 0 ? warn : green }} /></div>
+              <div className="mb-2 text-xs font-semibold" style={{ color: textPrimary }}>Market Benchmarking</div>
+              <p className="text-xs leading-relaxed" style={{ color: textSecondary }}>{selectedDriver.benchmark}</p>
             </div>
           </div>
 
           <div className="mt-5">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Top Contributors</div>
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Top Inflationary Vendors</div>
             <div className="space-y-2">
-              {selectedStep.vendors.map((vendor, index) => (
+              {selectedDriver.vendors.map((vendor, index) => (
                 <div key={vendor} className="flex items-center justify-between rounded-xl p-3 text-xs" style={{ background: "rgba(0,0,0,0.03)" }}>
                   <span style={{ color: textPrimary }}>{index + 1}. {vendor}</span>
                   <span className="font-mono font-semibold" style={{ color: textSecondary }}>{[42, 31, 27][index]}%</span>
@@ -555,16 +555,14 @@ function SpendingReport() {
             </div>
           </div>
 
-          {selectedConsolidation && (
-            <div className="mt-4 rounded-xl p-3 text-xs" style={{ background: `${purple}10`, color: textPrimary }}>
-              <div className="font-semibold">Vendor bloat detected</div>
-              <div className="mt-1" style={{ color: textSecondary }}>{selectedConsolidation.vendorCount} vendors vs. {selectedConsolidation.industryAvg} benchmark.</div>
-            </div>
-          )}
+          <div className="mt-4 rounded-xl p-3 text-xs" style={{ background: `${purple}10`, color: textPrimary }}>
+            <div className="font-semibold">Mitigation Strategy</div>
+            <div className="mt-1 leading-relaxed" style={{ color: textSecondary }}>{selectedDriver.strategy}</div>
+          </div>
 
-          {selectedStep.arbitrage > 0 && (
+          {selectedDriver.controllable > 0 && (
             <button className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-bold text-white transition-all hover:scale-[1.01]" style={{ background: green, boxShadow: "0 16px 32px rgba(34,197,94,0.22)" }}>
-              Switch & Save ${selectedStep.arbitrage.toLocaleString()}
+              Switch & Save ${selectedDriver.controllable.toLocaleString()}
             </button>
           )}
         </motion.aside>
