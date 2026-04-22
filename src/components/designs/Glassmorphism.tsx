@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   integrityAlerts,
@@ -135,61 +134,51 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
       >
         {vendor.name}: ${vendor.price} {isBest && "✓"}
       </button>
-      {createPortal(
-        <AnimatePresence>
-          {open && (
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.96 }}
               transition={{ duration: 0.16 }}
-              className="fixed inset-0 z-[100] overflow-y-auto bg-background text-foreground"
+              className="absolute left-0 top-full mt-2 z-50 w-[520px] max-w-[calc(100vw-3rem)] rounded-2xl border border-border bg-card p-7 text-card-foreground shadow-2xl"
               data-parsed-invoice-popover="invoiceNo invoiceDate total"
             >
               {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
-              <div className="flex min-h-screen items-center justify-center px-6 py-10">
-                <div className="w-full max-w-4xl rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-2xl">
-                  <div className="mb-8 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-xl bg-muted p-3">
-                        <FileText className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Invoice</div>
-                        <div className="mt-1 text-lg font-bold text-foreground">{vendor.name}</div>
-                      </div>
-                    </div>
-                    <button onClick={() => setOpen(false)} className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
-                      <ArrowLeft size={16} />
-                      Back
-                    </button>
-                  </div>
+              <div className="mb-7 flex items-center gap-3">
+                <div className="rounded-xl bg-muted p-3">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Invoice</div>
+                  <div className="mt-1 text-lg font-bold text-foreground">{vendor.name}</div>
+                </div>
+              </div>
 
-                  <div className="grid gap-x-16 gap-y-8 sm:grid-cols-2">
-                    <div>
-                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Invoice #</div>
-                      <div className="mt-3 break-all font-mono text-2xl font-bold text-foreground">{vendor.invoiceNo}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Date</div>
-                      <div className="mt-3 font-mono text-2xl font-bold text-foreground">{vendor.invoiceDate}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Unit Price</div>
-                      <div className="mt-3 font-mono text-3xl font-bold text-destructive">${vendor.price}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Qty / Total</div>
-                      <div className="mt-3 font-mono text-2xl font-bold text-foreground">{vendor.qty} units · ${vendor.total.toLocaleString()}</div>
-                    </div>
-                  </div>
+              <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Invoice #</div>
+                  <div className="mt-2 break-all font-mono text-xl font-bold text-foreground">{vendor.invoiceNo}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Date</div>
+                  <div className="mt-2 font-mono text-xl font-bold text-foreground">{vendor.invoiceDate}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Unit Price</div>
+                  <div className="mt-2 font-mono text-3xl font-bold text-destructive">${vendor.price}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Qty / Total</div>
+                  <div className="mt-2 font-mono text-xl font-bold text-foreground">{vendor.qty} units · ${vendor.total.toLocaleString()}</div>
                 </div>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
