@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   integrityAlerts,
@@ -120,10 +121,27 @@ export default function Glassmorphism() {
 function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: number; invoiceNo: string; invoiceDate: string; qty: number; total: number }; isBest: boolean }) {
   const [open, setOpen] = useState(false);
 
+  const togglePopover = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const popoverWidth = 288;
+    const left = Math.min(rect.left, window.innerWidth - popoverWidth - 16);
+    const nextPosition = {
+      top: rect.bottom + 8,
+      left: Math.max(16, left),
+    };
+
+    setOpen((current) => {
+      if (current) return false;
+      vendorPopoverPosition = nextPosition;
+      return true;
+    });
+  };
+
   return (
-    <div className={`relative ${open ? "z-[1000]" : "z-0"}`}>
+    <div className="relative">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={togglePopover}
         className="text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer"
         style={{
           background: isBest ? `${green}12` : "rgba(255,255,255,0.8)",
@@ -137,43 +155,49 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
       <AnimatePresence>
         {open && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: 6, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 6, scale: 0.98 }}
-              transition={{ duration: 0.14 }}
-              className="absolute left-0 top-full mt-2 z-[1001] w-72 rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl"
-              data-parsed-invoice-popover="invoiceNo invoiceDate total"
-            >
-              {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
-              <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Invoice</div>
-                  <div className="text-sm font-semibold text-foreground">{vendor.name}</div>
-                </div>
-              </div>
+            {createPortal(
+              <>
+                <div className="fixed inset-0 z-[1000]" onClick={() => setOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                  transition={{ duration: 0.14 }}
+                  className="fixed z-[1001] w-72 rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl"
+                  style={{ top: vendorPopoverPosition.top, left: vendorPopoverPosition.left }}
+                  data-parsed-invoice-popover="invoiceNo invoiceDate total"
+                >
+                  {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Invoice</div>
+                      <div className="text-sm font-semibold text-foreground">{vendor.name}</div>
+                    </div>
+                  </div>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">Invoice #</span>
-                  <span className="break-all text-right font-mono font-semibold text-foreground">{vendor.invoiceNo}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">Date</span>
-                  <span className="font-mono font-semibold text-foreground">{vendor.invoiceDate}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-mono font-semibold text-foreground">${vendor.total.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">Unit Price</span>
-                  <span className="font-mono font-semibold text-foreground">${vendor.price}</span>
-                </div>
-              </div>
-            </motion.div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Invoice #</span>
+                      <span className="break-all text-right font-mono font-semibold text-foreground">{vendor.invoiceNo}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Date</span>
+                      <span className="font-mono font-semibold text-foreground">{vendor.invoiceDate}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Amount</span>
+                      <span className="font-mono font-semibold text-foreground">${vendor.total.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Unit Price</span>
+                      <span className="font-mono font-semibold text-foreground">${vendor.price}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </>,
+              document.body,
+            )}
           </>
         )}
       </AnimatePresence>
