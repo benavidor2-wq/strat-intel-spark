@@ -15,7 +15,7 @@ import {
   type IntegrityAlert,
   type PriceDriftItem,
 } from "@/data/mockData";
-import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, Cookie, CheckCircle2, CalendarDays } from "lucide-react";
+import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
 const purple = "#6366f1";
@@ -752,12 +752,13 @@ function getEvidenceItems(alert: IntegrityAlert) {
   return evidence[alert.type];
 }
 
-function getCookieCrumbTrail(alert: IntegrityAlert) {
+function getBackendHandoffSteps(alert: IntegrityAlert) {
+  // Claude backend handoff: persist these steps as investigation_events tied to anomaly_id for auditability.
   return [
     `${getAnomalyLabel(alert.type)} pattern detected`,
     "Vendor and invoice behavior checked",
     "Approval and payment controls reviewed",
-    "Claud’s recommendation generated",
+    "Recommended action generated",
   ];
 }
 
