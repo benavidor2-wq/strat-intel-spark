@@ -346,27 +346,18 @@ function PriceDriftReport() {
         </table>
       </div>
 
-      {/* Invoice Detail Modal */}
+      {/* Invoice Detail Panel */}
       <AnimatePresence>
         {selectedItem && (
-          <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
-              onClick={() => setSelectedItem(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
               transition={{ duration: 0.2 }}
-              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] max-h-[80vh] overflow-y-auto rounded-2xl shadow-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.08)" }}
+              className="mt-5 flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
             >
               {/* Header */}
-              <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start justify-between border-b border-border px-6 py-5">
                 <div>
                   <h3 className="text-lg font-semibold" style={{ color: textPrimary }}>{selectedItem.product}</h3>
                   <p className="text-xs mt-1" style={{ color: textSecondary }}>Vendor: {selectedItem.vendor} · Drift: <span className="font-mono font-semibold" style={{ color: selectedItem.status === "alert" ? danger : selectedItem.status === "warning" ? warn : green }}>+{selectedItem.driftPercent}%</span></p>
@@ -376,66 +367,64 @@ function PriceDriftReport() {
                 </button>
               </div>
 
-              {/* Most Recent Invoice */}
-              <div className="mb-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText size={14} style={{ color: danger }} />
-                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: danger }}>Most Recent Invoice</span>
-                </div>
-                <div className="p-4 rounded-xl" style={{ background: `${danger}06`, border: `1px solid ${danger}15` }}>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid min-h-0 gap-5 overflow-y-auto p-6 lg:grid-cols-[0.85fr_1.15fr]">
+                <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+                  <div className="mb-4 flex items-center gap-2">
+                    <FileText size={14} className="text-destructive" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-destructive">Most Recent Invoice</span>
+                  </div>
+                  <div className="space-y-4 text-xs">
                     <div>
-                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Invoice #</div>
-                      <div className="font-mono font-semibold mt-0.5" style={{ color: textPrimary }}>{selectedItem.recentInvoice.invoiceNo}</div>
+                      <div className="uppercase tracking-wider text-[10px] text-muted-foreground">Invoice #</div>
+                      <div className="mt-0.5 font-mono font-semibold text-foreground">{selectedItem.recentInvoice.invoiceNo}</div>
                     </div>
                     <div>
-                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Date</div>
-                      <div className="font-mono mt-0.5" style={{ color: textPrimary }}>{selectedItem.recentInvoice.date}</div>
+                      <div className="uppercase tracking-wider text-[10px] text-muted-foreground">Date</div>
+                      <div className="mt-0.5 font-mono text-foreground">{selectedItem.recentInvoice.date}</div>
                     </div>
                     <div>
-                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Unit Price</div>
-                      <div className="font-mono font-bold text-base mt-0.5" style={{ color: danger }}>${selectedItem.recentInvoice.unitPrice}</div>
+                      <div className="uppercase tracking-wider text-[10px] text-muted-foreground">Unit Price</div>
+                      <div className="mt-0.5 font-mono text-2xl font-bold text-destructive">${selectedItem.recentInvoice.unitPrice}</div>
                     </div>
                     <div>
-                      <div className="uppercase tracking-wider text-[10px]" style={{ color: textSecondary }}>Qty / Total</div>
-                      <div className="font-mono font-semibold mt-0.5" style={{ color: textPrimary }}>{selectedItem.recentInvoice.qty} units · ${selectedItem.recentInvoice.total.toLocaleString()}</div>
+                      <div className="uppercase tracking-wider text-[10px] text-muted-foreground">Qty / Total</div>
+                      <div className="mt-0.5 font-mono font-semibold text-foreground">{selectedItem.recentInvoice.qty} units · ${selectedItem.recentInvoice.total.toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Historical Invoices (90 days) */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText size={14} style={{ color: purple }} />
-                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: purple }}>Previous 90-Day Invoices</span>
-                </div>
-                <div className="space-y-2">
-                  {selectedItem.historicalInvoices.map((inv, i) => (
-                    <div key={i} className="p-3 rounded-xl flex items-center justify-between" style={{ background: "rgba(0,0,0,0.03)" }}>
-                      <div>
-                        <div className="font-mono text-xs font-semibold" style={{ color: textPrimary }}>{inv.invoiceNo}</div>
-                        <div className="text-[10px] font-mono mt-0.5" style={{ color: textSecondary }}>{inv.date}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-sm font-bold" style={{ color: green }}>${inv.unitPrice}</div>
-                        <div className="text-[10px] font-mono" style={{ color: textSecondary }}>{inv.qty} units · ${inv.total.toLocaleString()}</div>
-                      </div>
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <div className="mb-4 flex items-center gap-2">
+                    <FileText size={14} className="text-primary" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-primary">Previous 90-Day Invoices</span>
+                  </div>
+                  <div className="overflow-hidden rounded-lg border border-border">
+                    <div className="grid grid-cols-[1.2fr_0.9fr_0.8fr_1.2fr] bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <div>Invoice #</div>
+                      <div>Date</div>
+                      <div className="text-right">Unit Price</div>
+                      <div className="text-right">Qty / Total</div>
                     </div>
-                  ))}
+                    {selectedItem.historicalInvoices.map((inv, i) => (
+                      <div key={i} className="grid grid-cols-[1.2fr_0.9fr_0.8fr_1.2fr] border-t border-border px-3 py-3 text-xs">
+                        <div className="font-mono font-semibold text-foreground">{inv.invoiceNo}</div>
+                        <div className="font-mono text-muted-foreground">{inv.date}</div>
+                        <div className="text-right font-mono font-bold text-foreground">${inv.unitPrice}</div>
+                        <div className="text-right font-mono text-muted-foreground">{inv.qty} units · ${inv.total.toLocaleString()}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Price change summary */}
-              <div className="mt-5 p-3 rounded-xl text-xs" style={{ background: `${purple}08`, border: `1px solid ${purple}15` }}>
-                <span style={{ color: textSecondary }}>Price increased from </span>
-                <span className="font-mono font-bold" style={{ color: green }}>${selectedItem.historicalInvoices[selectedItem.historicalInvoices.length - 1]?.unitPrice}</span>
-                <span style={{ color: textSecondary }}> to </span>
-                <span className="font-mono font-bold" style={{ color: danger }}>${selectedItem.recentInvoice.unitPrice}</span>
-                <span style={{ color: textSecondary }}> over the past 90 days — use these invoices to negotiate back to previous rates.</span>
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs lg:col-span-2">
+                  <span className="text-muted-foreground">Price increased from </span>
+                  <span className="font-mono font-bold text-foreground">${selectedItem.historicalInvoices[selectedItem.historicalInvoices.length - 1]?.unitPrice}</span>
+                  <span className="text-muted-foreground"> to </span>
+                  <span className="font-mono font-bold text-destructive">${selectedItem.recentInvoice.unitPrice}</span>
+                  <span className="text-muted-foreground"> over the past 90 days — use these invoices to negotiate back to previous rates.</span>
+                </div>
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </div>
