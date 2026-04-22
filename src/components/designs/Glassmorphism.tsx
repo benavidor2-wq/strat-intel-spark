@@ -18,12 +18,12 @@ import {
 import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays } from "lucide-react";
 import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
-const purple = "#6366f1";
-const green = "#22c55e";
-const warn = "#f59e0b";
-const danger = "#ef4444";
-const textPrimary = "#1e1b4b";
-const textSecondary = "#6b7280";
+const purple = "hsl(239 84% 67%)";
+const green = "hsl(142 71% 45%)";
+const warn = "hsl(38 92% 50%)";
+const danger = "hsl(0 84% 60%)";
+const textPrimary = "hsl(246 47% 20%)";
+const textSecondary = "hsl(220 9% 46%)";
 
 const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl shadow-lg shadow-indigo-500/5";
 
