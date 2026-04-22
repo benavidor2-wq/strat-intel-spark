@@ -12,9 +12,10 @@ import {
   summaryStats,
   vendorProducts,
   categoryVendors,
+  type IntegrityAlert,
   type PriceDriftItem,
 } from "@/data/mockData";
-import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText } from "lucide-react";
+import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, Cookie, CheckCircle2, CalendarDays } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
 const purple = "#6366f1";
