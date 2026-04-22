@@ -1,43 +1,228 @@
 
+## Approved plan update: Anomaly & Risk redesign with Claud cookie details
 
-## Plan: Full-Page Vendor Charts with Interactive Drill-Down
+### Goal
 
-### What changes
+Redesign the Anomaly & Risk page into a clearer investigation workspace, while adding cookie-themed details throughout for Claud so the experience feels more personalized and memorable.
 
-**1. Make the Vendor Consolidation charts full-width**
-- Remove the `grid-cols-2` constraint and make each pie chart take up more space
-- Increase chart heights from `h-48` to `h-80` or similar
-- Increase `outerRadius`/`innerRadius` so charts are larger and more readable
-- Use the full width of the content area (side-by-side at ~50% each, but much taller)
+---
 
-**2. Add click interactivity to pie chart slices**
+## What will change
 
-When a user clicks a slice on either pie chart, an expandable detail panel appears below that chart showing relevant drill-down data:
+### 1. Replace the current alert list with an investigation dashboard
 
-- **Spend by Vendor** — clicking a vendor slice (e.g., "SteelCo") shows:
-  - List of products purchased from that vendor
-  - Recent invoices with dates, amounts, quantities
-  - Price drift status for that vendor's products
-  - Monthly spend trend (if data available)
+The Anomaly & Risk page will become a two-column command center:
 
-- **Spend by Category** — clicking a category slice (e.g., "Raw Materials") shows:
-  - Which vendors supply this category
-  - Vendor count vs. industry average (from `vendorConsolidation` data)
-  - Redundancy score and potential savings
-  - Breakdown of spend across vendors in that category
+```text
+┌──────────────────────────────┬────────────────────────────────┐
+│ Risk Queue                   │ Investigation Detail            │
+│                              │                                │
+│ Critical alert               │ Selected risk details           │
+│ High alert                   │ Evidence checklist              │
+│ Medium alert                 │ Recommended action              │
+│                              │ Claud cookie insight            │
+└──────────────────────────────┴────────────────────────────────┘
+```
 
-The detail panel will animate in below the charts using `AnimatePresence` and can be dismissed by clicking the same slice again or an X button.
+The left side lets the user select an anomaly.  
+The right side shows all details for the selected anomaly.
 
-### Technical details
+---
 
-- **State**: Add `selectedVendor` and `selectedCategory` state variables to `VendorReport`
-- **Pie `onClick`**: Use Recharts' `onClick` handler on each `<Pie>` to set the selected slice
-- **Detail panel**: A new `<motion.div>` below the charts grid that renders contextual info based on which slice is selected
-- **Data cross-referencing**: Match clicked vendor name against `priceDriftItems`, `arbitrageOpportunities`, and `vendorMonthlySpend` to show relevant details. Match clicked category against `vendorConsolidation` and `spendByCategory`.
-- **Visual feedback**: Highlight the selected slice (slightly increased radius or opacity change on other slices)
-- **Mock drill-down data**: Add a `vendorProducts` mapping in `mockData.ts` linking vendors to their categories/products for richer detail panels
+### 2. Add a risk summary header
 
-### Files modified
-- `src/components/designs/Glassmorphism.tsx` — Expand `VendorReport` with larger charts, click handlers, and drill-down panel
-- `src/data/mockData.ts` — Add vendor-to-category/product mapping data for drill-downs
+At the top of the page, add summary cards for:
 
+- Total flagged exposure
+- Critical alerts
+- High-risk alerts
+- Total anomalies
+- Latest detection date
+
+Example:
+
+```text
+Anomaly & Risk
+AI-detected invoice, vendor, and payment integrity risks
+
+[$241,600 Exposure] [2 Critical] [2 High Risk] [5 Alerts]
+```
+
+---
+
+### 3. Add severity filtering
+
+Add filter pills above the risk queue:
+
+```text
+All | Critical | High | Medium
+```
+
+Clicking a filter updates the visible alert list.
+
+---
+
+### 4. Add a clickable Risk Queue
+
+Each alert becomes a compact clickable card showing:
+
+- Severity badge
+- Vendor name
+- Risk amount
+- Anomaly type
+- Short description
+- Detection date
+
+The selected alert will be highlighted.
+
+---
+
+### 5. Add a full Investigation Detail panel
+
+When an alert is selected, the detail panel will show:
+
+- Vendor name
+- Risk amount
+- Severity
+- Detection date
+- Full description
+- Why it was flagged
+- Evidence checklist
+- Recommended next action
+- Action buttons
+
+Example actions:
+
+- Mark for Review
+- Export Evidence
+- Contact Vendor
+- Dismiss Risk
+
+These can be visual-only for now unless functionality is requested later.
+
+---
+
+## Cookie details for Claud
+
+### 6. Add cookie-themed UI accents throughout the Anomaly & Risk experience
+
+To personalize the page for Claud, add subtle cookie references across the redesigned page.
+
+This will be visual and UX-focused, not browser tracking cookies.
+
+Examples:
+
+- A small cookie icon or cookie badge in the page header
+- “Claud’s Risk Cookie Jar” as a friendly label for the risk queue
+- “Cookie crumb trail” section in the investigation detail panel to show evidence steps
+- Cookie-themed empty state copy if filters return no results
+- Small cookie-style circular markers in the evidence checklist
+- A “Claud’s recommendation” callout in the detail panel
+
+Example detail panel section:
+
+```text
+Cookie crumb trail
+• Invoice pattern detected
+• Vendor/payment behavior checked
+• Approval threshold reviewed
+• Recommended next action generated
+```
+
+The cookie theme will stay subtle so the page still feels professional.
+
+---
+
+## Technical implementation
+
+### Main file to update
+
+- `src/components/designs/Glassmorphism.tsx`
+
+The existing `IntegrityReport` component will be redesigned.
+
+### Existing data source
+
+Use the current mock data:
+
+- `integrityAlerts` from `src/data/mockData.ts`
+
+No database changes are required.
+
+### State to add
+
+Add state for selected alert and severity filter:
+
+```ts
+const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
+const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high" | "medium">("all");
+```
+
+### Helper functions to add
+
+Add helper functions to keep the component clean:
+
+```ts
+getSeverityStyles(severity)
+getAnomalyLabel(type)
+getRiskExplanation(type)
+getRecommendedAction(type)
+getEvidenceItems(alert)
+getCookieCrumbTrail(alert)
+```
+
+### Layout approach
+
+Use responsive Tailwind grid classes:
+
+```tsx
+grid grid-cols-1 lg:grid-cols-[0.9fr_1.4fr]
+```
+
+Desktop:
+
+```text
+Risk Queue | Investigation Detail
+```
+
+Mobile:
+
+```text
+Summary cards
+Risk Queue
+Investigation Detail
+```
+
+### Styling approach
+
+Keep the current glassmorphism style but make the investigation content solid and readable:
+
+- Solid detail cards
+- High-contrast text
+- Clear severity colors
+- Subtle borders
+- No pop-up overlays
+- No clipped content
+
+Severity colors:
+
+- Critical: red
+- High: amber/orange
+- Medium: purple/indigo
+
+Cookie accents should use warm amber/brown tones sparingly so they do not conflict with severity colors.
+
+---
+
+## Final experience
+
+After implementation:
+
+1. User opens Anomaly & Risk
+2. They see total exposure and risk counts immediately
+3. They scan Claud’s cookie-themed risk queue
+4. They filter by severity if needed
+5. They click an alert
+6. The detail panel updates with full investigation information
+7. The user can follow the “cookie crumb trail” to understand why the anomaly was flagged
+8. The user sees a clear recommended next action
