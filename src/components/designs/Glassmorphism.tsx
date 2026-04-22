@@ -1,4 +1,4 @@
-import { type MouseEvent, useState } from "react";
+import { type MouseEvent, type ReactNode, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,9 +12,10 @@ import {
   summaryStats,
   vendorProducts,
   categoryVendors,
+  type IntegrityAlert,
   type PriceDriftItem,
 } from "@/data/mockData";
-import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText } from "lucide-react";
+import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, Cookie, CheckCircle2, CalendarDays } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
 const purple = "#6366f1";
@@ -701,40 +702,229 @@ function VendorReport() {
   );
 }
 
+type SeverityFilter = "all" | IntegrityAlert["severity"];
+
+const severityFilters: { label: string; value: SeverityFilter }[] = [
+  { label: "All", value: "all" },
+  { label: "Critical", value: "critical" },
+  { label: "High", value: "high" },
+  { label: "Medium", value: "medium" },
+];
+
+function getSeverityStyles(severity: IntegrityAlert["severity"]) {
+  if (severity === "critical") return "border-risk-critical/25 bg-risk-critical/10 text-risk-critical";
+  if (severity === "high") return "border-risk-high/25 bg-risk-high/10 text-risk-high";
+  return "border-risk-medium/25 bg-risk-medium/10 text-risk-medium";
+}
+
+function getAnomalyLabel(type: IntegrityAlert["type"]) {
+  return type.split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+
+function getRiskExplanation(type: IntegrityAlert["type"]) {
+  const explanations: Record<IntegrityAlert["type"], string> = {
+    phantom_vendor: "The vendor has invoice activity without matching receipt or delivery evidence, which can indicate fabricated supplier spend.",
+    duplicate_invoice: "The invoice pattern resembles a previously submitted payment request and should be blocked until AP confirms uniqueness.",
+    split_invoice: "Multiple invoices are clustered below an approval threshold, suggesting the purchase may have been split to bypass controls.",
+    mandate_fraud: "Payment details changed shortly before settlement, creating a high-risk payment redirection scenario.",
+  };
+  return explanations[type];
+}
+
+function getRecommendedAction(type: IntegrityAlert["type"]) {
+  const actions: Record<IntegrityAlert["type"], string> = {
+    phantom_vendor: "Pause payment and verify vendor legitimacy against procurement, receiving, and master-data records.",
+    duplicate_invoice: "Hold the invoice, compare source documents, and require AP approval before release.",
+    split_invoice: "Review the related purchase orders as a single bundle and escalate approval if thresholds were avoided.",
+    mandate_fraud: "Freeze the payment and confirm bank-detail changes through a known vendor contact path.",
+  };
+  return actions[type];
+}
+
+function getEvidenceItems(alert: IntegrityAlert) {
+  const shared = [`${alert.vendor} flagged on ${alert.date}`, `$${alert.amount.toLocaleString()} exposed`, "Control review required before payment release"];
+  const evidence: Record<IntegrityAlert["type"], string[]> = {
+    phantom_vendor: ["No delivery records matched to repeated invoices", "Vendor activity lacks receiving confirmation", ...shared],
+    duplicate_invoice: ["Invoice identifier or payment pattern appears more than once", "Potential duplicated AP submission detected", ...shared],
+    split_invoice: ["Invoice amounts cluster just below approval limits", "Pattern suggests approval-threshold avoidance", ...shared],
+    mandate_fraud: ["Bank details changed close to scheduled payment", "Payment redirection risk exceeds tolerance", ...shared],
+  };
+  return evidence[alert.type];
+}
+
+function getCookieCrumbTrail(alert: IntegrityAlert) {
+  return [
+    `${getAnomalyLabel(alert.type)} pattern detected`,
+    "Vendor and invoice behavior checked",
+    "Approval and payment controls reviewed",
+    "Claud’s recommendation generated",
+  ];
+}
+
 function IntegrityReport() {
+  const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
+  const filteredAlerts = severityFilter === "all" ? integrityAlerts : integrityAlerts.filter((alert) => alert.severity === severityFilter);
+  const selectedAlert = integrityAlerts.find((alert) => alert.id === selectedAlertId) ?? filteredAlerts[0] ?? integrityAlerts[0];
+  const totalExposure = integrityAlerts.reduce((sum, alert) => sum + alert.amount, 0);
   const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
   const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
+  const latestDetection = integrityAlerts.map((alert) => alert.date).sort().at(-1);
+
   return (
-    <div className={`${glass} p-6`}>
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><Shield size={14} style={{ color: danger }} /> Anomaly & Risk</h3>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: danger }} /> {criticalCount} Critical</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: warn }} /> {highCount} High</span>
-        </div>
-      </div>
-      <div className="grid gap-4">
-        {integrityAlerts.map((a) => (
-          <div key={a.id} className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full"
-                    style={{
-                      background: a.severity === "critical" ? `${danger}15` : a.severity === "high" ? `${warn}15` : `${purple}15`,
-                      color: a.severity === "critical" ? danger : a.severity === "high" ? warn : purple,
-                    }}>{a.severity}</span>
-                  <span className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>{a.type.replace(/_/g, " ")}</span>
-                </div>
-                <h4 className="text-sm font-semibold" style={{ color: textPrimary }}>{a.vendor}</h4>
-              </div>
-              <span className="text-base font-bold font-mono" style={{ color: a.severity === "critical" ? danger : warn }}>${a.amount.toLocaleString()}</span>
+    <div className="grid gap-5">
+      <section className={`${glass} p-6`}>
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cookie/20 bg-cookie/10 px-3 py-1 text-xs font-semibold text-cookie-foreground">
+              <Cookie size={14} className="text-cookie" /> Claud’s risk cookie jar
             </div>
-            <p className="text-xs mb-1" style={{ color: textSecondary }}>{a.description}</p>
-            <div className="text-[10px]" style={{ color: "#9ca3af" }}>Detected: {a.date}</div>
+            <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground"><Shield size={18} className="text-risk-critical" /> Anomaly & Risk</h3>
+            <p className="mt-1 text-sm text-muted-foreground">AI-detected invoice, vendor, and payment integrity risks.</p>
           </div>
-        ))}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <MetricTile label="Flagged Exposure" value={`$${totalExposure.toLocaleString()}`} tone="critical" />
+          <MetricTile label="Critical" value={criticalCount} tone="critical" />
+          <MetricTile label="High Risk" value={highCount} tone="high" />
+          <MetricTile label="Total Alerts" value={integrityAlerts.length} tone="medium" />
+          <MetricTile label="Latest Detection" value={latestDetection ?? "—"} tone="cookie" />
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[0.9fr_1.4fr]">
+        <section className={`${glass} p-5`}>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Risk Queue</h4>
+              <p className="text-xs text-muted-foreground">Claud’s sorted batch of suspicious crumbs.</p>
+            </div>
+            <Cookie size={18} className="text-cookie" />
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            {severityFilters.map((filter) => (
+              <button
+                key={filter.value}
+                onClick={() => setSeverityFilter(filter.value)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${severityFilter === filter.value ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:bg-accent hover:text-accent-foreground"}`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid gap-3">
+            {filteredAlerts.length === 0 ? (
+              <div className="rounded-xl border border-cookie/20 bg-cookie/10 p-4 text-sm text-cookie-foreground">No crumbs in this cookie batch.</div>
+            ) : filteredAlerts.map((alert) => {
+              const isSelected = selectedAlert?.id === alert.id;
+              return (
+                <button
+                  key={alert.id}
+                  onClick={() => setSelectedAlertId(alert.id)}
+                  className={`rounded-xl border p-4 text-left transition-all ${isSelected ? "border-primary bg-card shadow-lg shadow-primary/10" : "border-border bg-card/70 hover:border-primary/30 hover:bg-card"}`}
+                >
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getSeverityStyles(alert.severity)}`}>{alert.severity}</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{getAnomalyLabel(alert.type)}</span>
+                      </div>
+                      <h5 className="truncate text-sm font-semibold text-foreground">{alert.vendor}</h5>
+                    </div>
+                    <span className={`font-mono text-sm font-bold ${alert.severity === "critical" ? "text-risk-critical" : alert.severity === "high" ? "text-risk-high" : "text-risk-medium"}`}>${alert.amount.toLocaleString()}</span>
+                  </div>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{alert.description}</p>
+                  <div className="mt-3 flex items-center gap-1.5 text-[10px] text-muted-foreground"><CalendarDays size={12} /> Detected: {alert.date}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {selectedAlert && (
+          <section className={`${glass} overflow-hidden bg-card/95`}>
+            <div className="border-b border-border p-6">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getSeverityStyles(selectedAlert.severity)}`}>{selectedAlert.severity}</span>
+                    <span className="rounded-full border border-cookie/20 bg-cookie/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-cookie-foreground">Cookie crumb trail ready</span>
+                  </div>
+                  <h4 className="text-xl font-semibold text-foreground">{selectedAlert.vendor}</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">{getAnomalyLabel(selectedAlert.type)} · detected {selectedAlert.date}</p>
+                </div>
+                <div className="text-left sm:text-right">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Risk Amount</div>
+                  <div className="font-mono text-2xl font-bold text-risk-critical">${selectedAlert.amount.toLocaleString()}</div>
+                </div>
+              </div>
+              <p className="rounded-xl border border-border bg-background p-4 text-sm text-foreground">{selectedAlert.description}</p>
+            </div>
+
+            <div className="grid gap-5 p-6 xl:grid-cols-[1.05fr_0.95fr]">
+              <div className="space-y-5">
+                <InfoBlock title="Why it was flagged" icon={<Shield size={15} className="text-risk-critical" />}>{getRiskExplanation(selectedAlert.type)}</InfoBlock>
+                <InfoBlock title="Evidence checklist" icon={<CheckCircle2 size={15} className="text-risk-success" />}>
+                  <ul className="space-y-2">
+                    {getEvidenceItems(selectedAlert).map((item) => (
+                      <li key={item} className="flex gap-2 text-sm text-foreground"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-cookie" />{item}</li>
+                    ))}
+                  </ul>
+                </InfoBlock>
+              </div>
+
+              <div className="space-y-5">
+                <InfoBlock title="Cookie crumb trail" icon={<Cookie size={15} className="text-cookie" />}>
+                  <div className="space-y-3">
+                    {getCookieCrumbTrail(selectedAlert).map((crumb, index) => (
+                      <div key={crumb} className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cookie/15 font-mono text-xs font-bold text-cookie-foreground">{index + 1}</span>
+                        {crumb}
+                      </div>
+                    ))}
+                  </div>
+                </InfoBlock>
+                <div className="rounded-xl border border-cookie/25 bg-cookie/10 p-4">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-cookie-foreground"><Cookie size={15} className="text-cookie" /> Claud’s recommendation</div>
+                  <p className="text-sm text-foreground">{getRecommendedAction(selectedAlert.type)}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    "Mark for Review",
+                    "Export Evidence",
+                    "Contact Vendor",
+                    "Dismiss Risk",
+                  ].map((action, index) => (
+                    <button key={action} className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${index === 0 ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : "border-border bg-card text-foreground hover:bg-accent"}`}>{action}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
+    </div>
+  );
+}
+
+function MetricTile({ label, value, tone }: { label: string; value: string | number; tone: "critical" | "high" | "medium" | "cookie" }) {
+  const toneClass = tone === "critical" ? "text-risk-critical bg-risk-critical/10 border-risk-critical/20" : tone === "high" ? "text-risk-high bg-risk-high/10 border-risk-high/20" : tone === "medium" ? "text-risk-medium bg-risk-medium/10 border-risk-medium/20" : "text-cookie-foreground bg-cookie/10 border-cookie/20";
+  return (
+    <div className={`rounded-xl border p-4 ${toneClass}`}>
+      <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{label}</div>
+      <div className="mt-1 font-mono text-xl font-bold">{value}</div>
+    </div>
+  );
+}
+
+function InfoBlock({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-background p-4">
+      <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{icon}{title}</div>
+      <div className="text-sm leading-relaxed text-foreground">{children}</div>
     </div>
   );
 }
