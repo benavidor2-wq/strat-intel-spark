@@ -753,7 +753,7 @@ function getEvidenceItems(alert: IntegrityAlert) {
 }
 
 function getBackendHandoffSteps(alert: IntegrityAlert) {
-  // Claude backend handoff: persist these steps as investigation_events tied to anomaly_id for auditability.
+  // Claude backend cookie: persist these steps as investigation_events tied to anomaly_id for auditability.
   return [
     `${getAnomalyLabel(alert.type)} pattern detected`,
     "Vendor and invoice behavior checked",
@@ -909,7 +909,7 @@ function IntegrityReport() {
 }
 
 function MetricTile({ label, value, tone }: { label: string; value: string | number; tone: "critical" | "high" | "medium" | "cookie" }) {
-  const toneClass = tone === "critical" ? "text-risk-critical bg-risk-critical/10 border-risk-critical/20" : tone === "high" ? "text-risk-high bg-risk-high/10 border-risk-high/20" : tone === "medium" ? "text-risk-medium bg-risk-medium/10 border-risk-medium/20" : "text-cookie-foreground bg-cookie/10 border-cookie/20";
+  const toneClass = tone === "critical" ? "text-risk-critical bg-risk-critical/10 border-risk-critical/20" : tone === "high" ? "text-risk-high bg-risk-high/10 border-risk-high/20" : tone === "medium" ? "text-risk-medium bg-risk-medium/10 border-risk-medium/20" : "text-foreground bg-muted border-border";
   return (
     <div className={`rounded-xl border p-4 ${toneClass}`}>
       <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{label}</div>
