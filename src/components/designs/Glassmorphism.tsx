@@ -369,7 +369,7 @@ function PriceDriftReport() {
               const statusColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
               return (
                 <>
-                  <tr key={item.id} className="border-b border-gray-100/50 cursor-pointer transition-all hover:bg-white/60" onClick={() => setSelectedItem(item)}>
+                  <tr key={item.id} className="border-b border-gray-100/50 cursor-pointer transition-all hover:bg-white/60" onClick={() => setSelectedItem((current) => current?.id === item.id ? null : item)}>
                     <td className="px-5 py-3.5 font-medium" style={{ color: textPrimary }}>{item.product}</td>
                     <td className="px-5 py-3.5" style={{ color: textSecondary }}>{item.vendor}</td>
                     <td className="px-5 py-3.5 text-right font-mono">${item.currentPrice}</td>
