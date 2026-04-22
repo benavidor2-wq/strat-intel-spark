@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   integrityAlerts,
@@ -134,16 +135,15 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
       >
         {vendor.name}: ${vendor.price} {isBest && "✓"}
       </button>
-      <AnimatePresence>
-        {open && (
-          <>
-            <div className="fixed inset-0 z-40 bg-background" />
+      {createPortal(
+        <AnimatePresence>
+          {open && (
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 18 }}
-              transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-50 overflow-y-auto bg-background text-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
+              className="fixed inset-0 z-[100] overflow-y-auto bg-background text-foreground"
               data-parsed-invoice-popover="invoiceNo invoiceDate total"
             >
               {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
@@ -202,9 +202,10 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
                 </main>
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   );
 }
