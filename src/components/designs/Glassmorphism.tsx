@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type MouseEvent, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -120,8 +120,9 @@ export default function Glassmorphism() {
 
 function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: number; invoiceNo: string; invoiceDate: string; qty: number; total: number }; isBest: boolean }) {
   const [open, setOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
 
-  const togglePopover = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const togglePopover = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     const rect = event.currentTarget.getBoundingClientRect();
     const popoverWidth = 288;
@@ -131,11 +132,8 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
       left: Math.max(16, left),
     };
 
-    setOpen((current) => {
-      if (current) return false;
-      vendorPopoverPosition = nextPosition;
-      return true;
-    });
+    setPopoverPosition(nextPosition);
+    setOpen((current) => !current);
   };
 
   return (
@@ -164,7 +162,7 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
                   exit={{ opacity: 0, y: 6, scale: 0.98 }}
                   transition={{ duration: 0.14 }}
                   className="fixed z-[1001] w-72 rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl"
-                  style={{ top: vendorPopoverPosition.top, left: vendorPopoverPosition.left }}
+                  style={{ top: popoverPosition.top, left: popoverPosition.left }}
                   data-parsed-invoice-popover="invoiceNo invoiceDate total"
                 >
                   {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
