@@ -330,16 +330,25 @@ function PriceDriftReport() {
             {priceDriftItems.map((item) => {
               const statusColor = item.status === "alert" ? danger : item.status === "warning" ? warn : green;
               return (
-                <tr key={item.id} className="border-b border-gray-100/50 cursor-pointer transition-all hover:bg-white/60" onClick={() => setSelectedItem(item)}>
-                  <td className="px-5 py-3.5 font-medium" style={{ color: textPrimary }}>{item.product}</td>
-                  <td className="px-5 py-3.5" style={{ color: textSecondary }}>{item.vendor}</td>
-                  <td className="px-5 py-3.5 text-right font-mono">${item.currentPrice}</td>
-                  <td className="px-5 py-3.5 text-right font-mono" style={{ color: textSecondary }}>${item.avg90Day}</td>
-                  <td className="px-5 py-3.5 text-right font-mono font-semibold" style={{ color: statusColor }}>+{item.driftPercent}%</td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full" style={{ background: `${statusColor}15`, color: statusColor }}>{item.status}</span>
-                  </td>
-                </tr>
+                <>
+                  <tr key={item.id} className="border-b border-gray-100/50 cursor-pointer transition-all hover:bg-white/60" onClick={() => setSelectedItem(item)}>
+                    <td className="px-5 py-3.5 font-medium" style={{ color: textPrimary }}>{item.product}</td>
+                    <td className="px-5 py-3.5" style={{ color: textSecondary }}>{item.vendor}</td>
+                    <td className="px-5 py-3.5 text-right font-mono">${item.currentPrice}</td>
+                    <td className="px-5 py-3.5 text-right font-mono" style={{ color: textSecondary }}>${item.avg90Day}</td>
+                    <td className="px-5 py-3.5 text-right font-mono font-semibold" style={{ color: statusColor }}>+{item.driftPercent}%</td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full" style={{ background: `${statusColor}15`, color: statusColor }}>{item.status}</span>
+                    </td>
+                  </tr>
+                  {selectedItem?.id === item.id && (
+                    <tr key={`${item.id}-details`}>
+                      <td colSpan={6} className="p-0">
+                        <PriceDriftInvoicePanel item={item} onClose={() => setSelectedItem(null)} />
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
           </tbody>
