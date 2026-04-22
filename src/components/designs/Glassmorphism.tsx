@@ -4,7 +4,6 @@ import {
   integrityAlerts,
   priceDriftItems,
   arbitrageOpportunities,
-  inventoryItems,
   spendingTrends,
   vendorConsolidation,
   vendorMonthlySpend,
@@ -14,7 +13,7 @@ import {
   categoryVendors,
   type PriceDriftItem,
 } from "@/data/mockData";
-import { Shield, TrendingDown, Zap, BarChart3, Users, Gift, Send, X, FileText } from "lucide-react";
+import { Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
 const purple = "#6366f1";
@@ -26,12 +25,11 @@ const textSecondary = "#6b7280";
 
 const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl shadow-lg shadow-indigo-500/5";
 
-type PillarKey = "arbitrage" | "priceDrift" | "inventory" | "spending" | "vendor" | "integrity";
+type PillarKey = "arbitrage" | "priceDrift" | "spending" | "vendor" | "integrity";
 
 const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string; badge: number | string }[] = [
   { key: "arbitrage", label: "Vendor Arbitrage & Best Pricing", icon: Zap, color: purple, badge: 4 },
   { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple, badge: 3 },
-  { key: "inventory", label: "Predictive Ordering", icon: BarChart3, color: purple, badge: 2 },
   { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple, badge: 1 },
   { key: "vendor", label: "Vendor Consolidation", icon: Users, color: purple, badge: 3 },
   { key: "integrity", label: "Anomaly & Risk", icon: Shield, color: purple, badge: 2 },
@@ -55,7 +53,7 @@ export default function Glassmorphism() {
       <div className="relative z-10">
 
         {/* 6 Pillar Cards */}
-        <div className="max-w-[1400px] mx-auto px-8 pt-6 grid grid-cols-6 gap-3 mb-6">
+        <div className="max-w-[1400px] mx-auto px-8 pt-6 grid grid-cols-5 gap-3 mb-6">
           {pillars.map((p, i) => {
             const isActive = active === p.key;
             return (
@@ -106,7 +104,6 @@ export default function Glassmorphism() {
             >
               {active === "arbitrage" && <ArbitrageReport />}
               {active === "priceDrift" && <PriceDriftReport />}
-              {active === "inventory" && <InventoryReport />}
               {active === "spending" && <SpendingReport />}
               {active === "vendor" && <VendorReport />}
               {active === "integrity" && <IntegrityReport />}
