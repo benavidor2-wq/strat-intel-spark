@@ -147,80 +147,43 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
               data-parsed-invoice-popover="invoiceNo invoiceDate total"
             >
               {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
-              <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-6">
-                <header className="flex items-center justify-between border-b border-border pb-5">
-                  <button onClick={() => setOpen(false)} className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
-                    <ArrowLeft size={16} />
-                    Back to vendors
-                  </button>
-                  <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary-foreground">Parsed invoice</span>
-                </header>
-
-                <main className="grid flex-1 gap-6 py-8 lg:grid-cols-[0.95fr_1.05fr]">
-                  <section className="flex min-h-[520px] flex-col rounded-2xl border border-border bg-card p-7 text-card-foreground shadow-xl">
-                    <div className="mb-8 flex items-start justify-between gap-6 border-b border-border pb-6">
+              <div className="flex min-h-screen items-center justify-center px-6 py-10">
+                <div className="w-full max-w-4xl rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-2xl">
+                  <div className="mb-8 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-muted p-3">
+                        <FileText className="h-6 w-6 text-muted-foreground" />
+                      </div>
                       <div>
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Invoice</div>
-                        <h2 className="mt-2 text-3xl font-bold tracking-normal text-foreground">{vendor.invoiceNo}</h2>
-                        <p className="mt-2 text-sm font-medium text-muted-foreground">Parsed from {vendor.name}</p>
-                      </div>
-                      <div className="rounded-2xl bg-muted p-4">
-                        <FileText className="h-9 w-9 text-muted-foreground" />
+                        <div className="mt-1 text-lg font-bold text-foreground">{vendor.name}</div>
                       </div>
                     </div>
+                    <button onClick={() => setOpen(false)} className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
+                      <ArrowLeft size={16} />
+                      Back
+                    </button>
+                  </div>
 
-                    <div className="grid gap-4">
-                      <div className="rounded-xl border border-border bg-muted p-4">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Invoice Number</div>
-                        <div className="mt-2 break-all font-mono text-base font-bold text-foreground">{vendor.invoiceNo}</div>
-                      </div>
-                      <div className="rounded-xl border border-border bg-muted p-4">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Invoice Date</div>
-                        <div className="mt-2 font-mono text-base font-bold text-foreground">{vendor.invoiceDate}</div>
-                      </div>
-                      <div className="rounded-xl border border-border bg-primary p-4 text-primary-foreground">
-                        <div className="text-[10px] font-bold uppercase tracking-widest">Invoice Amount</div>
-                        <div className="mt-2 font-mono text-2xl font-bold">${vendor.total.toLocaleString()}</div>
-                      </div>
+                  <div className="grid gap-x-16 gap-y-8 sm:grid-cols-2">
+                    <div>
+                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Invoice #</div>
+                      <div className="mt-3 break-all font-mono text-2xl font-bold text-foreground">{vendor.invoiceNo}</div>
                     </div>
-
-                    <div className="mt-auto pt-8">
-                      <div className="rounded-xl border border-border bg-background p-4 text-sm text-muted-foreground">
-                        Prepared fields for parsed invoice data: invoice number, invoice date, and invoice amount.
-                      </div>
+                    <div>
+                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Date</div>
+                      <div className="mt-3 font-mono text-2xl font-bold text-foreground">{vendor.invoiceDate}</div>
                     </div>
-                  </section>
-
-                  <aside className="rounded-2xl border border-border bg-card p-7 text-card-foreground shadow-xl">
-                    <div className="mb-6">
-                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Line Item Review</div>
-                      <h3 className="mt-2 text-2xl font-bold text-foreground">{vendor.name}</h3>
+                    <div>
+                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Unit Price</div>
+                      <div className="mt-3 font-mono text-3xl font-bold text-destructive">${vendor.price}</div>
                     </div>
-                    <div className="overflow-hidden rounded-xl border border-border">
-                      <div className="grid grid-cols-[1fr_auto] bg-muted px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        <span>Field</span>
-                        <span>Parsed Value</span>
-                      </div>
-                      <div className="grid grid-cols-[1fr_auto] items-center border-t border-border px-4 py-4">
-                        <span className="text-sm font-medium text-muted-foreground">Unit Price</span>
-                        <span className="font-mono text-lg font-bold text-foreground">${vendor.price}</span>
-                      </div>
-                      <div className="grid grid-cols-[1fr_auto] items-center border-t border-border px-4 py-4">
-                        <span className="text-sm font-medium text-muted-foreground">Quantity</span>
-                        <span className="font-mono text-lg font-bold text-foreground">{vendor.qty}</span>
-                      </div>
-                      <div className="grid grid-cols-[1fr_auto] items-center border-t border-border px-4 py-4">
-                        <span className="text-sm font-medium text-muted-foreground">Line Total</span>
-                        <span className="font-mono text-lg font-bold text-foreground">${vendor.total.toLocaleString()}</span>
-                      </div>
+                    <div>
+                      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Qty / Total</div>
+                      <div className="mt-3 font-mono text-2xl font-bold text-foreground">{vendor.qty} units · ${vendor.total.toLocaleString()}</div>
                     </div>
-
-                    <div className="mt-6 rounded-xl bg-secondary p-4">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-secondary-foreground">Vendor Status</div>
-                      <div className="mt-2 text-lg font-bold text-secondary-foreground">{isBest ? "Best price in comparison" : "Included in comparison"}</div>
-                    </div>
-                  </aside>
-                </main>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
