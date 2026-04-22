@@ -310,13 +310,7 @@ function ArbitrageReport() {
 
 function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClose: () => void }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.18 }}
-      className="my-3 flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xl"
-    >
+    <div className="my-3 flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xl">
       <div className="flex items-start justify-between border-b border-border px-6 py-5">
         <div>
           <h3 className="text-lg font-semibold" style={{ color: textPrimary }}>{item.product}</h3>
@@ -348,7 +342,7 @@ function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClo
 
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs lg:col-span-2"><span className="text-muted-foreground">Price increased from </span><span className="font-mono font-bold text-foreground">${item.historicalInvoices[item.historicalInvoices.length - 1]?.unitPrice}</span><span className="text-muted-foreground"> to </span><span className="font-mono font-bold text-destructive">${item.recentInvoice.unitPrice}</span><span className="text-muted-foreground"> over the past 90 days — use these invoices to negotiate back to previous rates.</span></div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
