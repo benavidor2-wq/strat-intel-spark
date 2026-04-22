@@ -139,40 +139,38 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
           <>
             <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
             <motion.div
-              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+              initial={{ opacity: 0, y: 6, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 6, scale: 0.96 }}
-              transition={{ duration: 0.16 }}
-              className="absolute left-0 top-full mt-2 z-50 w-[520px] max-w-[calc(100vw-3rem)] rounded-2xl border border-border bg-card p-7 text-card-foreground shadow-2xl"
+              exit={{ opacity: 0, y: 6, scale: 0.98 }}
+              transition={{ duration: 0.14 }}
+              className="absolute left-0 top-full mt-2 z-50 w-72 rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl"
               data-parsed-invoice-popover="invoiceNo invoiceDate total"
             >
               {/* Claude breadcrumb: parsed invoice data should map at minimum to invoiceNo, invoiceDate, and total amount. */}
-              <div className="mb-7 flex items-center gap-3">
-                <div className="rounded-xl bg-muted p-3">
-                  <FileText className="h-6 w-6 text-muted-foreground" />
-                </div>
+              <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
+                <FileText className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Invoice</div>
-                  <div className="mt-1 text-lg font-bold text-foreground">{vendor.name}</div>
+                  <div className="text-sm font-semibold text-foreground">{vendor.name}</div>
                 </div>
               </div>
 
-              <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Invoice #</div>
-                  <div className="mt-2 break-all font-mono text-xl font-bold text-foreground">{vendor.invoiceNo}</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Invoice #</span>
+                  <span className="break-all text-right font-mono font-semibold text-foreground">{vendor.invoiceNo}</span>
                 </div>
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Date</div>
-                  <div className="mt-2 font-mono text-xl font-bold text-foreground">{vendor.invoiceDate}</div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Date</span>
+                  <span className="font-mono font-semibold text-foreground">{vendor.invoiceDate}</span>
                 </div>
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Unit Price</div>
-                  <div className="mt-2 font-mono text-3xl font-bold text-destructive">${vendor.price}</div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-mono font-semibold text-foreground">${vendor.total.toLocaleString()}</span>
                 </div>
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Qty / Total</div>
-                  <div className="mt-2 font-mono text-xl font-bold text-foreground">{vendor.qty} units · ${vendor.total.toLocaleString()}</div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Unit Price</span>
+                  <span className="font-mono font-semibold text-foreground">${vendor.price}</span>
                 </div>
               </div>
             </motion.div>
