@@ -346,24 +346,15 @@ function PriceDriftReport() {
         </table>
       </div>
 
-      {/* Invoice Detail Modal */}
+      {/* Invoice Detail Panel */}
       <AnimatePresence>
         {selectedItem && (
-          createPortal(
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[1000] bg-black/30 backdrop-blur-sm"
-              onClick={() => setSelectedItem(null)}
-            />
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 16 }}
               transition={{ duration: 0.2 }}
-              className="fixed left-1/2 top-1/2 z-[1001] flex max-h-[calc(100vh-4rem)] w-[min(920px,calc(100vw-4rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+              className="mt-5 flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
             >
               {/* Header */}
               <div className="flex items-start justify-between border-b border-border px-6 py-5">
@@ -434,9 +425,6 @@ function PriceDriftReport() {
                 </div>
               </div>
             </motion.div>
-          </>,
-          document.body,
-          )
         )}
       </AnimatePresence>
     </div>
