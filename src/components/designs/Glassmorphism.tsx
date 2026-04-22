@@ -18,12 +18,12 @@ import {
 import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays } from "lucide-react";
 import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
 
-const purple = "#6366f1";
-const green = "#22c55e";
-const warn = "#f59e0b";
-const danger = "#ef4444";
-const textPrimary = "#1e1b4b";
-const textSecondary = "#6b7280";
+const purple = "hsl(239 84% 67%)";
+const green = "hsl(142 71% 45%)";
+const warn = "hsl(38 92% 50%)";
+const danger = "hsl(0 84% 60%)";
+const textPrimary = "hsl(246 47% 20%)";
+const textSecondary = "hsl(220 9% 46%)";
 
 const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl shadow-lg shadow-indigo-500/5";
 
@@ -400,85 +400,65 @@ function PriceDriftReport() {
 
 
 function SpendingReport() {
-  type DimensionMode = "department" | "project";
-
-  const [dimensionMode, setDimensionMode] = useState<DimensionMode>("department");
-
   const currentSpend = spendingTrends[spendingTrends.length - 1].costs;
   const lastSpend = spendingTrends[spendingTrends.length - 2].costs;
   const netVariance = currentSpend - lastSpend;
-
-  const waterfallStepsByMode = {
-    department: [
-      { id: "raw-materials", label: "Raw Materials", delta: 94000, price: 52000, volume: 42000, fixed: 82, vendors: ["SteelCo", "MetalWorks", "BuildMat"], arbitrage: 18500 },
-      { id: "logistics", label: "Logistics", delta: 58000, price: 19000, volume: 39000, fixed: 61, vendors: ["FuelDirect", "Metro Freight", "QuickHaul"], arbitrage: 31200 },
-      { id: "maintenance", label: "Maintenance", delta: 38000, price: 12000, volume: 26000, fixed: 74, vendors: ["SafetyFirst", "RepairWorks", "ChemSupply"], arbitrage: 0 },
-      { id: "it-equipment", label: "IT Equipment", delta: -22500, price: 0, volume: -22500, fixed: 48, vendors: ["ElectroParts", "TechParts Global", "OfficePro"], arbitrage: 6700 },
-      { id: "office", label: "Office", delta: -7100, price: 0, volume: -7100, fixed: 54, vendors: ["OfficePro", "PaperDirect", "BulkSupply"], arbitrage: 0 },
-    ],
-    project: [
-      { id: "build-301", label: "BUILD-301", delta: 112000, price: 61000, volume: 51000, fixed: 79, vendors: ["SteelCo", "BuildMat", "MetalWorks"], arbitrage: 22400 },
-      { id: "ops-118", label: "OPS-118", delta: 47000, price: 18000, volume: 29000, fixed: 68, vendors: ["FuelDirect", "ChemSupply", "Metro Freight"], arbitrage: 15400 },
-      { id: "tech-044", label: "TECH-044", delta: -18500, price: 0, volume: -18500, fixed: 46, vendors: ["ElectroParts", "TechParts Global", "OfficePro"], arbitrage: 6700 },
-      { id: "ops-101", label: "OPS-101", delta: -8100, price: 0, volume: -8100, fixed: 57, vendors: ["SafetyFirst", "OfficePro", "BulkSupply"], arbitrage: 0 },
-    ],
-  } as const;
-
-  const waterfallSteps = waterfallStepsByMode[dimensionMode];
-  const [selectedStepId, setSelectedStepId] = useState(waterfallStepsByMode.department[1].id);
-  const selectedStep = waterfallSteps.find((step) => step.id === selectedStepId) ?? waterfallSteps[0];
-  const selectedConsolidation = vendorConsolidation.find((item) => item.category === selectedStep.label);
-  const efficiencyLeak = waterfallSteps.reduce((total, step) => total + Math.max(step.price, 0), 0);
-  const fixedPercent = Math.round(waterfallSteps.reduce((total, step) => total + step.fixed, 0) / waterfallSteps.length);
-  const maxAbsDelta = Math.max(...waterfallSteps.map((step) => Math.abs(step.delta)));
-  const totalSlots = waterfallSteps.length + 2;
-
-  const toggleDimensionMode = (mode: DimensionMode) => {
-    setDimensionMode(mode);
-    setSelectedStepId(waterfallStepsByMode[mode][0].id);
+  type Driver = {
+    id: string;
+    label: string;
+    delta: number;
+    kind: "increase" | "savings";
+    vendors: string[];
+    benchmark: string;
+    strategy: string;
+    controllable: number;
   };
 
-  // CLAUDE_NOTE: Use 'Spending Patterns & Trend Analysis' to calculate the delta between periods for the Waterfall steps.
-  // CLAUDE_NOTE: Reference 'Dynamic Pricing & Price Drift' to separate 'Volume' variance from 'Price' variance in the sidebar.
-  // CLAUDE_NOTE: Trigger 'Vendor Consolidation & Benchmarking' when a category is clicked to show if the variance is due to vendor bloat.
-  // CLAUDE_NOTE: Use 'Semantic Dimension Discovery' to allow the user to toggle the Waterfall view between 'By Department' and 'By Project Code'.
+  const attributionDrivers: Driver[] = [
+    { id: "price-drift", label: "Price Drift", delta: 68500, kind: "increase", vendors: ["SteelCo", "FuelDirect", "ChemSupply"], benchmark: "Isolated: 71% above peer inflation index", strategy: "Renegotiate SteelCo and FuelDirect against the 90-day average before the next PO cycle.", controllable: 24500 },
+    { id: "volume-scale", label: "Volume / Scale", delta: 51200, kind: "increase", vendors: ["BuildMat", "Metro Freight", "SafetyFirst"], benchmark: "Operational: aligned with higher order frequency", strategy: "Separate recurring replenishment from discretionary project buys to cap over-ordering.", controllable: 13200 },
+    { id: "lazy-tax", label: "Arbitrage Lazy Tax", delta: 34700, kind: "increase", vendors: ["OfficePro", "QuickHaul", "TechParts Global"], benchmark: "Isolated: vendor mix is 18% above lowest qualified suppliers", strategy: "Consolidate overlapping SKUs with benchmarked suppliers and lock preferred pricing.", controllable: 34700 },
+    { id: "risk-variance", label: "Risk Variance", delta: 12100, kind: "increase", vendors: ["RepairWorks", "PaperDirect", "BulkSupply"], benchmark: "Exception-driven: duplicate and late-cycle invoice pressure", strategy: "Route flagged invoices through approval controls before payment release.", controllable: 12100 },
+    { id: "savings", label: "Policy Savings", delta: -28600, kind: "savings", vendors: ["ElectroParts", "OfficePro", "MetalWorks"], benchmark: "Favorable: savings outpaced peer group by 6%", strategy: "Keep current controls and extend preferred supplier rules to adjacent categories.", controllable: 0 },
+  ];
+
+  const [selectedDriverId, setSelectedDriverId] = useState<string>("price-drift");
+  const selectedDriver = attributionDrivers.find((driver) => driver.id === selectedDriverId) ?? attributionDrivers[0];
+  const maxAbsDelta = Math.max(...attributionDrivers.map((driver) => Math.abs(driver.delta)));
+  const totalSlots = attributionDrivers.length + 2;
+  const controllableVariance = attributionDrivers.reduce((total, driver) => total + driver.controllable, 0);
+  const marketDrivenVariance = attributionDrivers.find((driver) => driver.id === "price-drift")?.delta ?? 0;
+  const operationalInertia = 68;
+
+  // CLAUDE_NOTE: Use 'Pillar 2: Dynamic Pricing' to isolate price-driven variance from volume-driven variance.
+  // CLAUDE_NOTE: Reference 'Pillar 3: Arbitrage' to calculate the 'Lazy Tax' impact on the monthly bridge.
+  // CLAUDE_NOTE: Flag any 'Integrity Layer' alerts as a separate 'Risk Variance' step if they exceed a defined threshold.
+  // CLAUDE_NOTE: Use 'Pillar 5: Spending Patterns' to define the primary 'Total Spend' anchors for the X-axis.
 
   return (
     <div className={`${glass} p-6`}>
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold"><TrendingDown size={14} style={{ color: purple }} /> Strategic Expense Diagnostic</h3>
-          <p className="mt-1 text-xs" style={{ color: textSecondary }}>Waterfall bridge from last-period spend to current-period spend using invoice dimensions.</p>
-        </div>
-        <div className="flex rounded-full p-1" style={{ background: "rgba(0,0,0,0.04)" }}>
-          {(["department", "project"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => toggleDimensionMode(mode)}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition-all"
-              style={{ background: dimensionMode === mode ? "rgba(99,102,241,0.14)" : "transparent", color: dimensionMode === mode ? purple : textSecondary }}
-            >
-              By {mode === "department" ? "Department" : "Project Code"}
-            </button>
-          ))}
+          <h3 className="flex items-center gap-2 text-sm font-semibold"><TrendingDown size={14} style={{ color: purple }} /> Spend Attribution Bridge</h3>
+          <p className="mt-1 text-xs" style={{ color: textSecondary }}>Causality waterfall from last month total spend to current month total spend.</p>
         </div>
       </div>
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl p-4" style={{ background: "rgba(0,0,0,0.03)" }}>
-          <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Net Variance</div>
-          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: netVariance >= 0 ? purple : green }}>+${netVariance.toLocaleString()}</div>
-          <div className="mt-1 text-xs" style={{ color: textSecondary }}>vs. previous period</div>
+          <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Controllable Variance</div>
+          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: purple }}>${controllableVariance.toLocaleString()}</div>
+          <div className="mt-1 text-xs" style={{ color: textSecondary }}>policy or vendor-switch fixable</div>
+        </div>
+        <div className="rounded-2xl p-4" style={{ background: "rgba(0,0,0,0.03)" }}>
+          <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Market-Driven Variance</div>
+          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: warn }}>${marketDrivenVariance.toLocaleString()}</div>
+          <div className="mt-1 text-xs" style={{ color: textSecondary }}>external inflation / price drift</div>
         </div>
         <div className="rounded-2xl p-4" style={{ background: "rgba(0,0,0,0.03)" }}>
           <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Operational Inertia</div>
-          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: textPrimary }}>{fixedPercent}%</div>
-          <div className="mt-1 text-xs" style={{ color: textSecondary }}>fixed / recurring spend</div>
-        </div>
-        <div className="rounded-2xl p-4" style={{ background: "rgba(0,0,0,0.03)" }}>
-          <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Efficiency Leak</div>
-          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: warn }}>${efficiencyLeak.toLocaleString()}</div>
-          <div className="mt-1 text-xs" style={{ color: textSecondary }}>lost to price drift above index</div>
+          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: textPrimary }}>{operationalInertia}%</div>
+          <div className="mt-1 text-xs" style={{ color: textSecondary }}>recurring/fixed vs discretionary</div>
         </div>
       </div>
 
@@ -486,8 +466,8 @@ function SpendingReport() {
         <div className="rounded-2xl border p-5" style={{ background: "rgba(255,255,255,0.58)", borderColor: "rgba(99,102,241,0.16)" }}>
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Bridge Visualization</div>
-              <div className="mt-1 text-xs" style={{ color: textSecondary }}>Click a variance bar to run a semantic pivot.</div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Attribution Waterfall</div>
+              <div className="mt-1 text-xs" style={{ color: textSecondary }}>Click a behavioral driver to root-cause the variance.</div>
             </div>
             <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider" style={{ color: textSecondary }}>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: purple }} /> Increase</span>
@@ -500,18 +480,18 @@ function SpendingReport() {
             <div className="absolute bottom-5 left-4 right-4 top-6 grid items-center" style={{ gridTemplateColumns: `repeat(${totalSlots}, minmax(86px, 1fr))` }}>
               <div className="flex h-full flex-col justify-center gap-3 px-1">
                 <div className="rounded-xl p-3 text-center shadow-sm" style={{ background: "rgba(30,27,75,0.08)", color: textPrimary }}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: textSecondary }}>Last Period</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: textSecondary }}>Last Month</div>
                   <div className="mt-1 font-mono text-lg font-bold">${(lastSpend / 1e6).toFixed(2)}M</div>
                 </div>
               </div>
 
-              {waterfallSteps.map((step) => {
-                const isIncrease = step.delta >= 0;
-                const barHeight = 48 + (Math.abs(step.delta) / maxAbsDelta) * 138;
-                const isSelected = selectedStep.id === step.id;
+              {attributionDrivers.map((driver) => {
+                const isIncrease = driver.kind === "increase";
+                const barHeight = 48 + (Math.abs(driver.delta) / maxAbsDelta) * 138;
+                const isSelected = selectedDriver.id === driver.id;
                 return (
-                  <button key={step.id} onClick={() => setSelectedStepId(step.id)} className="group flex h-full flex-col items-center justify-center gap-2 px-1 text-center">
-                    <div className="font-mono text-xs font-bold" style={{ color: isIncrease ? purple : green }}>{isIncrease ? "+" : "-"}${Math.abs(step.delta).toLocaleString()}</div>
+                  <button key={driver.id} onClick={() => setSelectedDriverId(driver.id)} className="group flex h-full flex-col items-center justify-center gap-2 px-1 text-center">
+                    <div className="font-mono text-xs font-bold" style={{ color: isIncrease ? purple : green }}>{isIncrease ? "+" : "-"}${Math.abs(driver.delta).toLocaleString()}</div>
                     <div className="relative flex h-52 w-full items-center justify-center">
                       <div
                         className="w-full max-w-[72px] rounded-lg transition-all group-hover:scale-[1.04]"
@@ -523,14 +503,14 @@ function SpendingReport() {
                         }}
                       />
                     </div>
-                    <div className="min-h-8 text-[11px] font-semibold leading-tight" style={{ color: isSelected ? textPrimary : textSecondary }}>{step.label}</div>
+                    <div className="min-h-8 text-[11px] font-semibold leading-tight" style={{ color: isSelected ? textPrimary : textSecondary }}>{driver.label}</div>
                   </button>
                 );
               })}
 
               <div className="flex h-full flex-col justify-center gap-3 px-1">
                 <div className="rounded-xl p-3 text-center shadow-sm" style={{ background: "rgba(99,102,241,0.13)", color: textPrimary }}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: purple }}>Current Period</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: purple }}>Current Month</div>
                   <div className="mt-1 font-mono text-lg font-bold">${(currentSpend / 1e6).toFixed(2)}M</div>
                 </div>
               </div>
@@ -539,7 +519,7 @@ function SpendingReport() {
         </div>
 
         <motion.aside
-          key={selectedStep.id}
+          key={selectedDriver.id}
           initial={{ opacity: 0, x: 18 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.18 }}
@@ -547,26 +527,26 @@ function SpendingReport() {
           style={{ background: "rgba(255,255,255,0.74)", borderColor: "rgba(99,102,241,0.16)" }}
         >
           <div className="mb-4">
-            <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Variance Analysis</div>
-            <h4 className="mt-1 text-base font-semibold" style={{ color: textPrimary }}>{selectedStep.label}</h4>
-            <p className="mt-1 text-xs" style={{ color: textSecondary }}>Semantic pivot across invoices, vendors, and discovered dimensions.</p>
+            <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Driver Analysis</div>
+            <h4 className="mt-1 text-base font-semibold" style={{ color: textPrimary }}>{selectedDriver.label}</h4>
+            <p className="mt-1 text-xs" style={{ color: textSecondary }}>Semantic pivot across behavioral drivers, invoices, and supplier benchmarks.</p>
           </div>
 
           <div className="space-y-3">
             <div className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <div className="mb-2 flex items-center justify-between text-xs"><span style={{ color: textSecondary }}>Volume variance</span><span className="font-mono font-bold" style={{ color: purple }}>${Math.abs(selectedStep.volume).toLocaleString()}</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(selectedStep.volume) / Math.max(Math.abs(selectedStep.delta), 1) * 100)}%`, background: purple }} /></div>
+              <div className="mb-2 flex items-center justify-between text-xs"><span style={{ color: textSecondary }}>Monthly impact</span><span className="font-mono font-bold" style={{ color: selectedDriver.kind === "increase" ? purple : green }}>{selectedDriver.kind === "increase" ? "+" : "-"}${Math.abs(selectedDriver.delta).toLocaleString()}</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(selectedDriver.delta) / maxAbsDelta * 100)}%`, background: selectedDriver.kind === "increase" ? purple : green }} /></div>
             </div>
             <div className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <div className="mb-2 flex items-center justify-between text-xs"><span style={{ color: textSecondary }}>Price Drift</span><span className="font-mono font-bold" style={{ color: selectedStep.price > 0 ? warn : green }}>${Math.abs(selectedStep.price).toLocaleString()}</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(selectedStep.price) / Math.max(Math.abs(selectedStep.delta), 1) * 100)}%`, background: selectedStep.price > 0 ? warn : green }} /></div>
+              <div className="mb-2 text-xs font-semibold" style={{ color: textPrimary }}>Market Benchmarking</div>
+              <p className="text-xs leading-relaxed" style={{ color: textSecondary }}>{selectedDriver.benchmark}</p>
             </div>
           </div>
 
           <div className="mt-5">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Top Contributors</div>
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Top Inflationary Vendors</div>
             <div className="space-y-2">
-              {selectedStep.vendors.map((vendor, index) => (
+              {selectedDriver.vendors.map((vendor, index) => (
                 <div key={vendor} className="flex items-center justify-between rounded-xl p-3 text-xs" style={{ background: "rgba(0,0,0,0.03)" }}>
                   <span style={{ color: textPrimary }}>{index + 1}. {vendor}</span>
                   <span className="font-mono font-semibold" style={{ color: textSecondary }}>{[42, 31, 27][index]}%</span>
@@ -575,16 +555,14 @@ function SpendingReport() {
             </div>
           </div>
 
-          {selectedConsolidation && (
-            <div className="mt-4 rounded-xl p-3 text-xs" style={{ background: `${purple}10`, color: textPrimary }}>
-              <div className="font-semibold">Vendor bloat detected</div>
-              <div className="mt-1" style={{ color: textSecondary }}>{selectedConsolidation.vendorCount} vendors vs. {selectedConsolidation.industryAvg} benchmark.</div>
-            </div>
-          )}
+          <div className="mt-4 rounded-xl p-3 text-xs" style={{ background: `${purple}10`, color: textPrimary }}>
+            <div className="font-semibold">Mitigation Strategy</div>
+            <div className="mt-1 leading-relaxed" style={{ color: textSecondary }}>{selectedDriver.strategy}</div>
+          </div>
 
-          {selectedStep.arbitrage > 0 && (
+          {selectedDriver.controllable > 0 && (
             <button className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-bold text-white transition-all hover:scale-[1.01]" style={{ background: green, boxShadow: "0 16px 32px rgba(34,197,94,0.22)" }}>
-              Switch & Save ${selectedStep.arbitrage.toLocaleString()}
+              Switch & Save ${selectedDriver.controllable.toLocaleString()}
             </button>
           )}
         </motion.aside>
