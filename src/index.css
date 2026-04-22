@@ -32,6 +32,13 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    --risk-critical: 0 84.2% 60.2%;
+    --risk-high: 38 92% 50%;
+    --risk-medium: 262 83% 58%;
+    --risk-success: 142 71% 45%;
+    --cookie: 32 95% 44%;
+    --cookie-foreground: 24 95% 16%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
