@@ -16,7 +16,7 @@ import {
   type PriceDriftItem,
 } from "@/data/mockData";
 import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie, ReferenceDot } from "recharts";
 
 const purple = "#6366f1";
 const green = "#22c55e";
@@ -400,37 +400,115 @@ function PriceDriftReport() {
 
 
 function SpendingReport() {
-  const latestMargin = spendingTrends[spendingTrends.length - 1].margin;
+  const spendComposition = {
+    "Q1 2025": { category: "Raw Materials", projectCode: "OPS-101", dimensions: [{ label: "Raw Materials", value: 740000 }, { label: "Logistics", value: 390000 }, { label: "Maintenance", value: 310000 }, { label: "IT Equipment", value: 240000 }] },
+    "Q2 2025": { category: "Logistics", projectCode: "OPS-118", dimensions: [{ label: "Raw Materials", value: 810000 }, { label: "Logistics", value: 455000 }, { label: "Maintenance", value: 352000 }, { label: "Office Supplies", value: 291000 }] },
+    "Q3 2025": { category: "Raw Materials", projectCode: "BUILD-204", dimensions: [{ label: "Raw Materials", value: 920000 }, { label: "Logistics", value: 472000 }, { label: "Maintenance", value: 388000 }, { label: "IT Equipment", value: 292000 }] },
+    "Q4 2025": { category: "IT Equipment", projectCode: "TECH-044", dimensions: [{ label: "Raw Materials", value: 990000 }, { label: "Logistics", value: 538000 }, { label: "IT Equipment", value: 442000 }, { label: "Maintenance", value: 386000 }] },
+    "Q1 2026": { category: "Raw Materials", projectCode: "BUILD-301", dimensions: [{ label: "Raw Materials", value: 1060000 }, { label: "Logistics", value: 596000 }, { label: "Maintenance", value: 486000 }, { label: "IT Equipment", value: 425500 }] },
+  } as const;
+  const pvvData = spendingTrends.map((trend, index) => {
+    const historicalSpend = Math.round(trend.costs * (0.78 - index * 0.015));
+    const volumeIncrease = Math.round(trend.costs * (0.14 + index * 0.008));
+    const priceDrift = trend.costs - historicalSpend - volumeIncrease;
+    return {
+      period: trend.period,
+      historicalSpend,
+      volumeIncrease,
+      priceDrift,
+      totalSpend: trend.costs,
+      recurringPercent: [68, 71, 73, 76, 78][index],
+      efficiencyScore: Math.max(58, 94 - Math.round((priceDrift / trend.costs) * 180)),
+      arbitrageSavings: index === 2 ? 18500 : index === 4 ? 31200 : 0,
+      ...spendComposition[trend.period as keyof typeof spendComposition],
+    };
+  });
+  const [selectedPeriod, setSelectedPeriod] = useState(pvvData[pvvData.length - 1].period);
+  const selectedSpend = pvvData.find((item) => item.period === selectedPeriod) ?? pvvData[0];
+  const selectedConsolidation = vendorConsolidation.find((item) => item.category === selectedSpend.category);
+
+  // CLAUDE_NOTE: Use 'Price Drift' pillar data to calculate the 'Price' variance vs. 'Volume' variance for the main chart.
+  // CLAUDE_NOTE: Categorize invoices into 'Fixed' vs 'Variable' based on frequency analysis in 'Predictive Ordering'.
+  // CLAUDE_NOTE: Map 'executive_summary' to provide a narrative on whether spend increases are operational (Volume) or external (Drift).
+  // CLAUDE_NOTE: Filter 'Vendor Consolidation' results into the sidebar when a specific category is selected.
+
   return (
     <div className={`${glass} p-6`}>
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><TrendingDown size={14} style={{ color: purple }} /> Spending Patterns</h3>
-        <span className="text-sm" style={{ color: danger }}>Margin erosion: {summaryStats.marginErosion}pp</span>
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-semibold"><TrendingDown size={14} style={{ color: purple }} /> Spend Intensity & Variance</h3>
+          <p className="mt-1 text-xs" style={{ color: textSecondary }}>Accounts payable view of where cash is going and what changed.</p>
+        </div>
+        <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: `${purple}12`, color: purple }}>PVV expense logic</span>
       </div>
-      <div className="h-72 mb-6">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={spendingTrends}>
+      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+        <div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={pvvData} onClick={(event) => event?.activeLabel && setSelectedPeriod(String(event.activeLabel))}>
             <defs>
-              <linearGradient id="gl-spend" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={purple} stopOpacity={0.15} />
+              <linearGradient id="gl-historical" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={purple} stopOpacity={0.18} />
                 <stop offset="100%" stopColor={purple} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gl-volume" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={green} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={green} stopOpacity={0.03} />
+              </linearGradient>
+              <linearGradient id="gl-drift" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={warn} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={warn} stopOpacity={0.04} />
               </linearGradient>
             </defs>
             <XAxis dataKey="period" tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: textSecondary }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1e6}M`} />
             <RechartsTooltip formatter={(v: number) => `$${(v / 1e6).toFixed(2)}M`} />
-            <Area type="monotone" dataKey="costs" stroke={purple} fill="url(#gl-spend)" strokeWidth={2} name="Total Spend" />
+            <Area type="monotone" dataKey="historicalSpend" stackId="1" stroke={purple} fill="url(#gl-historical)" strokeWidth={2} name="Historical Spend" />
+            <Area type="monotone" dataKey="volumeIncrease" stackId="1" stroke={green} fill="url(#gl-volume)" strokeWidth={2} name="Volume Increase" />
+            <Area type="monotone" dataKey="priceDrift" stackId="1" stroke={warn} fill="url(#gl-drift)" strokeWidth={2} name="Price Drift" />
+            {pvvData.filter((point) => point.arbitrageSavings > 0).map((point) => (
+              <ReferenceDot key={point.period} x={point.period} y={point.totalSpend} r={7} fill={danger} stroke="white" strokeWidth={2} label={{ value: "Save", fontSize: 10, fill: danger, position: "top" }} />
+            ))}
           </AreaChart>
         </ResponsiveContainer>
-      </div>
-      <div className="grid grid-cols-5 gap-3">
-        {spendingTrends.map((t) => (
-          <div key={t.period} className="text-center p-3 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-            <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: textSecondary }}>{t.period}</div>
-            <div className="text-lg font-bold" style={{ color: t.margin >= 28 ? green : t.margin >= 24 ? warn : danger }}>{t.margin}%</div>
-            <div className="text-[10px]" style={{ color: textSecondary }}>margin</div>
           </div>
-        ))}
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+            {pvvData.map((period) => (
+              <button key={period.period} onClick={() => setSelectedPeriod(period.period)} className="rounded-xl p-3 text-left transition-all" style={{ background: selectedPeriod === period.period ? `${purple}12` : "rgba(0,0,0,0.03)", border: selectedPeriod === period.period ? `1px solid ${purple}55` : "1px solid transparent" }}>
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: textSecondary }}>{period.period}</div>
+                <div className="font-mono text-lg font-bold" style={{ color: textPrimary }}>${(period.totalSpend / 1e6).toFixed(2)}M</div>
+                <div className="mt-2 flex justify-between text-[10px]" style={{ color: textSecondary }}><span>Recurring</span><span className="font-mono">{period.recurringPercent}%</span></div>
+                <div className="mt-1 flex justify-between text-[10px]" style={{ color: period.efficiencyScore >= 75 ? green : warn }}><span>Efficiency</span><span className="font-mono font-bold">{period.efficiencyScore}</span></div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <aside className="rounded-2xl border p-5" style={{ background: "rgba(255,255,255,0.7)", borderColor: "rgba(99,102,241,0.16)" }}>
+          <div className="mb-4">
+            <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Spend Composition</div>
+            <h4 className="mt-1 text-base font-semibold" style={{ color: textPrimary }}>{selectedSpend.period}</h4>
+            <p className="mt-1 text-xs" style={{ color: textSecondary }}>Dimensions discovered from invoice category and project code fields.</p>
+          </div>
+          <div className="space-y-2">
+            {selectedSpend.dimensions.map((dimension) => (
+              <div key={dimension.label} className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.03)" }}>
+                <div className="flex items-center justify-between text-xs"><span style={{ color: textPrimary }}>{dimension.label}</span><span className="font-mono font-semibold" style={{ color: purple }}>${dimension.value.toLocaleString()}</span></div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${(dimension.value / selectedSpend.totalSpend) * 100}%`, background: purple }} /></div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-xl p-3 text-xs" style={{ background: `${warn}12`, color: textPrimary }}>
+            <div className="font-semibold">Project Code: {selectedSpend.projectCode}</div>
+            <div className="mt-1" style={{ color: textSecondary }}>Primary category: {selectedSpend.category}</div>
+          </div>
+          {selectedConsolidation && (
+            <div className="mt-3 rounded-xl p-3 text-xs" style={{ background: `${green}10`, color: textPrimary }}>
+              <div className="font-semibold">Vendor consolidation match</div>
+              <div className="mt-1" style={{ color: textSecondary }}>${selectedConsolidation.potentialSavings.toLocaleString()} potential annual savings from {selectedConsolidation.category}.</div>
+            </div>
+          )}
+          {selectedSpend.arbitrageSavings > 0 && <div className="mt-3 rounded-xl p-3 text-xs font-semibold" style={{ background: `${danger}10`, color: danger }}>Arbitrage opportunity: ${selectedSpend.arbitrageSavings.toLocaleString()} identified this period.</div>}
+        </aside>
       </div>
     </div>
   );
