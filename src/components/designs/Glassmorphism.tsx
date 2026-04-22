@@ -844,8 +844,8 @@ function IntegrityReport() {
 
         {selectedAlert && (
           <section className={`${glass} overflow-hidden bg-card/95`}>
-            <div className="border-b border-border p-6">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="border-b border-border px-6 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getSeverityStyles(selectedAlert.severity)}`}>{selectedAlert.severity}</span>
@@ -860,7 +860,7 @@ function IntegrityReport() {
               </div>
             </div>
 
-            <div className="grid gap-5 p-6 xl:grid-cols-[1.05fr_0.95fr]">
+            <div className="grid gap-5 px-6 py-4 xl:grid-cols-[1.05fr_0.95fr]">
               <div className="space-y-5">
                 <InfoBlock title="Why it was flagged" icon={<Shield size={15} className="text-risk-critical" />}>{getRiskExplanation(selectedAlert.type)}</InfoBlock>
                 <InfoBlock title="Evidence checklist" icon={<CheckCircle2 size={15} className="text-risk-success" />}>
