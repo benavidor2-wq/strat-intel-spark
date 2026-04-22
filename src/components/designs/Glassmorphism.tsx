@@ -192,20 +192,32 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
                   </section>
 
                   <aside className="rounded-2xl border border-border bg-card p-7 text-card-foreground shadow-xl">
-                    <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Parsed Line Summary</div>
-                    <div className="mt-5 space-y-4">
-                      <div className="flex items-center justify-between border-b border-border pb-4">
+                    <div className="mb-6">
+                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Line Item Review</div>
+                      <h3 className="mt-2 text-2xl font-bold text-foreground">{vendor.name}</h3>
+                    </div>
+                    <div className="overflow-hidden rounded-xl border border-border">
+                      <div className="grid grid-cols-[1fr_auto] bg-muted px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span>Field</span>
+                        <span>Parsed Value</span>
+                      </div>
+                      <div className="grid grid-cols-[1fr_auto] items-center border-t border-border px-4 py-4">
                         <span className="text-sm font-medium text-muted-foreground">Unit Price</span>
                         <span className="font-mono text-lg font-bold text-foreground">${vendor.price}</span>
                       </div>
-                      <div className="flex items-center justify-between border-b border-border pb-4">
+                      <div className="grid grid-cols-[1fr_auto] items-center border-t border-border px-4 py-4">
                         <span className="text-sm font-medium text-muted-foreground">Quantity</span>
                         <span className="font-mono text-lg font-bold text-foreground">{vendor.qty}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Vendor Status</span>
-                        <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold uppercase tracking-widest text-secondary-foreground">{isBest ? "Best price" : "Compared"}</span>
+                      <div className="grid grid-cols-[1fr_auto] items-center border-t border-border px-4 py-4">
+                        <span className="text-sm font-medium text-muted-foreground">Line Total</span>
+                        <span className="font-mono text-lg font-bold text-foreground">${vendor.total.toLocaleString()}</span>
                       </div>
+                    </div>
+
+                    <div className="mt-6 rounded-xl bg-secondary p-4">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-secondary-foreground">Vendor Status</div>
+                      <div className="mt-2 text-lg font-bold text-secondary-foreground">{isBest ? "Best price in comparison" : "Included in comparison"}</div>
                     </div>
                   </aside>
                 </main>
