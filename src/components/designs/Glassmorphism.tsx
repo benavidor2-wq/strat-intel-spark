@@ -849,7 +849,6 @@ function IntegrityReport() {
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getSeverityStyles(selectedAlert.severity)}`}>{selectedAlert.severity}</span>
-                    <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Backend handoff ready</span>
                   </div>
                   <h4 className="text-xl font-semibold text-foreground">{selectedAlert.vendor}</h4>
                   <p className="mt-1 text-sm text-muted-foreground">{getAnomalyLabel(selectedAlert.type)} · detected {selectedAlert.date}</p>
@@ -859,7 +858,6 @@ function IntegrityReport() {
                   <div className="font-mono text-2xl font-bold text-risk-critical">${selectedAlert.amount.toLocaleString()}</div>
                 </div>
               </div>
-              <p className="rounded-xl border border-border bg-background p-4 text-sm text-foreground">{selectedAlert.description}</p>
             </div>
 
             <div className="grid gap-5 p-6 xl:grid-cols-[1.05fr_0.95fr]">
