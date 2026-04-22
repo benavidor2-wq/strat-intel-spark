@@ -417,47 +417,6 @@ function PriceDriftReport() {
   );
 }
 
-function InventoryReport() {
-  return (
-    <div className={`${glass} p-6`}>
-      <h3 className="text-sm font-semibold mb-5 flex items-center gap-2"><BarChart3 size={14} style={{ color: purple }} /> Predictive Ordering</h3>
-      <div className="grid gap-4">
-        {inventoryItems.map((item) => {
-          const urgencyColor = item.daysRemaining <= 7 ? danger : item.daysRemaining <= 15 ? warn : green;
-          return (
-            <div key={item.id} className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <div className="flex items-start justify-between mb-3">
-                <h4 className="text-sm font-semibold" style={{ color: textPrimary }}>{item.product}</h4>
-                <span className="text-lg font-bold font-mono" style={{ color: urgencyColor }}>{item.daysRemaining}d</span>
-              </div>
-              <div className="grid grid-cols-3 gap-4 mb-3 text-xs">
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>Burn Rate</div>
-                  <div className="font-mono font-semibold" style={{ color: textPrimary }}>{item.burnRate}/day</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>Stock</div>
-                  <div className="font-mono font-semibold" style={{ color: textPrimary }}>{item.currentStock} units</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>Bulk Discount</div>
-                  <div className="font-mono font-semibold" style={{ color: item.bulkDiscount > 0 ? green : "#9ca3af" }}>
-                    {item.bulkDiscount > 0 ? `${item.bulkDiscount}%` : "—"}
-                  </div>
-                </div>
-              </div>
-              <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: "rgba(0,0,0,0.06)" }}>
-                <div className="h-full rounded-full" style={{ width: `${Math.min((item.daysRemaining / 40) * 100, 100)}%`, backgroundColor: urgencyColor }} />
-              </div>
-              <p className="text-xs rounded-lg px-3 py-2" style={{ color: textSecondary, background: "rgba(0,0,0,0.03)" }}>{item.suggestedAction}</p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function SpendingReport() {
   const latestMargin = spendingTrends[spendingTrends.length - 1].margin;
   return (
