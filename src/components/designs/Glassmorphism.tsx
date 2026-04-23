@@ -979,30 +979,8 @@ function IntegrityReport() {
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const filteredAlerts = severityFilter === "all" ? integrityAlerts : integrityAlerts.filter((alert) => alert.severity === severityFilter);
   const selectedAlert = integrityAlerts.find((alert) => alert.id === selectedAlertId) ?? filteredAlerts[0] ?? integrityAlerts[0];
-  const totalExposure = integrityAlerts.reduce((sum, alert) => sum + alert.amount, 0);
-  const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
-  const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
-  const latestDetection = integrityAlerts.map((alert) => alert.date).sort().at(-1);
-
   return (
     <div className="grid gap-5">
-      <section className={`${glass} p-6`}>
-        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground"><Shield size={18} className="text-risk-critical" /> Anomaly & Risk</h3>
-            <p className="mt-1 text-sm text-muted-foreground">AI-detected invoice, vendor, and payment integrity risks.</p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <MetricTile label="Flagged Exposure" value={`$${totalExposure.toLocaleString()}`} tone="critical" />
-          <MetricTile label="Critical" value={criticalCount} tone="critical" />
-          <MetricTile label="High Risk" value={highCount} tone="high" />
-          <MetricTile label="Total Alerts" value={integrityAlerts.length} tone="medium" />
-          <MetricTile label="Latest Detection" value={latestDetection ?? "—"} tone="cookie" />
-        </div>
-      </section>
-
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[0.9fr_1.4fr]">
         <section className={`${glass} p-5`}>
           <div className="mb-4 flex items-center justify-between gap-3">
