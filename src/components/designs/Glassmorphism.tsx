@@ -16,7 +16,7 @@ import {
   type PriceDriftItem,
 } from "@/data/mockData";
 import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays } from "lucide-react";
-import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, Cell, PieChart, Pie } from "recharts";
+import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Cell, PieChart, Pie, AreaChart, Area, CartesianGrid, ScatterChart, Scatter, ZAxis, ReferenceLine } from "recharts";
 
 const purple = "hsl(239 84% 67%)";
 const green = "hsl(142 71% 45%)";
@@ -400,177 +400,195 @@ function PriceDriftReport() {
 
 
 function SpendingReport() {
-  const currentSpend = spendingTrends[spendingTrends.length - 1].costs;
-  const lastSpend = spendingTrends[spendingTrends.length - 2].costs;
-  const netVariance = currentSpend - lastSpend;
-  type Driver = {
+  type InertiaPoint = { month: string; committed: number; discretionary: number };
+  type MatrixPoint = {
     id: string;
-    label: string;
-    delta: number;
-    kind: "increase" | "savings";
-    vendors: string[];
-    benchmark: string;
-    strategy: string;
-    controllable: number;
+    name: string;
+    vendor: string;
+    project: string;
+    volumeChange: number;
+    priceChange: number;
+    identifiedSavings: number;
+    lazyTax: number;
+    lowestSupplier: string;
+    anomaly: boolean;
+    summary: string;
   };
 
-  const attributionDrivers: Driver[] = [
-    { id: "price-drift", label: "Price Drift", delta: 68500, kind: "increase", vendors: ["SteelCo", "FuelDirect", "ChemSupply"], benchmark: "Isolated: 71% above peer inflation index", strategy: "Renegotiate SteelCo and FuelDirect against the 90-day average before the next PO cycle.", controllable: 24500 },
-    { id: "volume-scale", label: "Volume / Scale", delta: 51200, kind: "increase", vendors: ["BuildMat", "Metro Freight", "SafetyFirst"], benchmark: "Operational: aligned with higher order frequency", strategy: "Separate recurring replenishment from discretionary project buys to cap over-ordering.", controllable: 13200 },
-    { id: "lazy-tax", label: "Arbitrage Lazy Tax", delta: 34700, kind: "increase", vendors: ["OfficePro", "QuickHaul", "TechParts Global"], benchmark: "Isolated: vendor mix is 18% above lowest qualified suppliers", strategy: "Consolidate overlapping SKUs with benchmarked suppliers and lock preferred pricing.", controllable: 34700 },
-    { id: "risk-variance", label: "Risk Variance", delta: 12100, kind: "increase", vendors: ["RepairWorks", "PaperDirect", "BulkSupply"], benchmark: "Exception-driven: duplicate and late-cycle invoice pressure", strategy: "Route flagged invoices through approval controls before payment release.", controllable: 12100 },
-    { id: "savings", label: "Policy Savings", delta: -28600, kind: "savings", vendors: ["ElectroParts", "OfficePro", "MetalWorks"], benchmark: "Favorable: savings outpaced peer group by 6%", strategy: "Keep current controls and extend preferred supplier rules to adjacent categories.", controllable: 0 },
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [matrixMode, setMatrixMode] = useState<"vendor" | "project">("vendor");
+  const [selectedLeak, setSelectedLeak] = useState<MatrixPoint | null>(null);
+
+  const inertiaData: InertiaPoint[] = spendingTrends.map((trend, index) => {
+    const committedShare = 0.58 + index * 0.018;
+    return {
+      month: trend.month,
+      committed: Math.round(trend.costs * committedShare),
+      discretionary: Math.round(trend.costs * (1 - committedShare)),
+    };
+  });
+
+  const recurringVendors = [
+    { vendor: "CloudLedger SaaS", burn: 38400, velocity: "+14%", contract: "renews in 42 days" },
+    { vendor: "Metro Facilities", burn: 31200, velocity: "+9%", contract: "auto-renewal active" },
+    { vendor: "UtilityGrid", burn: 22100, velocity: "+7%", contract: "indexed monthly" },
+    { vendor: "SecureOps", burn: 18400, velocity: "+4%", contract: "seat expansion" },
+    { vendor: "FleetFuel Direct", burn: 16700, velocity: "+18%", contract: "usage-based floor" },
   ];
 
-  const [selectedDriverId, setSelectedDriverId] = useState<string>("price-drift");
-  const selectedDriver = attributionDrivers.find((driver) => driver.id === selectedDriverId) ?? attributionDrivers[0];
-  const maxAbsDelta = Math.max(...attributionDrivers.map((driver) => Math.abs(driver.delta)));
-  const totalSlots = attributionDrivers.length + 2;
-  const controllableVariance = attributionDrivers.reduce((total, driver) => total + driver.controllable, 0);
-  const marketDrivenVariance = attributionDrivers.find((driver) => driver.id === "price-drift")?.delta ?? 0;
-  const operationalInertia = 68;
+  const matrixPoints: MatrixPoint[] = [
+    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", project: "Project Alpha", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, lazyTax: 18300, lowestSupplier: "Verified Supply Co.", anomaly: true, summary: "80% of this spend increase is Price Drift, not operational volume." },
+    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", project: "Logistics", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, lazyTax: 7200, lowestSupplier: "QuickHaul Preferred", anomaly: false, summary: "Higher purchase velocity is amplifying a moderate rate increase." },
+    { id: "raw", name: "Raw Materials", vendor: "AlloyWorks", project: "Project Delta", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, lazyTax: 1800, lowestSupplier: "MetalWorks", anomaly: false, summary: "Spend is up from scale, while unit economics improved." },
+    { id: "saas", name: "Seat Licenses", vendor: "CloudLedger SaaS", project: "Shared Services", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, lazyTax: 9400, lowestSupplier: "StackSuite", anomaly: true, summary: "Recurring licenses expanded while renewal pricing drifted above benchmark." },
+    { id: "marketing", name: "Marketing Dept", vendor: "MarketMakers", project: "Growth Sprint", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, lazyTax: 0, lowestSupplier: "Current vendor", anomaly: false, summary: "Spend decreased from reduced scope and better negotiated unit rates." },
+  ];
 
-  // CLAUDE_NOTE: Use 'Pillar 2: Dynamic Pricing' to isolate price-driven variance from volume-driven variance.
-  // CLAUDE_NOTE: Reference 'Pillar 3: Arbitrage' to calculate the 'Lazy Tax' impact on the monthly bridge.
-  // CLAUDE_NOTE: Flag any 'Integrity Layer' alerts as a separate 'Risk Variance' step if they exceed a defined threshold.
-  // CLAUDE_NOTE: Use 'Pillar 5: Spending Patterns' to define the primary 'Total Spend' anchors for the X-axis.
+  const groupedMatrix = matrixMode === "vendor"
+    ? matrixPoints
+    : matrixPoints.map((point) => ({ ...point, name: point.project }));
+
+  const committedMoM = Math.round(((inertiaData[inertiaData.length - 1].committed - inertiaData[inertiaData.length - 2].committed) / inertiaData[inertiaData.length - 2].committed) * 100);
+  const totalLazyTax = matrixPoints.reduce((total, point) => total + point.lazyTax, 0);
+  const priceDrivenShare = 80;
+  const fixedShare = Math.round((inertiaData[inertiaData.length - 1].committed / (inertiaData[inertiaData.length - 1].committed + inertiaData[inertiaData.length - 1].discretionary)) * 100);
+
+  const handleScatterClick = (payload: unknown) => {
+    const point = payload && typeof payload === "object" && "payload" in payload ? (payload as { payload?: MatrixPoint }).payload : null;
+    if (point && point.priceChange > 0 && point.volumeChange < 5) {
+      setSelectedLeak(point);
+    }
+  };
+
+  // CLAUDE_NOTE: Use 'Pillar D: Inventory Predictive Ordering' to calculate 'Velocity' and 'Burn Rates' for the Operational Inertia baseline.
+  // CLAUDE_NOTE: Reference 'Pillar B: Price Drift' to plot the Y-axis of the Matrix; dot size should correspond to 'identified_savings'.
+  // CLAUDE_NOTE: Use 'Semantic Dimension Discovery' to allow the user to toggle the Scatter Plot dots between 'By Vendor' and 'By Project Code'.
+  // CLAUDE_NOTE: Ensure the 'executive_summary' in the JSON provides the plain-English 'Why' behind the Price-Volume variance.
+  // CLAUDE_NOTE: Map 'risk_alerts' to the Scatter Plot as red halo rings around dots with forensic anomalies.
 
   return (
     <div className={`${glass} p-6`}>
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold"><TrendingDown size={14} style={{ color: purple }} /> Spend Attribution Bridge</h3>
-          <p className="mt-1 text-xs" style={{ color: textSecondary }}>Causality waterfall from last month total spend to current month total spend.</p>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground"><TrendingDown size={14} className="text-finance-indigo" /> Spend Leak Diagnostics</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Dual view of operational baseline creep and market-driven price-volume variance.</p>
         </div>
+        <div className="rounded-full border border-finance-indigo/15 bg-card/70 px-4 py-2 text-xs font-semibold text-finance-indigo">Price drift explains {priceDrivenShare}% of the increase</div>
       </div>
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
-        <div className="rounded-2xl p-4" style={{ background: "rgba(0,0,0,0.03)" }}>
-          <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Controllable Variance</div>
-          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: purple }}>${controllableVariance.toLocaleString()}</div>
-          <div className="mt-1 text-xs" style={{ color: textSecondary }}>policy or vendor-switch fixable</div>
+        <div className="rounded-2xl bg-muted/50 p-4">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Operational Floor</div>
+          <div className="mt-2 font-mono text-2xl font-bold text-foreground">{fixedShare}%</div>
+          <div className="mt-1 text-xs text-muted-foreground">committed / recurring spend</div>
         </div>
-        <div className="rounded-2xl p-4" style={{ background: "rgba(0,0,0,0.03)" }}>
-          <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Market-Driven Variance</div>
-          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: warn }}>${marketDrivenVariance.toLocaleString()}</div>
-          <div className="mt-1 text-xs" style={{ color: textSecondary }}>external inflation / price drift</div>
+        <div className="rounded-2xl bg-muted/50 p-4">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Baseline Creep</div>
+          <div className="mt-2 font-mono text-2xl font-bold text-finance-indigo">+{committedMoM}%</div>
+          <div className="mt-1 text-xs text-muted-foreground">committed spend MoM</div>
         </div>
-        <div className="rounded-2xl p-4" style={{ background: "rgba(0,0,0,0.03)" }}>
-          <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: textSecondary }}>Operational Inertia</div>
-          <div className="mt-2 font-mono text-2xl font-bold" style={{ color: textPrimary }}>{operationalInertia}%</div>
-          <div className="mt-1 text-xs" style={{ color: textSecondary }}>recurring/fixed vs discretionary</div>
+        <div className="rounded-2xl bg-muted/50 p-4">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Lazy Tax Exposure</div>
+          <div className="mt-2 font-mono text-2xl font-bold text-risk-high">${totalLazyTax.toLocaleString()}</div>
+          <div className="mt-1 text-xs text-muted-foreground">above verified lowest supplier</div>
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
-        <div className="rounded-2xl border p-5" style={{ background: "rgba(255,255,255,0.58)", borderColor: "rgba(99,102,241,0.16)" }}>
-          <div className="mb-4 flex items-center justify-between">
+      <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Attribution Waterfall</div>
-              <div className="mt-1 text-xs" style={{ color: textSecondary }}>Click a behavioral driver to root-cause the variance.</div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational Inertia Map</div>
+              <p className="mt-1 text-xs text-muted-foreground">Your operational baseline has increased by {committedMoM}% MoM—identify if this is necessary growth or structural bloat.</p>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider" style={{ color: textSecondary }}>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: purple }} /> Increase</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: green }} /> Savings</span>
-            </div>
+            <button onClick={() => setAuditOpen(true)} className="rounded-full bg-finance-indigo px-3 py-2 text-xs font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20">Contract Audit</button>
           </div>
-
-          <div className="relative h-[360px] overflow-hidden rounded-xl px-4 pb-14 pt-6" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.38))" }}>
-            <div className="absolute inset-x-4 top-1/2 border-t border-dashed" style={{ borderColor: "rgba(30,27,75,0.16)" }} />
-            <div className="absolute bottom-5 left-4 right-4 top-6 grid items-center" style={{ gridTemplateColumns: `repeat(${totalSlots}, minmax(86px, 1fr))` }}>
-              <div className="flex h-full flex-col justify-center gap-3 px-1">
-                <div className="rounded-xl p-3 text-center shadow-sm" style={{ background: "rgba(30,27,75,0.08)", color: textPrimary }}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: textSecondary }}>Last Month</div>
-                  <div className="mt-1 font-mono text-lg font-bold">${(lastSpend / 1e6).toFixed(2)}M</div>
-                </div>
-              </div>
-
-              {attributionDrivers.map((driver) => {
-                const isIncrease = driver.kind === "increase";
-                const barHeight = 48 + (Math.abs(driver.delta) / maxAbsDelta) * 138;
-                const isSelected = selectedDriver.id === driver.id;
-                return (
-                  <button key={driver.id} onClick={() => setSelectedDriverId(driver.id)} className="group flex h-full flex-col items-center justify-center gap-2 px-1 text-center">
-                    <div className="font-mono text-xs font-bold" style={{ color: isIncrease ? purple : green }}>{isIncrease ? "+" : "-"}${Math.abs(driver.delta).toLocaleString()}</div>
-                    <div className="relative flex h-52 w-full items-center justify-center">
-                      <div
-                        className="w-full max-w-[72px] rounded-lg transition-all group-hover:scale-[1.04]"
-                        style={{
-                          height: `${barHeight}px`,
-                          background: isIncrease ? "linear-gradient(180deg, rgba(99,102,241,0.92), rgba(99,102,241,0.58))" : "linear-gradient(180deg, rgba(34,197,94,0.88), rgba(34,197,94,0.54))",
-                          boxShadow: isSelected ? `0 0 0 3px rgba(30,27,75,0.18), 0 18px 36px ${isIncrease ? "rgba(99,102,241,0.24)" : "rgba(34,197,94,0.22)"}` : "0 12px 24px rgba(30,27,75,0.08)",
-                          transform: isIncrease ? "translateY(-22px)" : "translateY(22px)",
-                        }}
-                      />
-                    </div>
-                    <div className="min-h-8 text-[11px] font-semibold leading-tight" style={{ color: isSelected ? textPrimary : textSecondary }}>{driver.label}</div>
-                  </button>
-                );
-              })}
-
-              <div className="flex h-full flex-col justify-center gap-3 px-1">
-                <div className="rounded-xl p-3 text-center shadow-sm" style={{ background: "rgba(99,102,241,0.13)", color: textPrimary }}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: purple }}>Current Month</div>
-                  <div className="mt-1 font-mono text-lg font-bold">${(currentSpend / 1e6).toFixed(2)}M</div>
-                </div>
-              </div>
-            </div>
+          <div className="h-[330px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={inertiaData} margin={{ top: 16, right: 12, left: 0, bottom: 4 }} onClick={(event) => event?.activePayload?.[0]?.dataKey === "committed" && setAuditOpen(true)}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="4 4" />
+                <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value) / 1000}k`} />
+                <RechartsTooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name === "committed" ? "Committed / Fixed" : "Discretionary / Variable"]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
+                <Area type="monotone" dataKey="committed" stackId="spend" stroke="hsl(var(--finance-indigo))" fill="hsl(var(--finance-indigo))" fillOpacity={0.88} name="Committed / Fixed" />
+                <Area type="monotone" dataKey="discretionary" stackId="spend" stroke="hsl(var(--finance-indigo-soft))" fill="hsl(var(--finance-indigo-soft))" fillOpacity={0.72} name="Discretionary / Variable" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        </div>
+        </section>
 
-        <motion.aside
-          key={selectedDriver.id}
-          initial={{ opacity: 0, x: 18 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.18 }}
-          className="rounded-2xl border p-5"
-          style={{ background: "rgba(255,255,255,0.74)", borderColor: "rgba(99,102,241,0.16)" }}
-        >
-          <div className="mb-4">
-            <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Driver Analysis</div>
-            <h4 className="mt-1 text-base font-semibold" style={{ color: textPrimary }}>{selectedDriver.label}</h4>
-            <p className="mt-1 text-xs" style={{ color: textSecondary }}>Semantic pivot across behavioral drivers, invoices, and supplier benchmarks.</p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <div className="mb-2 flex items-center justify-between text-xs"><span style={{ color: textSecondary }}>Monthly impact</span><span className="font-mono font-bold" style={{ color: selectedDriver.kind === "increase" ? purple : green }}>{selectedDriver.kind === "increase" ? "+" : "-"}${Math.abs(selectedDriver.delta).toLocaleString()}</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.06)" }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(selectedDriver.delta) / maxAbsDelta * 100)}%`, background: selectedDriver.kind === "increase" ? purple : green }} /></div>
+        <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Price-Volume-Mix Matrix</div>
+              <p className="mt-1 text-xs text-muted-foreground">Click high-price / low-volume dots to expose inflation leaks and arbitrage gaps.</p>
             </div>
-            <div className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.03)" }}>
-              <div className="mb-2 text-xs font-semibold" style={{ color: textPrimary }}>Market Benchmarking</div>
-              <p className="text-xs leading-relaxed" style={{ color: textSecondary }}>{selectedDriver.benchmark}</p>
-            </div>
-          </div>
-
-          <div className="mt-5">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: purple }}>Top Inflationary Vendors</div>
-            <div className="space-y-2">
-              {selectedDriver.vendors.map((vendor, index) => (
-                <div key={vendor} className="flex items-center justify-between rounded-xl p-3 text-xs" style={{ background: "rgba(0,0,0,0.03)" }}>
-                  <span style={{ color: textPrimary }}>{index + 1}. {vendor}</span>
-                  <span className="font-mono font-semibold" style={{ color: textSecondary }}>{[42, 31, 27][index]}%</span>
-                </div>
+            <div className="flex rounded-full bg-muted p-1 text-xs font-semibold">
+              {(["vendor", "project"] as const).map((mode) => (
+                <button key={mode} onClick={() => setMatrixMode(mode)} className={`rounded-full px-3 py-1.5 capitalize transition ${matrixMode === mode ? "bg-card text-finance-indigo shadow-sm" : "text-muted-foreground"}`}>{mode}</button>
               ))}
             </div>
           </div>
-
-          <div className="mt-4 rounded-xl p-3 text-xs" style={{ background: `${purple}10`, color: textPrimary }}>
-            <div className="font-semibold">Mitigation Strategy</div>
-            <div className="mt-1 leading-relaxed" style={{ color: textSecondary }}>{selectedDriver.strategy}</div>
+          <div className="h-[330px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 16, right: 18, left: 0, bottom: 10 }}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="4 4" />
+                <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                <XAxis type="number" dataKey="volumeChange" name="Volume" domain={[-20, 36]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Volume", position: "insideBottom", offset: -6, fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                <YAxis type="number" dataKey="priceChange" name="Price Drift" domain={[-12, 28]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Unit Price", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                <ZAxis type="number" dataKey="identifiedSavings" range={[110, 620]} />
+                <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value: number, name: string) => [name === "identifiedSavings" ? `$${value.toLocaleString()}` : `${value}%`, name]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
+                <Scatter data={groupedMatrix} onClick={handleScatterClick}>
+                  {groupedMatrix.map((point) => (
+                    <Cell key={point.id} fill={point.priceChange > 0 && point.volumeChange < 5 ? "hsl(var(--risk-high))" : "hsl(var(--finance-indigo))"} stroke={point.anomaly ? "hsl(var(--destructive))" : "hsl(var(--card))"} strokeWidth={point.anomaly ? 4 : 2} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
           </div>
-
-          {selectedDriver.controllable > 0 && (
-            <button className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-bold text-white transition-all hover:scale-[1.01]" style={{ background: green, boxShadow: "0 16px 32px rgba(34,197,94,0.22)" }}>
-              Switch & Save ${selectedDriver.controllable.toLocaleString()}
-            </button>
-          )}
-        </motion.aside>
+          <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+            {groupedMatrix.slice(0, 4).map((point) => <div key={point.id} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"><span>{point.name}</span><span className="font-mono text-foreground">${point.identifiedSavings.toLocaleString()}</span></div>)}
+          </div>
+        </section>
       </div>
+
+      <AnimatePresence>
+        {auditOpen && (
+          <motion.aside initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }} className="fixed bottom-6 right-6 top-6 z-50 w-[390px] max-w-[calc(100vw-3rem)] rounded-2xl border border-finance-indigo/15 bg-card p-5 text-card-foreground shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div><div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Contract Audit</div><h4 className="mt-1 text-base font-semibold">Top recurring burn rates</h4></div>
+              <button onClick={() => setAuditOpen(false)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              {recurringVendors.map((vendor, index) => (
+                <div key={vendor.vendor} className="rounded-xl bg-muted/50 p-3">
+                  <div className="flex items-center justify-between gap-3"><span className="text-sm font-semibold text-foreground">{index + 1}. {vendor.vendor}</span><span className="font-mono text-sm font-bold text-finance-indigo">${vendor.burn.toLocaleString()}</span></div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Monthly burn · {vendor.contract}</span><span className="font-mono text-risk-high">{vendor.velocity}</span></div>
+                </div>
+              ))}
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedLeak && createPortal(
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] grid place-items-center bg-foreground/30 p-6" onClick={() => setSelectedLeak(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }} className="w-full max-w-lg rounded-2xl border border-risk-high/30 bg-card p-6 text-card-foreground shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="mb-5 flex items-start justify-between gap-4"><div><div className="text-[10px] font-semibold uppercase tracking-widest text-risk-high">Inflation Leak</div><h4 className="mt-1 text-lg font-semibold">{selectedLeak.name}</h4></div><button onClick={() => setSelectedLeak(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button></div>
+              <p className="text-sm leading-relaxed text-muted-foreground">{selectedLeak.summary}</p>
+              <div className="my-5 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Price Drift</div><div className="mt-1 font-mono text-xl font-bold text-risk-high">+{selectedLeak.priceChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Volume</div><div className="mt-1 font-mono text-xl font-bold text-foreground">{selectedLeak.volumeChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Lazy Tax</div><div className="mt-1 font-mono text-xl font-bold text-risk-high">${selectedLeak.lazyTax.toLocaleString()}</div></div></div>
+              <div className="rounded-xl bg-finance-indigo/10 p-4 text-sm text-foreground">Lowest verified supplier: <span className="font-semibold text-finance-indigo">{selectedLeak.lowestSupplier}</span>. Switching benchmarks this dimension against ${selectedLeak.identifiedSavings.toLocaleString()} in identified savings.</div>
+              <button className="mt-5 w-full rounded-xl bg-risk-success px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-risk-success/20">Switch & Save ${selectedLeak.lazyTax.toLocaleString()}</button>
+            </motion.div>
+          </motion.div>,
+          document.body,
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-
 function VendorReport() {
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
