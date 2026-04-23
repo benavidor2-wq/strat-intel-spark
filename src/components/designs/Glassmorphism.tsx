@@ -514,9 +514,19 @@ function SpendingReport() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational Inertia Map</div>
-              <p className="mt-1 text-xs text-muted-foreground">Click a period or the fixed layer to inspect recurring habits, burn rates, and contract cadence.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Stacked area chart: the dark base is recurring spend, the lighter layer is flexible project spend. Click any period to update the readout.</p>
             </div>
             <button onClick={() => setAuditOpen(true)} className="rounded-full bg-finance-indigo px-3 py-2 text-xs font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20">Drill Down</button>
+          </div>
+          <div className="mb-3 grid gap-2 text-xs sm:grid-cols-2">
+            <button onClick={() => setAuditOpen(true)} className="rounded-xl border border-finance-indigo/15 bg-finance-indigo/10 p-3 text-left transition hover:bg-finance-indigo/15">
+              <div className="flex items-center gap-2 font-semibold text-foreground"><span className="h-3 w-3 rounded-sm bg-finance-indigo" /> Committed / Fixed</div>
+              <div className="mt-1 text-muted-foreground">Predictable vendors: rent, utilities, SaaS, recurring services.</div>
+            </button>
+            <div className="rounded-xl border border-finance-indigo/10 bg-finance-indigo-soft/20 p-3">
+              <div className="flex items-center gap-2 font-semibold text-foreground"><span className="h-3 w-3 rounded-sm bg-finance-indigo-soft" /> Discretionary / Variable</div>
+              <div className="mt-1 text-muted-foreground">One-off or project-based invoices that move with operating activity.</div>
+            </div>
           </div>
           <div className="h-[330px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -531,9 +541,9 @@ function SpendingReport() {
             </ResponsiveContainer>
           </div>
           <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Fixed layer</span><div className="font-mono font-semibold text-finance-indigo">${currentPeriod.committed.toLocaleString()}</div></div>
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Variable layer</span><div className="font-mono font-semibold text-foreground">${currentPeriod.discretionary.toLocaleString()}</div></div>
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Habit read</span><div className="font-semibold text-foreground">{currentPeriod.habit}</div></div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Selected fixed layer</span><div className="font-mono font-semibold text-finance-indigo">${currentPeriod.committed.toLocaleString()} · {currentPeriod.committedShare}%</div></div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Selected variable layer</span><div className="font-mono font-semibold text-foreground">${currentPeriod.discretionary.toLocaleString()} · {100 - currentPeriod.committedShare}%</div></div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">What changed</span><div className="font-semibold text-foreground">{currentPeriod.habit}</div></div>
           </div>
         </section>
 
