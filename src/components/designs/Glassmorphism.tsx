@@ -466,7 +466,7 @@ function SpendingReport() {
 
   // CLAUDE_NOTE: Use 'Pillar D: Inventory Predictive Ordering' to calculate 'Velocity' and 'Burn Rates' for the Operational Inertia baseline.
   // CLAUDE_NOTE: Reference 'Pillar B: Price Drift' to plot the Y-axis of the Matrix; dot size should correspond to 'identified_savings'.
-  // CLAUDE_NOTE: Use 'Semantic Dimension Discovery' to allow the user to toggle the Scatter Plot dots between 'By Vendor' and 'By Project Code'.
+  // CLAUDE_NOTE: Use company-wide invoice data only; the Scatter Plot dots are vendor-level invoice patterns.
   // CLAUDE_NOTE: Ensure the 'executive_summary' in the JSON provides the plain-English 'Why' behind the Price-Volume variance.
   // CLAUDE_NOTE: Map 'risk_alerts' to the Scatter Plot as red halo rings around dots with forensic anomalies.
 
@@ -494,7 +494,7 @@ function SpendingReport() {
         <div className="rounded-2xl bg-muted/50 p-4">
           <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Variable Change</div>
           <div className="mt-2 font-mono text-2xl font-bold text-risk-high">{discretionaryMoM > 0 ? "+" : ""}{discretionaryMoM}%</div>
-          <div className="mt-1 text-xs text-muted-foreground">project and one-off purchase motion</div>
+          <div className="mt-1 text-xs text-muted-foreground">variable and one-off invoice motion</div>
         </div>
         <div className="rounded-2xl bg-muted/50 p-4">
           <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Mapped Habits</div>
@@ -508,7 +508,7 @@ function SpendingReport() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational Inertia Map</div>
-              <p className="mt-1 text-xs text-muted-foreground">Stacked area chart: the dark base is recurring spend, the lighter layer is flexible project spend. Click any period to update the readout.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Stacked area chart: the dark base is recurring vendor spend, the lighter layer is flexible invoice spend. Click any period to update the readout.</p>
             </div>
             <button onClick={() => setAuditOpen(true)} className="rounded-full bg-finance-indigo px-3 py-2 text-xs font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20">Drill Down</button>
           </div>
@@ -519,7 +519,7 @@ function SpendingReport() {
             </button>
             <div className="rounded-xl border border-finance-indigo/10 bg-finance-indigo-soft/20 p-3">
               <div className="flex items-center gap-2 font-semibold text-foreground"><span className="h-3 w-3 rounded-sm bg-finance-indigo-soft" /> Discretionary / Variable</div>
-              <div className="mt-1 text-muted-foreground">One-off or project-based invoices that move with operating activity.</div>
+              <div className="mt-1 text-muted-foreground">One-off or variable vendor invoices that move with operating activity.</div>
             </div>
           </div>
           <div className="h-[330px]">
