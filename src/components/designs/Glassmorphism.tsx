@@ -405,7 +405,6 @@ function SpendingReport() {
     id: string;
     name: string;
     vendor: string;
-    project: string;
     volumeChange: number;
     priceChange: number;
     identifiedSavings: number;
@@ -418,7 +417,6 @@ function SpendingReport() {
   };
 
   const [auditOpen, setAuditOpen] = useState(false);
-  const [matrixMode, setMatrixMode] = useState<"vendor" | "project">("vendor");
   const [selectedHabit, setSelectedHabit] = useState<MatrixPoint | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState(spendingTrends[spendingTrends.length - 1].period);
 
@@ -445,16 +443,12 @@ function SpendingReport() {
   ];
 
   const matrixPoints: MatrixPoint[] = [
-    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", project: "Project Alpha", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, monthlySpend: 86500, lowestSupplier: "Verified Supply Co.", anomaly: true, cadence: "ad hoc", category: "Specialty Materials", summary: "This habit is price-sensitive: fewer units were bought, but the unit cost rose sharply." },
-    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", project: "Logistics", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, monthlySpend: 64200, lowestSupplier: "QuickHaul Preferred", anomaly: false, cadence: "weekly", category: "Logistics", summary: "This habit is scale-led: purchase frequency increased and pricing moved up moderately." },
-    { id: "raw", name: "Raw Materials", vendor: "AlloyWorks", project: "Project Delta", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, monthlySpend: 95000, lowestSupplier: "MetalWorks", anomaly: false, cadence: "biweekly", category: "Raw Materials", summary: "This habit is growth-led: the business bought more, while unit economics improved." },
-    { id: "saas", name: "Seat Licenses", vendor: "CloudLedger SaaS", project: "Shared Services", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, monthlySpend: 38400, lowestSupplier: "StackSuite", anomaly: true, cadence: "monthly", category: "Software", summary: "This habit is recurring-base creep: licenses expanded while renewal pricing increased." },
-    { id: "marketing", name: "Marketing Dept", vendor: "MarketMakers", project: "Growth Sprint", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, monthlySpend: 21000, lowestSupplier: "Current vendor", anomaly: false, cadence: "campaign", category: "Marketing", summary: "This habit is controlled contraction: scope reduced and unit costs improved." },
+    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, monthlySpend: 86500, lowestSupplier: "Verified Supply Co.", anomaly: true, cadence: "ad hoc", category: "Specialty Materials", summary: "This vendor habit is price-sensitive: fewer invoice units were bought, but the unit cost rose sharply." },
+    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, monthlySpend: 64200, lowestSupplier: "QuickHaul Preferred", anomaly: false, cadence: "weekly", category: "Logistics", summary: "This vendor habit is scale-led: invoice frequency increased and pricing moved up moderately." },
+    { id: "raw", name: "AlloyWorks", vendor: "AlloyWorks", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, monthlySpend: 95000, lowestSupplier: "MetalWorks", anomaly: false, cadence: "biweekly", category: "Raw Materials", summary: "This vendor habit is growth-led: the company bought more, while unit economics improved." },
+    { id: "saas", name: "CloudLedger SaaS", vendor: "CloudLedger SaaS", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, monthlySpend: 38400, lowestSupplier: "StackSuite", anomaly: true, cadence: "monthly", category: "Software", summary: "This vendor habit is recurring-base creep: licenses expanded while renewal pricing increased." },
+    { id: "marketing", name: "MarketMakers", vendor: "MarketMakers", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, monthlySpend: 21000, lowestSupplier: "Current vendor", anomaly: false, cadence: "campaign", category: "Marketing", summary: "This vendor habit is controlled contraction: scope reduced and unit costs improved." },
   ];
-
-  const groupedMatrix = matrixMode === "vendor"
-    ? matrixPoints
-    : matrixPoints.map((point) => ({ ...point, name: point.project }));
 
   const currentPeriod = inertiaData.find((point) => point.period === selectedPeriod) ?? inertiaData[inertiaData.length - 1];
   const previousPeriod = inertiaData[Math.max(0, inertiaData.findIndex((point) => point.period === currentPeriod.period) - 1)] ?? inertiaData[0];
