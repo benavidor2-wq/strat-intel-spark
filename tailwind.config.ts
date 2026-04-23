@@ -37,6 +37,10 @@ export default {
           medium: "hsl(var(--risk-medium))",
           success: "hsl(var(--risk-success))",
         },
+        finance: {
+          indigo: "hsl(var(--finance-indigo))",
+          "indigo-soft": "hsl(var(--finance-indigo-soft))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
