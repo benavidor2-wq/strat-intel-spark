@@ -534,7 +534,17 @@ function SpendingReport() {
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="4 4" />
                 <XAxis dataKey="period" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value) / 1000000}M`} />
-                <RechartsTooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name === "committed" ? "Committed / Fixed" : "Discretionary / Variable"]} labelFormatter={(label) => `${label} · ${inertiaData.find((point) => point.period === label)?.habit}`} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
+                <RechartsTooltip
+                  formatter={(value: number, name: string) => {
+                    const label = String(name).toLowerCase().includes("committed") ? "Committed / Fixed spend" : "Discretionary / Variable spend";
+                    return [`$${value.toLocaleString()}`, label];
+                  }}
+                  labelFormatter={(label) => {
+                    const point = inertiaData.find((item) => item.period === label);
+                    return point ? `${point.period} spending habit: ${point.habit}` : String(label);
+                  }}
+                  contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }}
+                />
                 <Area type="monotone" dataKey="committed" stackId="spend" stroke="hsl(var(--finance-indigo))" fill="hsl(var(--finance-indigo))" fillOpacity={0.88} name="Committed / Fixed" activeDot={{ r: 6, stroke: "hsl(var(--card))", strokeWidth: 2, onClick: () => setAuditOpen(true) }} />
                 <Area type="monotone" dataKey="discretionary" stackId="spend" stroke="hsl(var(--finance-indigo-soft))" fill="hsl(var(--finance-indigo-soft))" fillOpacity={0.64} name="Discretionary / Variable" />
               </AreaChart>
