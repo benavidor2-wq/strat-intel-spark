@@ -400,7 +400,7 @@ function PriceDriftReport() {
 
 
 function SpendingReport() {
-  type InertiaPoint = { month: string; committed: number; discretionary: number };
+  type InertiaPoint = { period: string; committed: number; discretionary: number; total: number; committedShare: number; habit: string };
   type MatrixPoint = {
     id: string;
     name: string;
@@ -409,55 +409,65 @@ function SpendingReport() {
     volumeChange: number;
     priceChange: number;
     identifiedSavings: number;
-    lazyTax: number;
+    monthlySpend: number;
     lowestSupplier: string;
     anomaly: boolean;
     summary: string;
+    cadence: string;
+    category: string;
   };
 
   const [auditOpen, setAuditOpen] = useState(false);
   const [matrixMode, setMatrixMode] = useState<"vendor" | "project">("vendor");
-  const [selectedLeak, setSelectedLeak] = useState<MatrixPoint | null>(null);
+  const [selectedHabit, setSelectedHabit] = useState<MatrixPoint | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState(spendingTrends[spendingTrends.length - 1].period);
 
   const inertiaData: InertiaPoint[] = spendingTrends.map((trend, index) => {
     const committedShare = 0.58 + index * 0.018;
+    const committed = Math.round(trend.costs * committedShare);
+    const discretionary = trend.costs - committed;
     return {
-      month: trend.month,
-      committed: Math.round(trend.costs * committedShare),
-      discretionary: Math.round(trend.costs * (1 - committedShare)),
+      period: trend.period,
+      committed,
+      discretionary,
+      total: trend.costs,
+      committedShare: Math.round((committed / trend.costs) * 100),
+      habit: index < 2 ? "seasonal expansion" : index === 2 ? "project ramp" : index === 3 ? "recurring base reset" : "fixed-cost normalization",
     };
   });
 
   const recurringVendors = [
-    { vendor: "CloudLedger SaaS", burn: 38400, velocity: "+14%", contract: "renews in 42 days" },
-    { vendor: "Metro Facilities", burn: 31200, velocity: "+9%", contract: "auto-renewal active" },
-    { vendor: "UtilityGrid", burn: 22100, velocity: "+7%", contract: "indexed monthly" },
-    { vendor: "SecureOps", burn: 18400, velocity: "+4%", contract: "seat expansion" },
-    { vendor: "FleetFuel Direct", burn: 16700, velocity: "+18%", contract: "usage-based floor" },
+    { vendor: "CloudLedger SaaS", burn: 38400, velocity: "+14%", cadence: "monthly", behavior: "seat-count creep", contract: "renews in 42 days" },
+    { vendor: "Metro Facilities", burn: 31200, velocity: "+9%", cadence: "monthly", behavior: "facility baseline", contract: "auto-renewal active" },
+    { vendor: "UtilityGrid", burn: 22100, velocity: "+7%", cadence: "monthly", behavior: "usage floor rising", contract: "indexed monthly" },
+    { vendor: "SecureOps", burn: 18400, velocity: "+4%", cadence: "annualized monthly", behavior: "tooling dependency", contract: "seat expansion" },
+    { vendor: "FleetFuel Direct", burn: 16700, velocity: "+18%", cadence: "weekly", behavior: "route intensity", contract: "usage-based floor" },
   ];
 
   const matrixPoints: MatrixPoint[] = [
-    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", project: "Project Alpha", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, lazyTax: 18300, lowestSupplier: "Verified Supply Co.", anomaly: true, summary: "80% of this spend increase is Price Drift, not operational volume." },
-    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", project: "Logistics", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, lazyTax: 7200, lowestSupplier: "QuickHaul Preferred", anomaly: false, summary: "Higher purchase velocity is amplifying a moderate rate increase." },
-    { id: "raw", name: "Raw Materials", vendor: "AlloyWorks", project: "Project Delta", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, lazyTax: 1800, lowestSupplier: "MetalWorks", anomaly: false, summary: "Spend is up from scale, while unit economics improved." },
-    { id: "saas", name: "Seat Licenses", vendor: "CloudLedger SaaS", project: "Shared Services", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, lazyTax: 9400, lowestSupplier: "StackSuite", anomaly: true, summary: "Recurring licenses expanded while renewal pricing drifted above benchmark." },
-    { id: "marketing", name: "Marketing Dept", vendor: "MarketMakers", project: "Growth Sprint", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, lazyTax: 0, lowestSupplier: "Current vendor", anomaly: false, summary: "Spend decreased from reduced scope and better negotiated unit rates." },
+    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", project: "Project Alpha", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, monthlySpend: 86500, lowestSupplier: "Verified Supply Co.", anomaly: true, cadence: "ad hoc", category: "Specialty Materials", summary: "This habit is price-sensitive: fewer units were bought, but the unit cost rose sharply." },
+    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", project: "Logistics", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, monthlySpend: 64200, lowestSupplier: "QuickHaul Preferred", anomaly: false, cadence: "weekly", category: "Logistics", summary: "This habit is scale-led: purchase frequency increased and pricing moved up moderately." },
+    { id: "raw", name: "Raw Materials", vendor: "AlloyWorks", project: "Project Delta", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, monthlySpend: 95000, lowestSupplier: "MetalWorks", anomaly: false, cadence: "biweekly", category: "Raw Materials", summary: "This habit is growth-led: the business bought more, while unit economics improved." },
+    { id: "saas", name: "Seat Licenses", vendor: "CloudLedger SaaS", project: "Shared Services", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, monthlySpend: 38400, lowestSupplier: "StackSuite", anomaly: true, cadence: "monthly", category: "Software", summary: "This habit is recurring-base creep: licenses expanded while renewal pricing increased." },
+    { id: "marketing", name: "Marketing Dept", vendor: "MarketMakers", project: "Growth Sprint", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, monthlySpend: 21000, lowestSupplier: "Current vendor", anomaly: false, cadence: "campaign", category: "Marketing", summary: "This habit is controlled contraction: scope reduced and unit costs improved." },
   ];
 
   const groupedMatrix = matrixMode === "vendor"
     ? matrixPoints
     : matrixPoints.map((point) => ({ ...point, name: point.project }));
 
-  const committedMoM = Math.round(((inertiaData[inertiaData.length - 1].committed - inertiaData[inertiaData.length - 2].committed) / inertiaData[inertiaData.length - 2].committed) * 100);
-  const totalLazyTax = matrixPoints.reduce((total, point) => total + point.lazyTax, 0);
-  const priceDrivenShare = 80;
-  const fixedShare = Math.round((inertiaData[inertiaData.length - 1].committed / (inertiaData[inertiaData.length - 1].committed + inertiaData[inertiaData.length - 1].discretionary)) * 100);
+  const currentPeriod = inertiaData.find((point) => point.period === selectedPeriod) ?? inertiaData[inertiaData.length - 1];
+  const previousPeriod = inertiaData[Math.max(0, inertiaData.findIndex((point) => point.period === currentPeriod.period) - 1)] ?? inertiaData[0];
+  const committedMoM = Math.round(((currentPeriod.committed - previousPeriod.committed) / previousPeriod.committed) * 100);
+  const discretionaryMoM = Math.round(((currentPeriod.discretionary - previousPeriod.discretionary) / previousPeriod.discretionary) * 100);
+  const totalHabitSpend = matrixPoints.reduce((total, point) => total + point.monthlySpend, 0);
+  const fixedShare = currentPeriod.committedShare;
+  const recurringBurn = recurringVendors.reduce((total, vendor) => total + vendor.burn, 0);
+  const habitConnections = matrixPoints.filter((point) => point.category === "Software" || point.category === "Logistics" || point.category === "Raw Materials");
 
   const handleScatterClick = (payload: unknown) => {
     const point = payload && typeof payload === "object" && "payload" in payload ? (payload as { payload?: MatrixPoint }).payload : null;
-    if (point && point.priceChange > 0 && point.volumeChange < 5) {
-      setSelectedLeak(point);
-    }
+    if (point) setSelectedHabit(point);
   };
 
   // CLAUDE_NOTE: Use 'Pillar D: Inventory Predictive Ordering' to calculate 'Velocity' and 'Burn Rates' for the Operational Inertia baseline.
@@ -470,27 +480,32 @@ function SpendingReport() {
     <div className={`${glass} p-6`}>
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground"><TrendingDown size={14} className="text-finance-indigo" /> Spend Leak Diagnostics</h3>
-          <p className="mt-1 text-xs text-muted-foreground">Dual view of operational baseline creep and market-driven price-volume variance.</p>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground"><TrendingDown size={14} className="text-finance-indigo" /> Spending Habits Diagnostic</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Connect recurring baseline behavior with purchase volume, cadence, and unit-price habits.</p>
         </div>
-        <div className="rounded-full border border-finance-indigo/15 bg-card/70 px-4 py-2 text-xs font-semibold text-finance-indigo">Price drift explains {priceDrivenShare}% of the increase</div>
+        <div className="rounded-full border border-finance-indigo/15 bg-card/70 px-4 py-2 text-xs font-semibold text-finance-indigo">Selected period: {currentPeriod.period}</div>
       </div>
 
-      <div className="mb-5 grid gap-3 md:grid-cols-3">
-        <div className="rounded-2xl bg-muted/50 p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Operational Floor</div>
+      <div className="mb-5 grid gap-3 md:grid-cols-4">
+        <button onClick={() => setAuditOpen(true)} className="rounded-2xl bg-muted/50 p-4 text-left transition hover:bg-muted">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Recurring Floor</div>
           <div className="mt-2 font-mono text-2xl font-bold text-foreground">{fixedShare}%</div>
-          <div className="mt-1 text-xs text-muted-foreground">committed / recurring spend</div>
+          <div className="mt-1 text-xs text-muted-foreground">of {currentPeriod.period} spend is committed</div>
+        </button>
+        <div className="rounded-2xl bg-muted/50 p-4">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Committed Change</div>
+          <div className="mt-2 font-mono text-2xl font-bold text-finance-indigo">{committedMoM > 0 ? "+" : ""}{committedMoM}%</div>
+          <div className="mt-1 text-xs text-muted-foreground">vs previous period, verified from fixed layer</div>
         </div>
         <div className="rounded-2xl bg-muted/50 p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Baseline Creep</div>
-          <div className="mt-2 font-mono text-2xl font-bold text-finance-indigo">+{committedMoM}%</div>
-          <div className="mt-1 text-xs text-muted-foreground">committed spend MoM</div>
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Variable Change</div>
+          <div className="mt-2 font-mono text-2xl font-bold text-risk-high">{discretionaryMoM > 0 ? "+" : ""}{discretionaryMoM}%</div>
+          <div className="mt-1 text-xs text-muted-foreground">project and one-off purchase motion</div>
         </div>
         <div className="rounded-2xl bg-muted/50 p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Lazy Tax Exposure</div>
-          <div className="mt-2 font-mono text-2xl font-bold text-risk-high">${totalLazyTax.toLocaleString()}</div>
-          <div className="mt-1 text-xs text-muted-foreground">above verified lowest supplier</div>
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Mapped Habits</div>
+          <div className="mt-2 font-mono text-2xl font-bold text-foreground">${(totalHabitSpend / 1000).toFixed(0)}K</div>
+          <div className="mt-1 text-xs text-muted-foreground">across matrix dimensions</div>
         </div>
       </div>
 
@@ -499,21 +514,26 @@ function SpendingReport() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational Inertia Map</div>
-              <p className="mt-1 text-xs text-muted-foreground">Your operational baseline has increased by {committedMoM}% MoM—identify if this is necessary growth or structural bloat.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Click a period or the fixed layer to inspect recurring habits, burn rates, and contract cadence.</p>
             </div>
-            <button onClick={() => setAuditOpen(true)} className="rounded-full bg-finance-indigo px-3 py-2 text-xs font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20">Contract Audit</button>
+            <button onClick={() => setAuditOpen(true)} className="rounded-full bg-finance-indigo px-3 py-2 text-xs font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20">Drill Down</button>
           </div>
           <div className="h-[330px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={inertiaData} margin={{ top: 16, right: 12, left: 0, bottom: 4 }} onClick={(event) => event?.activePayload?.[0]?.dataKey === "committed" && setAuditOpen(true)}>
+              <AreaChart data={inertiaData} margin={{ top: 18, right: 14, left: 0, bottom: 4 }} onClick={(event) => { if (event?.activeLabel) setSelectedPeriod(String(event.activeLabel)); if (event?.activePayload?.some((item) => item.dataKey === "committed")) setAuditOpen(true); }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="4 4" />
-                <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value) / 1000}k`} />
-                <RechartsTooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name === "committed" ? "Committed / Fixed" : "Discretionary / Variable"]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
-                <Area type="monotone" dataKey="committed" stackId="spend" stroke="hsl(var(--finance-indigo))" fill="hsl(var(--finance-indigo))" fillOpacity={0.88} name="Committed / Fixed" />
-                <Area type="monotone" dataKey="discretionary" stackId="spend" stroke="hsl(var(--finance-indigo-soft))" fill="hsl(var(--finance-indigo-soft))" fillOpacity={0.72} name="Discretionary / Variable" />
+                <XAxis dataKey="period" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value) / 1000000}M`} />
+                <RechartsTooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name === "committed" ? "Committed / Fixed" : "Discretionary / Variable"]} labelFormatter={(label) => `${label} · ${inertiaData.find((point) => point.period === label)?.habit}`} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
+                <Area type="monotone" dataKey="committed" stackId="spend" stroke="hsl(var(--finance-indigo))" fill="hsl(var(--finance-indigo))" fillOpacity={0.88} name="Committed / Fixed" activeDot={{ r: 6, stroke: "hsl(var(--card))", strokeWidth: 2, onClick: () => setAuditOpen(true) }} />
+                <Area type="monotone" dataKey="discretionary" stackId="spend" stroke="hsl(var(--finance-indigo-soft))" fill="hsl(var(--finance-indigo-soft))" fillOpacity={0.64} name="Discretionary / Variable" />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Fixed layer</span><div className="font-mono font-semibold text-finance-indigo">${currentPeriod.committed.toLocaleString()}</div></div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Variable layer</span><div className="font-mono font-semibold text-foreground">${currentPeriod.discretionary.toLocaleString()}</div></div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Habit read</span><div className="font-semibold text-foreground">{currentPeriod.habit}</div></div>
           </div>
         </section>
 
@@ -521,7 +541,7 @@ function SpendingReport() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Price-Volume-Mix Matrix</div>
-              <p className="mt-1 text-xs text-muted-foreground">Click high-price / low-volume dots to expose inflation leaks and arbitrage gaps.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Click any dot to see the habit behind its quantity, cadence, and price movement.</p>
             </div>
             <div className="flex rounded-full bg-muted p-1 text-xs font-semibold">
               {(["vendor", "project"] as const).map((mode) => (
@@ -529,43 +549,57 @@ function SpendingReport() {
               ))}
             </div>
           </div>
-          <div className="h-[330px]">
+          <div className="relative h-[330px]">
+            <div className="pointer-events-none absolute right-6 top-4 z-10 rounded-lg bg-card/80 px-2 py-1 text-[10px] font-semibold text-risk-high">Price-led habits</div>
+            <div className="pointer-events-none absolute bottom-8 right-6 z-10 rounded-lg bg-card/80 px-2 py-1 text-[10px] font-semibold text-finance-indigo">Scale-led habits</div>
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 16, right: 18, left: 0, bottom: 10 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="4 4" />
                 <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                 <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                <XAxis type="number" dataKey="volumeChange" name="Volume" domain={[-20, 36]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Volume", position: "insideBottom", offset: -6, fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <YAxis type="number" dataKey="priceChange" name="Price Drift" domain={[-12, 28]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Unit Price", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <ZAxis type="number" dataKey="identifiedSavings" range={[110, 620]} />
-                <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value: number, name: string) => [name === "identifiedSavings" ? `$${value.toLocaleString()}` : `${value}%`, name]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
+                <XAxis type="number" dataKey="volumeChange" name="Volume Change" domain={[-20, 36]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Volume", position: "insideBottom", offset: -6, fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                <YAxis type="number" dataKey="priceChange" name="Unit Price Change" domain={[-12, 28]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Unit Price", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                <ZAxis type="number" dataKey="monthlySpend" range={[120, 660]} />
+                <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value: number, name: string) => [name === "monthlySpend" ? `$${value.toLocaleString()}` : `${value}%`, name]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
                 <Scatter data={groupedMatrix} onClick={handleScatterClick}>
                   {groupedMatrix.map((point) => (
-                    <Cell key={point.id} fill={point.priceChange > 0 && point.volumeChange < 5 ? "hsl(var(--risk-high))" : "hsl(var(--finance-indigo))"} stroke={point.anomaly ? "hsl(var(--destructive))" : "hsl(var(--card))"} strokeWidth={point.anomaly ? 4 : 2} />
+                    <Cell key={point.id} fill={point.priceChange > 12 ? "hsl(var(--risk-high))" : point.volumeChange > 20 ? "hsl(var(--finance-indigo))" : "hsl(var(--finance-indigo-soft))"} stroke={point.anomaly ? "hsl(var(--destructive))" : "hsl(var(--card))"} strokeWidth={point.anomaly ? 4 : 2} />
                   ))}
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-            {groupedMatrix.slice(0, 4).map((point) => <div key={point.id} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"><span>{point.name}</span><span className="font-mono text-foreground">${point.identifiedSavings.toLocaleString()}</span></div>)}
+            {habitConnections.map((point) => <button key={point.id} onClick={() => setSelectedHabit(point)} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-left transition hover:bg-muted"><span>{point.name}</span><span className="font-mono text-foreground">{point.cadence}</span></button>)}
           </div>
         </section>
       </div>
 
+      <div className="mt-5 rounded-2xl border border-finance-indigo/15 bg-card/70 p-4">
+        <div className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Connected Habit Path</div>
+        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center">
+          <div className="rounded-xl bg-muted/50 p-3"><div className="text-xs text-muted-foreground">Baseline</div><div className="font-semibold text-foreground">{fixedShare}% fixed in {currentPeriod.period}</div></div>
+          <div className="hidden h-px bg-finance-indigo/30 md:block" />
+          <div className="rounded-xl bg-muted/50 p-3"><div className="text-xs text-muted-foreground">Behavior</div><div className="font-semibold text-foreground">{currentPeriod.habit}</div></div>
+          <div className="hidden h-px bg-finance-indigo/30 md:block" />
+          <button onClick={() => setSelectedHabit(groupedMatrix[0])} className="rounded-xl bg-finance-indigo/10 p-3 text-left transition hover:bg-finance-indigo/15"><div className="text-xs text-muted-foreground">Matrix pivot</div><div className="font-semibold text-finance-indigo">Open related vendor/project dots</div></button>
+        </div>
+      </div>
+
       <AnimatePresence>
         {auditOpen && (
-          <motion.aside initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }} className="fixed bottom-6 right-6 top-6 z-50 w-[390px] max-w-[calc(100vw-3rem)] rounded-2xl border border-finance-indigo/15 bg-card p-5 text-card-foreground shadow-2xl">
+          <motion.aside initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }} className="fixed bottom-6 right-6 top-6 z-50 w-[410px] max-w-[calc(100vw-3rem)] overflow-y-auto rounded-2xl border border-finance-indigo/15 bg-card p-5 text-card-foreground shadow-2xl">
             <div className="mb-5 flex items-start justify-between gap-4">
-              <div><div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Contract Audit</div><h4 className="mt-1 text-base font-semibold">Top recurring burn rates</h4></div>
+              <div><div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Habit Drilldown</div><h4 className="mt-1 text-base font-semibold">Recurring spend audit</h4><p className="mt-1 text-xs text-muted-foreground">Verified fixed layer: ${currentPeriod.committed.toLocaleString()} · recurring burn: ${recurringBurn.toLocaleString()}</p></div>
               <button onClick={() => setAuditOpen(false)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
             </div>
             <div className="space-y-3">
               {recurringVendors.map((vendor, index) => (
-                <div key={vendor.vendor} className="rounded-xl bg-muted/50 p-3">
+                <button key={vendor.vendor} onClick={() => setSelectedHabit(matrixPoints.find((point) => point.vendor === vendor.vendor) ?? matrixPoints[3])} className="w-full rounded-xl bg-muted/50 p-3 text-left transition hover:bg-muted">
                   <div className="flex items-center justify-between gap-3"><span className="text-sm font-semibold text-foreground">{index + 1}. {vendor.vendor}</span><span className="font-mono text-sm font-bold text-finance-indigo">${vendor.burn.toLocaleString()}</span></div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Monthly burn · {vendor.contract}</span><span className="font-mono text-risk-high">{vendor.velocity}</span></div>
-                </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>{vendor.cadence} · {vendor.behavior}</span><span className="font-mono text-risk-high">{vendor.velocity}</span></div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{vendor.contract}</div>
+                </button>
               ))}
             </div>
           </motion.aside>
@@ -573,14 +607,14 @@ function SpendingReport() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {selectedLeak && createPortal(
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] grid place-items-center bg-foreground/30 p-6" onClick={() => setSelectedLeak(null)}>
-            <motion.div initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }} className="w-full max-w-lg rounded-2xl border border-risk-high/30 bg-card p-6 text-card-foreground shadow-2xl" onClick={(event) => event.stopPropagation()}>
-              <div className="mb-5 flex items-start justify-between gap-4"><div><div className="text-[10px] font-semibold uppercase tracking-widest text-risk-high">Inflation Leak</div><h4 className="mt-1 text-lg font-semibold">{selectedLeak.name}</h4></div><button onClick={() => setSelectedLeak(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button></div>
-              <p className="text-sm leading-relaxed text-muted-foreground">{selectedLeak.summary}</p>
-              <div className="my-5 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Price Drift</div><div className="mt-1 font-mono text-xl font-bold text-risk-high">+{selectedLeak.priceChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Volume</div><div className="mt-1 font-mono text-xl font-bold text-foreground">{selectedLeak.volumeChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Lazy Tax</div><div className="mt-1 font-mono text-xl font-bold text-risk-high">${selectedLeak.lazyTax.toLocaleString()}</div></div></div>
-              <div className="rounded-xl bg-finance-indigo/10 p-4 text-sm text-foreground">Lowest verified supplier: <span className="font-semibold text-finance-indigo">{selectedLeak.lowestSupplier}</span>. Switching benchmarks this dimension against ${selectedLeak.identifiedSavings.toLocaleString()} in identified savings.</div>
-              <button className="mt-5 w-full rounded-xl bg-risk-success px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-risk-success/20">Switch & Save ${selectedLeak.lazyTax.toLocaleString()}</button>
+        {selectedHabit && createPortal(
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] grid place-items-center bg-foreground/30 p-6" onClick={() => setSelectedHabit(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }} className="w-full max-w-xl rounded-2xl border border-finance-indigo/20 bg-card p-6 text-card-foreground shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="mb-5 flex items-start justify-between gap-4"><div><div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Spending Habit Detail</div><h4 className="mt-1 text-lg font-semibold">{selectedHabit.name}</h4></div><button onClick={() => setSelectedHabit(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button></div>
+              <p className="text-sm leading-relaxed text-muted-foreground">{selectedHabit.summary}</p>
+              <div className="my-5 grid gap-3 sm:grid-cols-4"><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Spend</div><div className="mt-1 font-mono text-xl font-bold text-foreground">${(selectedHabit.monthlySpend / 1000).toFixed(0)}K</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Volume</div><div className="mt-1 font-mono text-xl font-bold text-finance-indigo">{selectedHabit.volumeChange > 0 ? "+" : ""}{selectedHabit.volumeChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Unit Price</div><div className="mt-1 font-mono text-xl font-bold text-risk-high">{selectedHabit.priceChange > 0 ? "+" : ""}{selectedHabit.priceChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Cadence</div><div className="mt-1 text-sm font-bold text-foreground">{selectedHabit.cadence}</div></div></div>
+              <div className="rounded-xl bg-finance-indigo/10 p-4 text-sm text-foreground">Connection: <span className="font-semibold text-finance-indigo">{selectedHabit.category}</span> contributes to the {currentPeriod.habit} pattern in {currentPeriod.period}. Benchmark supplier: <span className="font-semibold">{selectedHabit.lowestSupplier}</span>.</div>
+              <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2"><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Vendor</span><div className="font-semibold text-foreground">{selectedHabit.vendor}</div></div><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Project Code</span><div className="font-semibold text-foreground">{selectedHabit.project}</div></div></div>
             </motion.div>
           </motion.div>,
           document.body,
