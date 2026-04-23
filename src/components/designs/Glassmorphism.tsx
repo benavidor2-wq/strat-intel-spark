@@ -551,7 +551,7 @@ function SpendingReport() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Price-Volume-Mix Matrix</div>
-              <p className="mt-1 text-xs text-muted-foreground">Click any dot to see the habit behind its quantity, cadence, and price movement.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Each dot is a vendor or project. Left/right shows quantity change, up/down shows unit-price change, and dot size shows spend weight.</p>
             </div>
             <div className="flex rounded-full bg-muted p-1 text-xs font-semibold">
               {(["vendor", "project"] as const).map((mode) => (
@@ -578,6 +578,11 @@ function SpendingReport() {
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Dot color</span><div className="font-semibold text-foreground">Amber = price-led · Indigo = volume-led</div></div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Dot size</span><div className="font-semibold text-foreground">Larger = more monthly spend</div></div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Red ring</span><div className="font-semibold text-foreground">Forensic anomaly attached</div></div>
           </div>
           <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
             {habitConnections.map((point) => <button key={point.id} onClick={() => setSelectedHabit(point)} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-left transition hover:bg-muted"><span>{point.name}</span><span className="font-mono text-foreground">{point.cadence}</span></button>)}
