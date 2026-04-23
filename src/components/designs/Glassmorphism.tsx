@@ -557,7 +557,6 @@ function SpendingReport() {
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Price-Volume-Mix Matrix</div>
               <p className="mt-1 text-xs text-muted-foreground">Each dot is a company-wide vendor invoice pattern. Left/right shows quantity change, up/down shows unit-price change, and dot size shows spend weight.</p>
             </div>
-            <div className="rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-finance-indigo">Vendor invoices only</div>
           </div>
           <div className="relative h-[330px]">
             <div className="pointer-events-none absolute right-6 top-4 z-10 rounded-lg bg-card/80 px-2 py-1 text-[10px] font-semibold text-risk-high">Price-led habits</div>
