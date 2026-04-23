@@ -405,7 +405,6 @@ function SpendingReport() {
     id: string;
     name: string;
     vendor: string;
-    project: string;
     volumeChange: number;
     priceChange: number;
     identifiedSavings: number;
@@ -418,7 +417,6 @@ function SpendingReport() {
   };
 
   const [auditOpen, setAuditOpen] = useState(false);
-  const [matrixMode, setMatrixMode] = useState<"vendor" | "project">("vendor");
   const [selectedHabit, setSelectedHabit] = useState<MatrixPoint | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState(spendingTrends[spendingTrends.length - 1].period);
 
@@ -445,16 +443,12 @@ function SpendingReport() {
   ];
 
   const matrixPoints: MatrixPoint[] = [
-    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", project: "Project Alpha", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, monthlySpend: 86500, lowestSupplier: "Verified Supply Co.", anomaly: true, cadence: "ad hoc", category: "Specialty Materials", summary: "This habit is price-sensitive: fewer units were bought, but the unit cost rose sharply." },
-    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", project: "Logistics", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, monthlySpend: 64200, lowestSupplier: "QuickHaul Preferred", anomaly: false, cadence: "weekly", category: "Logistics", summary: "This habit is scale-led: purchase frequency increased and pricing moved up moderately." },
-    { id: "raw", name: "Raw Materials", vendor: "AlloyWorks", project: "Project Delta", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, monthlySpend: 95000, lowestSupplier: "MetalWorks", anomaly: false, cadence: "biweekly", category: "Raw Materials", summary: "This habit is growth-led: the business bought more, while unit economics improved." },
-    { id: "saas", name: "Seat Licenses", vendor: "CloudLedger SaaS", project: "Shared Services", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, monthlySpend: 38400, lowestSupplier: "StackSuite", anomaly: true, cadence: "monthly", category: "Software", summary: "This habit is recurring-base creep: licenses expanded while renewal pricing increased." },
-    { id: "marketing", name: "Marketing Dept", vendor: "MarketMakers", project: "Growth Sprint", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, monthlySpend: 21000, lowestSupplier: "Current vendor", anomaly: false, cadence: "campaign", category: "Marketing", summary: "This habit is controlled contraction: scope reduced and unit costs improved." },
+    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, monthlySpend: 86500, lowestSupplier: "Verified Supply Co.", anomaly: true, cadence: "ad hoc", category: "Specialty Materials", summary: "This vendor habit is price-sensitive: fewer invoice units were bought, but the unit cost rose sharply." },
+    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, monthlySpend: 64200, lowestSupplier: "QuickHaul Preferred", anomaly: false, cadence: "weekly", category: "Logistics", summary: "This vendor habit is scale-led: invoice frequency increased and pricing moved up moderately." },
+    { id: "raw", name: "AlloyWorks", vendor: "AlloyWorks", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, monthlySpend: 95000, lowestSupplier: "MetalWorks", anomaly: false, cadence: "biweekly", category: "Raw Materials", summary: "This vendor habit is growth-led: the company bought more, while unit economics improved." },
+    { id: "saas", name: "CloudLedger SaaS", vendor: "CloudLedger SaaS", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, monthlySpend: 38400, lowestSupplier: "StackSuite", anomaly: true, cadence: "monthly", category: "Software", summary: "This vendor habit is recurring-base creep: licenses expanded while renewal pricing increased." },
+    { id: "marketing", name: "MarketMakers", vendor: "MarketMakers", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, monthlySpend: 21000, lowestSupplier: "Current vendor", anomaly: false, cadence: "campaign", category: "Marketing", summary: "This vendor habit is controlled contraction: scope reduced and unit costs improved." },
   ];
-
-  const groupedMatrix = matrixMode === "vendor"
-    ? matrixPoints
-    : matrixPoints.map((point) => ({ ...point, name: point.project }));
 
   const currentPeriod = inertiaData.find((point) => point.period === selectedPeriod) ?? inertiaData[inertiaData.length - 1];
   const previousPeriod = inertiaData[Math.max(0, inertiaData.findIndex((point) => point.period === currentPeriod.period) - 1)] ?? inertiaData[0];
@@ -472,7 +466,7 @@ function SpendingReport() {
 
   // CLAUDE_NOTE: Use 'Pillar D: Inventory Predictive Ordering' to calculate 'Velocity' and 'Burn Rates' for the Operational Inertia baseline.
   // CLAUDE_NOTE: Reference 'Pillar B: Price Drift' to plot the Y-axis of the Matrix; dot size should correspond to 'identified_savings'.
-  // CLAUDE_NOTE: Use 'Semantic Dimension Discovery' to allow the user to toggle the Scatter Plot dots between 'By Vendor' and 'By Project Code'.
+  // CLAUDE_NOTE: Use company-wide invoice data only; the Scatter Plot dots are vendor-level invoice patterns.
   // CLAUDE_NOTE: Ensure the 'executive_summary' in the JSON provides the plain-English 'Why' behind the Price-Volume variance.
   // CLAUDE_NOTE: Map 'risk_alerts' to the Scatter Plot as red halo rings around dots with forensic anomalies.
 
@@ -500,7 +494,7 @@ function SpendingReport() {
         <div className="rounded-2xl bg-muted/50 p-4">
           <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Variable Change</div>
           <div className="mt-2 font-mono text-2xl font-bold text-risk-high">{discretionaryMoM > 0 ? "+" : ""}{discretionaryMoM}%</div>
-          <div className="mt-1 text-xs text-muted-foreground">project and one-off purchase motion</div>
+          <div className="mt-1 text-xs text-muted-foreground">variable and one-off invoice motion</div>
         </div>
         <div className="rounded-2xl bg-muted/50 p-4">
           <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Mapped Habits</div>
@@ -514,7 +508,7 @@ function SpendingReport() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational Inertia Map</div>
-              <p className="mt-1 text-xs text-muted-foreground">Stacked area chart: the dark base is recurring spend, the lighter layer is flexible project spend. Click any period to update the readout.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Stacked area chart: the dark base is recurring vendor spend, the lighter layer is flexible invoice spend. Click any period to update the readout.</p>
             </div>
             <button onClick={() => setAuditOpen(true)} className="rounded-full bg-finance-indigo px-3 py-2 text-xs font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20">Drill Down</button>
           </div>
@@ -525,7 +519,7 @@ function SpendingReport() {
             </button>
             <div className="rounded-xl border border-finance-indigo/10 bg-finance-indigo-soft/20 p-3">
               <div className="flex items-center gap-2 font-semibold text-foreground"><span className="h-3 w-3 rounded-sm bg-finance-indigo-soft" /> Discretionary / Variable</div>
-              <div className="mt-1 text-muted-foreground">One-off or project-based invoices that move with operating activity.</div>
+              <div className="mt-1 text-muted-foreground">One-off or variable vendor invoices that move with operating activity.</div>
             </div>
           </div>
           <div className="h-[330px]">
@@ -561,13 +555,9 @@ function SpendingReport() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Price-Volume-Mix Matrix</div>
-              <p className="mt-1 text-xs text-muted-foreground">Each dot is a vendor or project. Left/right shows quantity change, up/down shows unit-price change, and dot size shows spend weight.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Each dot is a company-wide vendor invoice pattern. Left/right shows quantity change, up/down shows unit-price change, and dot size shows spend weight.</p>
             </div>
-            <div className="flex rounded-full bg-muted p-1 text-xs font-semibold">
-              {(["vendor", "project"] as const).map((mode) => (
-                <button key={mode} onClick={() => setMatrixMode(mode)} className={`rounded-full px-3 py-1.5 capitalize transition ${matrixMode === mode ? "bg-card text-finance-indigo shadow-sm" : "text-muted-foreground"}`}>{mode}</button>
-              ))}
-            </div>
+            <div className="rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-finance-indigo">Vendor invoices only</div>
           </div>
           <div className="relative h-[330px]">
             <div className="pointer-events-none absolute right-6 top-4 z-10 rounded-lg bg-card/80 px-2 py-1 text-[10px] font-semibold text-risk-high">Price-led habits</div>
@@ -581,8 +571,8 @@ function SpendingReport() {
                 <YAxis type="number" dataKey="priceChange" name="Unit Price Change" domain={[-12, 28]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Unit Price", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                 <ZAxis type="number" dataKey="monthlySpend" range={[120, 660]} />
                 <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value: number, name: string) => [name === "monthlySpend" ? `$${value.toLocaleString()}` : `${value}%`, name]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
-                <Scatter data={groupedMatrix} onClick={handleScatterClick}>
-                  {groupedMatrix.map((point) => (
+                <Scatter data={matrixPoints} onClick={handleScatterClick}>
+                  {matrixPoints.map((point) => (
                     <Cell key={point.id} fill={point.priceChange > 12 ? "hsl(var(--risk-high))" : point.volumeChange > 20 ? "hsl(var(--finance-indigo))" : "hsl(var(--finance-indigo-soft))"} stroke={point.anomaly ? "hsl(var(--destructive))" : "hsl(var(--card))"} strokeWidth={point.anomaly ? 4 : 2} />
                   ))}
                 </Scatter>
@@ -607,7 +597,7 @@ function SpendingReport() {
           <div className="hidden h-px bg-finance-indigo/30 md:block" />
           <div className="rounded-xl bg-muted/50 p-3"><div className="text-xs text-muted-foreground">Behavior</div><div className="font-semibold text-foreground">{currentPeriod.habit}</div></div>
           <div className="hidden h-px bg-finance-indigo/30 md:block" />
-          <button onClick={() => setSelectedHabit(groupedMatrix[0])} className="rounded-xl bg-finance-indigo/10 p-3 text-left transition hover:bg-finance-indigo/15"><div className="text-xs text-muted-foreground">Matrix pivot</div><div className="font-semibold text-finance-indigo">Open related vendor/project dots</div></button>
+          <button onClick={() => setSelectedHabit(matrixPoints[0])} className="rounded-xl bg-finance-indigo/10 p-3 text-left transition hover:bg-finance-indigo/15"><div className="text-xs text-muted-foreground">Matrix pivot</div><div className="font-semibold text-finance-indigo">Open related vendor invoice dots</div></button>
         </div>
       </div>
 
@@ -639,7 +629,7 @@ function SpendingReport() {
               <p className="text-sm leading-relaxed text-muted-foreground">{selectedHabit.summary}</p>
               <div className="my-5 grid gap-3 sm:grid-cols-4"><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Spend</div><div className="mt-1 font-mono text-xl font-bold text-foreground">${(selectedHabit.monthlySpend / 1000).toFixed(0)}K</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Volume</div><div className="mt-1 font-mono text-xl font-bold text-finance-indigo">{selectedHabit.volumeChange > 0 ? "+" : ""}{selectedHabit.volumeChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Unit Price</div><div className="mt-1 font-mono text-xl font-bold text-risk-high">{selectedHabit.priceChange > 0 ? "+" : ""}{selectedHabit.priceChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Cadence</div><div className="mt-1 text-sm font-bold text-foreground">{selectedHabit.cadence}</div></div></div>
               <div className="rounded-xl bg-finance-indigo/10 p-4 text-sm text-foreground">Connection: <span className="font-semibold text-finance-indigo">{selectedHabit.category}</span> contributes to the {currentPeriod.habit} pattern in {currentPeriod.period}. Benchmark supplier: <span className="font-semibold">{selectedHabit.lowestSupplier}</span>.</div>
-              <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2"><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Vendor</span><div className="font-semibold text-foreground">{selectedHabit.vendor}</div></div><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Project Code</span><div className="font-semibold text-foreground">{selectedHabit.project}</div></div></div>
+              <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2"><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Vendor</span><div className="font-semibold text-foreground">{selectedHabit.vendor}</div></div><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Invoice category</span><div className="font-semibold text-foreground">{selectedHabit.category}</div></div></div>
             </motion.div>
           </motion.div>,
           document.body,
