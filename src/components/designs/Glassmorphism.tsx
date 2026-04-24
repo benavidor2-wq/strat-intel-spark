@@ -657,32 +657,31 @@ function SpendingReport() {
           CLAUDE_NOTE: spendHistory should come from Pillar E (recurring-pattern detector)
           summing invoice line totals per calendar month for the trailing 4 months.
           For now we synthesize it from priceHistory × thisMonthQty as a placeholder. */}
-      <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <section className="relative rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
+        {/* CLAUDE_NOTE: groupBy toggle. When "vendor", aggregate across commodities for the same vendor.
+            Reminder: a single commodity may be sourced from multiple vendors — when grouping by commodity,
+            back-end should sum spend across all vendors for that product key (not just one vendor row). */}
+        <div className="absolute right-5 top-5 inline-flex rounded-lg border border-border bg-card/60 p-0.5 text-[10px] font-semibold">
+          <button
+            onClick={() => setGroupBy("commodity")}
+            className={`rounded-md px-2.5 py-1 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            By commodity
+          </button>
+          <button
+            onClick={() => setGroupBy("vendor")}
+            className={`rounded-md px-2.5 py-1 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            By vendor
+          </button>
+        </div>
+
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3 pr-44">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Monthly spend movement</div>
             <p className="mt-1 text-xs text-muted-foreground">How much each {groupBy} grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* CLAUDE_NOTE: groupBy toggle. When "vendor", aggregate across commodities for the same vendor.
-                Reminder: a single commodity may be sourced from multiple vendors — when grouping by commodity,
-                back-end should sum spend across all vendors for that product key (not just one vendor row). */}
-            <div className="inline-flex rounded-lg border border-border bg-card/60 p-0.5 text-[10px] font-semibold">
-              <button
-                onClick={() => setGroupBy("commodity")}
-                className={`rounded-md px-2.5 py-1 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                By commodity
-              </button>
-              <button
-                onClick={() => setGroupBy("vendor")}
-                className={`rounded-md px-2.5 py-1 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                By vendor
-              </button>
-            </div>
-            <div className="text-[10px] text-muted-foreground">Sorted by biggest growth first</div>
-          </div>
+          <div className="text-[10px] text-muted-foreground">Sorted by biggest growth first</div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
