@@ -400,235 +400,247 @@ function PriceDriftReport() {
 
 
 function SpendingReport() {
-  type InertiaPoint = { period: string; committed: number; discretionary: number; total: number; committedShare: number; habit: string };
-  type MatrixPoint = {
+  // CLAUDE_NOTE: Use the 'Integrity Layer' to flag bubbles with active 'risk_alerts' using a red pulse animation.
+  // CLAUDE_NOTE: Map the 'Lazy Tax' from the 'Arbitrage' pillar to calculate the size of the 'Waste' layer in the Efficiency Ring.
+  // CLAUDE_NOTE: Reference 'Pillar E: Spending Patterns' to define the size of bubbles based on MoM/QoQ growth variance.
+  // CLAUDE_NOTE: Use 'suggested_viz' logic to automatically highlight the bubble with the single largest savings opportunity.
+
+  type Bubble = {
     id: string;
-    name: string;
     vendor: string;
-    volumeChange: number;
-    priceChange: number;
-    identifiedSavings: number;
-    monthlySpend: number;
-    lowestSupplier: string;
-    anomaly: boolean;
-    summary: string;
-    cadence: string;
     category: string;
+    spend: number;
+    efficiency: number; // 0-100 (higher = more efficient)
+    bucket: "growth" | "base" | "leakage";
+    why: string;
+    topVendors: { name: string; spend: number }[];
+    identifiedSavings: number;
+    fixAction: string;
+    riskAlert: boolean;
   };
 
-  const [auditOpen, setAuditOpen] = useState(false);
-  const [selectedHabit, setSelectedHabit] = useState<MatrixPoint | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState(spendingTrends[spendingTrends.length - 1].period);
-
-  const inertiaData: InertiaPoint[] = spendingTrends.map((trend, index) => {
-    const committedShare = 0.58 + index * 0.018;
-    const committed = Math.round(trend.costs * committedShare);
-    const discretionary = trend.costs - committed;
-    return {
-      period: trend.period,
-      committed,
-      discretionary,
-      total: trend.costs,
-      committedShare: Math.round((committed / trend.costs) * 100),
-      habit: index < 2 ? "seasonal expansion" : index === 2 ? "project ramp" : index === 3 ? "recurring base reset" : "fixed-cost normalization",
-    };
-  });
-
-  const recurringVendors = [
-    { vendor: "CloudLedger SaaS", burn: 38400, velocity: "+14%", cadence: "monthly", behavior: "seat-count creep", contract: "renews in 42 days" },
-    { vendor: "Metro Facilities", burn: 31200, velocity: "+9%", cadence: "monthly", behavior: "facility baseline", contract: "auto-renewal active" },
-    { vendor: "UtilityGrid", burn: 22100, velocity: "+7%", cadence: "monthly", behavior: "usage floor rising", contract: "indexed monthly" },
-    { vendor: "SecureOps", burn: 18400, velocity: "+4%", cadence: "annualized monthly", behavior: "tooling dependency", contract: "seat expansion" },
-    { vendor: "FleetFuel Direct", burn: 16700, velocity: "+18%", cadence: "weekly", behavior: "route intensity", contract: "usage-based floor" },
+  const bubbles: Bubble[] = [
+    { id: "vendor-a", vendor: "Vendor A", category: "Specialty Materials", spend: 86500, efficiency: 18, bucket: "leakage", why: "Spend is up because of a 24% unit-price hike by Vendor A while order volume actually fell 6%.", topVendors: [{ name: "Vendor A", spend: 86500 }, { name: "Verified Supply Co.", spend: 12200 }, { name: "MetroParts", spend: 8100 }], identifiedSavings: 47500, fixAction: "Switch to Verified Supply Co.", riskAlert: true },
+    { id: "saas", vendor: "CloudLedger SaaS", category: "Software", spend: 38400, efficiency: 28, bucket: "leakage", why: "Seat-count creep + 18% renewal price increase. Lazy tax on auto-renewal.", topVendors: [{ name: "CloudLedger SaaS", spend: 38400 }, { name: "StackSuite", spend: 9600 }, { name: "LedgerLite", spend: 4200 }], identifiedSavings: 26400, fixAction: "Consolidate to StackSuite", riskAlert: true },
+    { id: "freight", vendor: "Northline Freight", category: "Logistics", spend: 64200, efficiency: 55, bucket: "growth", why: "Shipment frequency up 18% to support scaling; pricing only up 11%.", topVendors: [{ name: "Northline Freight", spend: 64200 }, { name: "QuickHaul Preferred", spend: 14800 }, { name: "RegionRoute", spend: 6300 }], identifiedSavings: 22900, fixAction: "Negotiate volume tier with QuickHaul", riskAlert: false },
+    { id: "raw", vendor: "AlloyWorks", category: "Raw Materials", spend: 95000, efficiency: 82, bucket: "growth", why: "Volume up 31% to fuel production; unit cost actually dropped 4%.", topVendors: [{ name: "AlloyWorks", spend: 95000 }, { name: "MetalWorks", spend: 18200 }, { name: "CoreSteel", spend: 7400 }], identifiedSavings: 11200, fixAction: "Lock in 12-month rate card", riskAlert: false },
+    { id: "facilities", vendor: "Metro Facilities", category: "Facilities", spend: 31200, efficiency: 62, bucket: "base", why: "Steady recurring baseline. Up 9% vs prior period in line with footprint.", topVendors: [{ name: "Metro Facilities", spend: 31200 }, { name: "BuildOps", spend: 6100 }, { name: "SiteCare", spend: 3200 }], identifiedSavings: 4200, fixAction: "Benchmark against BuildOps", riskAlert: false },
+    { id: "utility", vendor: "UtilityGrid", category: "Utilities", spend: 22100, efficiency: 70, bucket: "base", why: "Indexed monthly contract. Recurring inertia, low volatility.", topVendors: [{ name: "UtilityGrid", spend: 22100 }, { name: "PowerPool", spend: 4800 }, { name: "GridDirect", spend: 2100 }], identifiedSavings: 1800, fixAction: "Audit usage floor", riskAlert: false },
+    { id: "marketing", vendor: "MarketMakers", category: "Marketing", spend: 21000, efficiency: 74, bucket: "base", why: "Controlled contraction: scope reduced 14%, unit cost improved 8%.", topVendors: [{ name: "MarketMakers", spend: 21000 }, { name: "BrandLab", spend: 5400 }, { name: "GrowthForge", spend: 2800 }], identifiedSavings: 6100, fixAction: "Hold current vendor", riskAlert: false },
   ];
 
-  const matrixPoints: MatrixPoint[] = [
-    { id: "vendor-a", name: "Vendor A", vendor: "Vendor A", volumeChange: -6, priceChange: 24, identifiedSavings: 47500, monthlySpend: 86500, lowestSupplier: "Verified Supply Co.", anomaly: true, cadence: "ad hoc", category: "Specialty Materials", summary: "This vendor habit is price-sensitive: fewer invoice units were bought, but the unit cost rose sharply." },
-    { id: "freight", name: "Northline Freight", vendor: "Northline Freight", volumeChange: 18, priceChange: 11, identifiedSavings: 22900, monthlySpend: 64200, lowestSupplier: "QuickHaul Preferred", anomaly: false, cadence: "weekly", category: "Logistics", summary: "This vendor habit is scale-led: invoice frequency increased and pricing moved up moderately." },
-    { id: "raw", name: "AlloyWorks", vendor: "AlloyWorks", volumeChange: 31, priceChange: -4, identifiedSavings: 11200, monthlySpend: 95000, lowestSupplier: "MetalWorks", anomaly: false, cadence: "biweekly", category: "Raw Materials", summary: "This vendor habit is growth-led: the company bought more, while unit economics improved." },
-    { id: "saas", name: "CloudLedger SaaS", vendor: "CloudLedger SaaS", volumeChange: 7, priceChange: 18, identifiedSavings: 26400, monthlySpend: 38400, lowestSupplier: "StackSuite", anomaly: true, cadence: "monthly", category: "Software", summary: "This vendor habit is recurring-base creep: licenses expanded while renewal pricing increased." },
-    { id: "marketing", name: "MarketMakers", vendor: "MarketMakers", volumeChange: -14, priceChange: -8, identifiedSavings: 6100, monthlySpend: 21000, lowestSupplier: "Current vendor", anomaly: false, cadence: "campaign", category: "Marketing", summary: "This vendor habit is controlled contraction: scope reduced and unit costs improved." },
+  // CLAUDE_NOTE: 'suggested_viz' — auto-highlight the single largest savings opportunity
+  const heroBubble = [...bubbles].sort((a, b) => b.identifiedSavings - a.identifiedSavings)[0];
+  const totalSpend = bubbles.reduce((s, b) => s + b.spend, 0);
+  const growthSpend = bubbles.filter((b) => b.bucket === "growth").reduce((s, b) => s + b.spend, 0);
+  const baseSpend = bubbles.filter((b) => b.bucket === "base").reduce((s, b) => s + b.spend, 0);
+  const leakageSpend = bubbles.filter((b) => b.bucket === "leakage").reduce((s, b) => s + b.spend, 0);
+  const totalSavings = bubbles.reduce((s, b) => s + b.identifiedSavings, 0);
+
+  const ringData = [
+    { name: "Growth Spend", value: growthSpend, fill: "hsl(var(--finance-emerald))", desc: "Increased volume to fuel scaling" },
+    { name: "Base Spend", value: baseSpend, fill: "hsl(var(--finance-indigo))", desc: "Recurring operational inertia" },
+    { name: "Leakage", value: leakageSpend, fill: "hsl(var(--destructive))", desc: "Price drift & lazy tax" },
   ];
 
-  const currentPeriod = inertiaData.find((point) => point.period === selectedPeriod) ?? inertiaData[inertiaData.length - 1];
-  const previousPeriod = inertiaData[Math.max(0, inertiaData.findIndex((point) => point.period === currentPeriod.period) - 1)] ?? inertiaData[0];
-  const committedMoM = Math.round(((currentPeriod.committed - previousPeriod.committed) / previousPeriod.committed) * 100);
-  const discretionaryMoM = Math.round(((currentPeriod.discretionary - previousPeriod.discretionary) / previousPeriod.discretionary) * 100);
-  const totalHabitSpend = matrixPoints.reduce((total, point) => total + point.monthlySpend, 0);
-  const fixedShare = currentPeriod.committedShare;
-  const recurringBurn = recurringVendors.reduce((total, vendor) => total + vendor.burn, 0);
-  const habitConnections = matrixPoints.filter((point) => point.category === "Software" || point.category === "Logistics" || point.category === "Raw Materials");
+  const [selected, setSelected] = useState<Bubble | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const handleScatterClick = (payload: unknown) => {
-    const point = payload && typeof payload === "object" && "payload" in payload ? (payload as { payload?: MatrixPoint }).payload : null;
-    if (point) setSelectedHabit(point);
+  const efficiencyColor = (eff: number) => {
+    if (eff >= 60) return "hsl(var(--finance-emerald))";
+    if (eff >= 40) return "hsl(var(--finance-indigo))";
+    return "hsl(var(--destructive))";
   };
 
-  // CLAUDE_NOTE: Use 'Pillar D: Inventory Predictive Ordering' to calculate 'Velocity' and 'Burn Rates' for the Operational Inertia baseline.
-  // CLAUDE_NOTE: Reference 'Pillar B: Price Drift' to plot the Y-axis of the Matrix; dot size should correspond to 'identified_savings'.
-  // CLAUDE_NOTE: Use company-wide invoice data only; the Scatter Plot dots are vendor-level invoice patterns.
-  // CLAUDE_NOTE: Ensure the 'executive_summary' in the JSON provides the plain-English 'Why' behind the Price-Volume variance.
-  // CLAUDE_NOTE: Map 'risk_alerts' to the Scatter Plot as red halo rings around dots with forensic anomalies.
+  // Layout the bubbles in a tidy grid-on-canvas (size = spend)
+  const minR = 32;
+  const maxR = 78;
+  const spendMin = Math.min(...bubbles.map((b) => b.spend));
+  const spendMax = Math.max(...bubbles.map((b) => b.spend));
+  const radius = (spend: number) => minR + ((spend - spendMin) / (spendMax - spendMin)) * (maxR - minR);
+
+  // Pre-computed positions (% of canvas) — clusters by bucket
+  const positions: Record<string, { x: number; y: number }> = {
+    "vendor-a": { x: 22, y: 32 },
+    saas: { x: 38, y: 62 },
+    freight: { x: 56, y: 30 },
+    raw: { x: 78, y: 50 },
+    facilities: { x: 16, y: 74 },
+    utility: { x: 50, y: 82 },
+    marketing: { x: 78, y: 78 },
+  };
 
   return (
     <div className={`${glass} p-6`}>
-      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground"><TrendingDown size={14} className="text-finance-indigo" /> Spending Habits Diagnostic</h3>
-          <p className="mt-1 text-xs text-muted-foreground">Connect recurring baseline behavior with purchase volume, cadence, and unit-price habits.</p>
+      {/* ZONE 1: AI Narrative — Executive BLUF */}
+      <section className="mb-6 rounded-2xl border border-finance-indigo/15 bg-card/70 p-6">
+        <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
+          <Zap size={12} /> Executive pulse
         </div>
-        <div className="rounded-full border border-finance-indigo/15 bg-card/70 px-4 py-2 text-xs font-semibold text-finance-indigo">Selected period: {currentPeriod.period}</div>
-      </div>
+        <p className="text-2xl font-semibold leading-snug tracking-tight text-finance-indigo md:text-3xl">
+          Your spend is healthy on growth, but{" "}
+          <span className="text-destructive">${(leakageSpend / 1000).toFixed(0)}K of monthly leakage</span>{" "}
+          across {bubbles.filter((b) => b.bucket === "leakage").length} vendors is hiding{" "}
+          <span className="rounded-md bg-finance-emerald/15 px-2 py-0.5 text-finance-emerald">
+            ${(totalSavings / 1000).toFixed(0)}K in identified savings
+          </span>
+          . Start with <span className="text-finance-indigo">{heroBubble.vendor}</span>.
+        </p>
+      </section>
 
-      <div className="mb-5 grid gap-3 md:grid-cols-4">
-        <button onClick={() => setAuditOpen(true)} className="rounded-2xl bg-muted/50 p-4 text-left transition hover:bg-muted">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Recurring Floor</div>
-          <div className="mt-2 font-mono text-2xl font-bold text-foreground">{fixedShare}%</div>
-          <div className="mt-1 text-xs text-muted-foreground">of {currentPeriod.period} spend is committed</div>
-        </button>
-        <div className="rounded-2xl bg-muted/50 p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Committed Change</div>
-          <div className="mt-2 font-mono text-2xl font-bold text-finance-indigo">{committedMoM > 0 ? "+" : ""}{committedMoM}%</div>
-          <div className="mt-1 text-xs text-muted-foreground">vs previous period, verified from fixed layer</div>
-        </div>
-        <div className="rounded-2xl bg-muted/50 p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Variable Change</div>
-          <div className="mt-2 font-mono text-2xl font-bold text-risk-high">{discretionaryMoM > 0 ? "+" : ""}{discretionaryMoM}%</div>
-          <div className="mt-1 text-xs text-muted-foreground">variable and one-off invoice motion</div>
-        </div>
-        <div className="rounded-2xl bg-muted/50 p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Mapped Habits</div>
-          <div className="mt-2 font-mono text-2xl font-bold text-foreground">${(totalHabitSpend / 1000).toFixed(0)}K</div>
-          <div className="mt-1 text-xs text-muted-foreground">across matrix dimensions</div>
-        </div>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
+        {/* ZONE 2: Efficiency Ring */}
         <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational Inertia Map</div>
-              <p className="mt-1 text-xs text-muted-foreground">Stacked area chart: the dark base is recurring vendor spend, the lighter layer is flexible invoice spend. Click any period to update the readout.</p>
-            </div>
-            <button onClick={() => setAuditOpen(true)} className="rounded-full bg-finance-indigo px-3 py-2 text-xs font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20">Drill Down</button>
-          </div>
-          <div className="mb-3 grid gap-2 text-xs sm:grid-cols-2">
-            <button onClick={() => setAuditOpen(true)} className="rounded-xl border border-finance-indigo/15 bg-finance-indigo/10 p-3 text-left transition hover:bg-finance-indigo/15">
-              <div className="flex items-center gap-2 font-semibold text-foreground"><span className="h-3 w-3 rounded-sm bg-finance-indigo" /> Committed / Fixed</div>
-              <div className="mt-1 text-muted-foreground">Predictable vendors: rent, utilities, SaaS, recurring services.</div>
-            </button>
-            <div className="rounded-xl border border-finance-indigo/10 bg-finance-indigo-soft/20 p-3">
-              <div className="flex items-center gap-2 font-semibold text-foreground"><span className="h-3 w-3 rounded-sm bg-finance-indigo-soft" /> Discretionary / Variable</div>
-              <div className="mt-1 text-muted-foreground">One-off or variable vendor invoices that move with operating activity.</div>
-            </div>
-          </div>
-          <div className="h-[330px]">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Efficiency Ring</div>
+          <p className="mb-3 text-xs text-muted-foreground">How every dollar of monthly spend is behaving.</p>
+          <div className="relative h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={inertiaData} margin={{ top: 18, right: 14, left: 0, bottom: 4 }} onClick={(event) => { if (event?.activeLabel) setSelectedPeriod(String(event.activeLabel)); if (event?.activePayload?.some((item) => item.dataKey === "committed")) setAuditOpen(true); }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="4 4" />
-                <XAxis dataKey="period" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value) / 1000000}M`} />
-                <RechartsTooltip
-                  formatter={(value: number, name: string) => {
-                    const label = String(name).toLowerCase().includes("committed") ? "Committed / Fixed spend" : "Discretionary / Variable spend";
-                    return [`$${value.toLocaleString()}`, label];
-                  }}
-                  labelFormatter={(label) => {
-                    const point = inertiaData.find((item) => item.period === label);
-                    return point ? `${point.period} spending habit: ${point.habit}` : String(label);
-                  }}
-                  contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }}
-                />
-                <Area type="monotone" dataKey="committed" stackId="spend" stroke="hsl(var(--finance-indigo))" fill="hsl(var(--finance-indigo))" fillOpacity={0.88} name="Committed / Fixed" activeDot={{ r: 6, stroke: "hsl(var(--card))", strokeWidth: 2, onClick: () => setAuditOpen(true) }} />
-                <Area type="monotone" dataKey="discretionary" stackId="spend" stroke="hsl(var(--finance-indigo-soft))" fill="hsl(var(--finance-indigo-soft))" fillOpacity={0.64} name="Discretionary / Variable" />
-              </AreaChart>
+              <PieChart>
+                <Pie data={ringData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={78} outerRadius={120} paddingAngle={3} stroke="hsl(var(--card))" strokeWidth={3}>
+                  {ringData.map((d) => <Cell key={d.name} fill={d.fill} />)}
+                </Pie>
+                <RechartsTooltip formatter={(v: number, n: string) => [`$${v.toLocaleString()} (${((v / totalSpend) * 100).toFixed(0)}%)`, n]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
+              </PieChart>
             </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Total monthly</div>
+              <div className="font-mono text-2xl font-bold text-foreground">${(totalSpend / 1000).toFixed(0)}K</div>
+            </div>
           </div>
-          <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Selected fixed layer</span><div className="font-mono font-semibold text-finance-indigo">${currentPeriod.committed.toLocaleString()} · {currentPeriod.committedShare}%</div></div>
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Selected variable layer</span><div className="font-mono font-semibold text-foreground">${currentPeriod.discretionary.toLocaleString()} · {100 - currentPeriod.committedShare}%</div></div>
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">What changed</span><div className="font-semibold text-foreground">{currentPeriod.habit}</div></div>
+          <div className="mt-4 space-y-2">
+            {ringData.map((d) => (
+              <div key={d.name} className="flex items-start gap-3 rounded-xl bg-muted/50 p-3">
+                <span className="mt-1 h-3 w-3 shrink-0 rounded-sm" style={{ background: d.fill }} />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-sm font-semibold text-foreground">
+                    <span>{d.name}</span>
+                    <span className="font-mono">{((d.value / totalSpend) * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{d.desc}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
+        {/* ZONE 3: Discovery Bubble Map */}
         <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-          <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="mb-2 flex items-start justify-between gap-3">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Price-Volume-Mix Matrix</div>
-              <p className="mt-1 text-xs text-muted-foreground">Each dot is a company-wide vendor invoice pattern. Left/right shows quantity change, up/down shows unit-price change, and dot size shows spend weight.</p>
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Discovery Map</div>
+              <p className="mt-1 text-xs text-muted-foreground">Bubble <strong>size</strong> = monthly spend. Bubble <strong>color</strong> = efficiency score (emerald = healthy, red = price drift). Click any bubble to drill down.</p>
+            </div>
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-finance-emerald" /> High</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-finance-indigo" /> Mid</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> Drift</span>
             </div>
           </div>
-          <div className="relative h-[330px]">
-            <div className="pointer-events-none absolute right-6 top-4 z-10 rounded-lg bg-card/80 px-2 py-1 text-[10px] font-semibold text-risk-high">Price-led habits</div>
-            <div className="pointer-events-none absolute bottom-8 right-6 z-10 rounded-lg bg-card/80 px-2 py-1 text-[10px] font-semibold text-finance-indigo">Scale-led habits</div>
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 16, right: 18, left: 0, bottom: 10 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="4 4" />
-                <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                <XAxis type="number" dataKey="volumeChange" name="Volume Change" domain={[-20, 36]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Volume", position: "insideBottom", offset: -6, fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <YAxis type="number" dataKey="priceChange" name="Unit Price Change" domain={[-12, 28]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(value) => `${value}%`} axisLine={false} tickLine={false} label={{ value: "% Change in Unit Price", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <ZAxis type="number" dataKey="monthlySpend" range={[120, 660]} />
-                <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value: number, name: string) => [name === "monthlySpend" ? `$${value.toLocaleString()}` : `${value}%`, name]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
-                <Scatter data={matrixPoints} onClick={handleScatterClick}>
-                  {matrixPoints.map((point) => (
-                    <Cell key={point.id} fill={point.priceChange > 12 ? "hsl(var(--risk-high))" : point.volumeChange > 20 ? "hsl(var(--finance-indigo))" : "hsl(var(--finance-indigo-soft))"} stroke={point.anomaly ? "hsl(var(--destructive))" : "hsl(var(--card))"} strokeWidth={point.anomaly ? 4 : 2} />
-                  ))}
-                </Scatter>
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Dot color</span><div className="font-semibold text-foreground">Amber = price-led · Indigo = volume-led</div></div>
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Dot size</span><div className="font-semibold text-foreground">Larger = more monthly spend</div></div>
-            <div className="rounded-lg bg-muted/50 px-3 py-2"><span className="text-muted-foreground">Red ring</span><div className="font-semibold text-foreground">Forensic anomaly attached</div></div>
-          </div>
-          <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-            {habitConnections.map((point) => <button key={point.id} onClick={() => setSelectedHabit(point)} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-left transition hover:bg-muted"><span>{point.name}</span><span className="font-mono text-foreground">{point.cadence}</span></button>)}
-          </div>
-        </section>
-      </div>
 
-      <div className="mt-5 rounded-2xl border border-finance-indigo/15 bg-card/70 p-4">
-        <div className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Connected Habit Path</div>
-        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center">
-          <div className="rounded-xl bg-muted/50 p-3"><div className="text-xs text-muted-foreground">Baseline</div><div className="font-semibold text-foreground">{fixedShare}% fixed in {currentPeriod.period}</div></div>
-          <div className="hidden h-px bg-finance-indigo/30 md:block" />
-          <div className="rounded-xl bg-muted/50 p-3"><div className="text-xs text-muted-foreground">Behavior</div><div className="font-semibold text-foreground">{currentPeriod.habit}</div></div>
-          <div className="hidden h-px bg-finance-indigo/30 md:block" />
-          <button onClick={() => setSelectedHabit(matrixPoints[0])} className="rounded-xl bg-finance-indigo/10 p-3 text-left transition hover:bg-finance-indigo/15"><div className="text-xs text-muted-foreground">Matrix pivot</div><div className="font-semibold text-finance-indigo">Open related vendor invoice dots</div></button>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {auditOpen && (
-          <motion.aside initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }} className="fixed bottom-6 right-6 top-6 z-50 w-[410px] max-w-[calc(100vw-3rem)] overflow-y-auto rounded-2xl border border-finance-indigo/15 bg-card p-5 text-card-foreground shadow-2xl">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div><div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Habit Drilldown</div><h4 className="mt-1 text-base font-semibold">Recurring spend audit</h4><p className="mt-1 text-xs text-muted-foreground">Verified fixed layer: ${currentPeriod.committed.toLocaleString()} · recurring burn: ${recurringBurn.toLocaleString()}</p></div>
-              <button onClick={() => setAuditOpen(false)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
-            </div>
-            <div className="space-y-3">
-              {recurringVendors.map((vendor, index) => (
-                <button key={vendor.vendor} onClick={() => setSelectedHabit(matrixPoints.find((point) => point.vendor === vendor.vendor) ?? matrixPoints[3])} className="w-full rounded-xl bg-muted/50 p-3 text-left transition hover:bg-muted">
-                  <div className="flex items-center justify-between gap-3"><span className="text-sm font-semibold text-foreground">{index + 1}. {vendor.vendor}</span><span className="font-mono text-sm font-bold text-finance-indigo">${vendor.burn.toLocaleString()}</span></div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>{vendor.cadence} · {vendor.behavior}</span><span className="font-mono text-risk-high">{vendor.velocity}</span></div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">{vendor.contract}</div>
+          <div className="relative mt-3 h-[440px] overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-muted/40 via-card/60 to-muted/30">
+            {bubbles.map((b) => {
+              const pos = positions[b.id];
+              const r = radius(b.spend);
+              const isHero = b.id === heroBubble.id;
+              const isHover = hoveredId === b.id;
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => setSelected(b)}
+                  onMouseEnter={() => setHoveredId(b.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  className={`group absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-200 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-finance-indigo ${b.riskAlert ? "animate-risk-pulse" : ""}`}
+                  style={{
+                    left: `${pos.x}%`,
+                    top: `${pos.y}%`,
+                    width: r * 2,
+                    height: r * 2,
+                    background: `radial-gradient(circle at 30% 30%, ${efficiencyColor(b.efficiency)}ee, ${efficiencyColor(b.efficiency)}aa)`,
+                    boxShadow: isHero ? `0 0 0 3px hsl(var(--card)), 0 0 0 5px ${efficiencyColor(b.efficiency)}, 0 12px 28px -8px ${efficiencyColor(b.efficiency)}` : `0 8px 22px -8px ${efficiencyColor(b.efficiency)}`,
+                  }}
+                >
+                  <span className="pointer-events-none flex h-full w-full flex-col items-center justify-center px-2 text-center text-primary-foreground">
+                    <span className="text-[11px] font-bold leading-tight drop-shadow">{b.vendor}</span>
+                    <span className="font-mono text-[10px] opacity-90">${(b.spend / 1000).toFixed(0)}K</span>
+                  </span>
+                  {isHero && (
+                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full bg-finance-emerald px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground shadow-lg">
+                      Top opportunity
+                    </span>
+                  )}
+                  {isHover && (
+                    <div className="absolute left-1/2 top-full z-20 mt-3 w-64 -translate-x-1/2 rounded-xl border border-border bg-popover p-3 text-left text-popover-foreground shadow-xl">
+                      <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Why</div>
+                      <p className="mt-1 text-xs leading-relaxed">{b.why}</p>
+                      {b.bucket === "leakage" && (
+                        <div className="mt-2 flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Savings</span>
+                          <span className="font-mono font-bold text-finance-emerald">${b.identifiedSavings.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </button>
-              ))}
-            </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+              );
+            })}
+          </div>
+        </section>
+      </div>
 
+      {/* DRILL-DOWN MODAL — Semantic Pivot */}
       <AnimatePresence>
-        {selectedHabit && createPortal(
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] grid place-items-center bg-foreground/30 p-6" onClick={() => setSelectedHabit(null)}>
-            <motion.div initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }} className="w-full max-w-xl rounded-2xl border border-finance-indigo/20 bg-card p-6 text-card-foreground shadow-2xl" onClick={(event) => event.stopPropagation()}>
-              <div className="mb-5 flex items-start justify-between gap-4"><div><div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Spending Habit Detail</div><h4 className="mt-1 text-lg font-semibold">{selectedHabit.name}</h4></div><button onClick={() => setSelectedHabit(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button></div>
-              <p className="text-sm leading-relaxed text-muted-foreground">{selectedHabit.summary}</p>
-              <div className="my-5 grid gap-3 sm:grid-cols-4"><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Spend</div><div className="mt-1 font-mono text-xl font-bold text-foreground">${(selectedHabit.monthlySpend / 1000).toFixed(0)}K</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Volume</div><div className="mt-1 font-mono text-xl font-bold text-finance-indigo">{selectedHabit.volumeChange > 0 ? "+" : ""}{selectedHabit.volumeChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Unit Price</div><div className="mt-1 font-mono text-xl font-bold text-risk-high">{selectedHabit.priceChange > 0 ? "+" : ""}{selectedHabit.priceChange}%</div></div><div className="rounded-xl bg-muted/50 p-3"><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Cadence</div><div className="mt-1 text-sm font-bold text-foreground">{selectedHabit.cadence}</div></div></div>
-              <div className="rounded-xl bg-finance-indigo/10 p-4 text-sm text-foreground">Connection: <span className="font-semibold text-finance-indigo">{selectedHabit.category}</span> contributes to the {currentPeriod.habit} pattern in {currentPeriod.period}. Benchmark supplier: <span className="font-semibold">{selectedHabit.lowestSupplier}</span>.</div>
-              <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2"><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Vendor</span><div className="font-semibold text-foreground">{selectedHabit.vendor}</div></div><div className="rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Invoice category</span><div className="font-semibold text-foreground">{selectedHabit.category}</div></div></div>
+        {selected && createPortal(
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] grid place-items-center bg-foreground/30 p-6" onClick={() => setSelected(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }} className="w-full max-w-xl rounded-2xl border border-finance-indigo/20 bg-card p-6 text-card-foreground shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
+                    <span className="h-2 w-2 rounded-full" style={{ background: efficiencyColor(selected.efficiency) }} />
+                    {selected.category}
+                  </div>
+                  <h4 className="mt-1 text-lg font-semibold">{selected.vendor}</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">{selected.why}</p>
+                </div>
+                <button onClick={() => setSelected(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-muted/50 p-3">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Monthly spend</div>
+                  <div className="mt-1 font-mono text-xl font-bold text-foreground">${(selected.spend / 1000).toFixed(0)}K</div>
+                </div>
+                <div className="rounded-xl bg-muted/50 p-3">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Efficiency</div>
+                  <div className="mt-1 font-mono text-xl font-bold" style={{ color: efficiencyColor(selected.efficiency) }}>{selected.efficiency}/100</div>
+                </div>
+                <div className="rounded-xl bg-finance-emerald/10 p-3">
+                  <div className="text-[10px] uppercase tracking-widest text-finance-emerald">Savings</div>
+                  <div className="mt-1 font-mono text-xl font-bold text-finance-emerald">${(selected.identifiedSavings / 1000).toFixed(0)}K</div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Top 3 vendors in this bucket</div>
+                <div className="space-y-2">
+                  {selected.topVendors.map((v, i) => (
+                    <div key={v.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                      <span className="font-semibold text-foreground">{i + 1}. {v.name}</span>
+                      <span className="font-mono text-foreground">${v.spend.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {selected.bucket === "leakage" && (
+                <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-3 text-sm font-bold text-destructive-foreground shadow-lg shadow-destructive/30 transition hover:opacity-90">
+                  <Zap size={14} /> Fix Now — {selected.fixAction}
+                </button>
+              )}
+              {selected.bucket !== "leakage" && (
+                <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-finance-indigo px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20 transition hover:opacity-90">
+                  <CheckCircle2 size={14} /> {selected.fixAction}
+                </button>
+              )}
             </motion.div>
           </motion.div>,
           document.body,
