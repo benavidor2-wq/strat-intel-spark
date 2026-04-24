@@ -488,6 +488,7 @@ function SpendingReport() {
   const [filterOpen, setFilterOpen] = useState(false);
   type VarianceSegment = "baseline" | "growth" | "waste" | "newVendor";
   const [drillSegment, setDrillSegment] = useState<VarianceSegment | null>(null);
+  const [groupBy, setGroupBy] = useState<"commodity" | "vendor">("commodity");
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
