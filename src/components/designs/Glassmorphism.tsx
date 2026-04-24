@@ -554,13 +554,13 @@ function SpendingReport() {
   return (
     <div className={`${glass} p-6`}>
       {/* ZONE 2: Variance Decomposition Bar */}
-      <section className="mb-6 rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <section className="mb-6 rounded-2xl border border-finance-indigo/15 bg-card/70 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Variance decomposition</div>
-            <p className="mt-1 text-xs text-muted-foreground">Where did this month's spend actually come from? Volume change vs. unit-price drift.</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Where did this month's spend actually come from? Volume change vs. unit-price drift.</p>
           </div>
-          <div className="flex items-baseline gap-4 text-sm">
+          <div className="flex items-baseline gap-3 text-xs">
             <div>
               <span className="text-muted-foreground">Last month </span>
               <span className="font-mono font-bold text-foreground">${(baseline / 1000).toFixed(0)}K</span>
@@ -573,13 +573,13 @@ function SpendingReport() {
           </div>
         </div>
 
-        <div className="mt-4 h-[110px]">
+        <div className="mt-2 h-[44px]">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart
               data={varianceData}
               layout="vertical"
               stackOffset="sign"
-              margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              margin={{ top: 2, right: 4, bottom: 2, left: 4 }}
               onClick={(state: { activeTooltipIndex?: number; activePayload?: Array<{ dataKey?: string }> } | null) => {
                 const key = state?.activePayload?.[0]?.dataKey as VarianceSegment | undefined;
                 if (key) setDrillSegment(key);
@@ -588,51 +588,43 @@ function SpendingReport() {
             >
               <XAxis type="number" hide domain={[0, baseline + totalGrowth + totalWaste + totalNewVendor]} />
               <YAxis type="category" dataKey="name" hide />
-              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(215 20% 55%)" radius={[8, 0, 0, 8]} cursor="pointer">
-                <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
+              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(215 20% 55%)" radius={[6, 0, 0, 6]} cursor="pointer">
+                <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={10} fontWeight={700} />
               </RechartsBar>
               <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" cursor="pointer">
-                <LabelList dataKey="growth" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
+                <LabelList dataKey="growth" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={10} fontWeight={700} />
               </RechartsBar>
               <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" cursor="pointer">
-                <LabelList dataKey="waste" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--destructive-foreground))" fontSize={11} fontWeight={700} />
+                <LabelList dataKey="waste" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--destructive-foreground))" fontSize={10} fontWeight={700} />
               </RechartsBar>
-              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} cursor="pointer">
-                <LabelList dataKey="newVendor" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
+              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 6, 6, 0]} cursor="pointer">
+                <LabelList dataKey="newVendor" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={10} fontWeight={700} />
               </RechartsBar>
             </RechartsBarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Static color legend — clickable to drill down */}
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <button onClick={() => setDrillSegment("baseline")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40">
-            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: "hsl(215 20% 55%)" }} />
-            <div>
-              <div className="text-[11px] font-semibold text-foreground">Baseline</div>
-              <div className="text-[10px] leading-snug text-muted-foreground">Recurring spend carried over from last month.</div>
-            </div>
+        {/* Compact inline color legend — clickable to drill down */}
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+          <button onClick={() => setDrillSegment("baseline")} className="flex items-center gap-1.5 transition hover:text-foreground">
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "hsl(215 20% 55%)" }} />
+            <span className="font-semibold text-foreground">Baseline</span>
+            <span className="text-muted-foreground">recurring carried over</span>
           </button>
-          <button onClick={() => setDrillSegment("growth")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-emerald/50 hover:bg-muted/40">
-            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-emerald" />
-            <div>
-              <div className="text-[11px] font-semibold text-foreground">Volume (Growth)</div>
-              <div className="text-[10px] leading-snug text-muted-foreground">Bought more units at the same unit price.</div>
-            </div>
+          <button onClick={() => setDrillSegment("growth")} className="flex items-center gap-1.5 transition hover:text-foreground">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-finance-emerald" />
+            <span className="font-semibold text-foreground">Volume</span>
+            <span className="text-muted-foreground">more units, same price</span>
           </button>
-          <button onClick={() => setDrillSegment("waste")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-destructive/50 hover:bg-muted/40">
-            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
-            <div>
-              <div className="text-[11px] font-semibold text-foreground">Price Drift (Waste)</div>
-              <div className="text-[10px] leading-snug text-muted-foreground">Same units now cost more vs. 90-day average.</div>
-            </div>
+          <button onClick={() => setDrillSegment("waste")} className="flex items-center gap-1.5 transition hover:text-foreground">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-destructive" />
+            <span className="font-semibold text-foreground">Price Drift</span>
+            <span className="text-muted-foreground">same units cost more</span>
           </button>
-          <button onClick={() => setDrillSegment("newVendor")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-indigo/50 hover:bg-muted/40">
-            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-indigo" />
-            <div>
-              <div className="text-[11px] font-semibold text-foreground">New Vendors</div>
-              <div className="text-[10px] leading-snug text-muted-foreground">First-time vendor spend with no prior basis.</div>
-            </div>
+          <button onClick={() => setDrillSegment("newVendor")} className="flex items-center gap-1.5 transition hover:text-foreground">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-finance-indigo" />
+            <span className="font-semibold text-foreground">New Vendors</span>
+            <span className="text-muted-foreground">first-time spend</span>
           </button>
         </div>
 
