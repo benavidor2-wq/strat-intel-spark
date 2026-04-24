@@ -619,7 +619,7 @@ function SpendingReport() {
         {/* Static color legend — clickable to drill down */}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <button onClick={() => setDrillSegment("baseline")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40">
-            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: "hsl(217 91% 60%)" }} />
+            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: "hsl(215 20% 55%)" }} />
             <div>
               <div className="text-[11px] font-semibold text-foreground">Baseline</div>
               <div className="text-[10px] leading-snug text-muted-foreground">Recurring spend carried over from last month.</div>
