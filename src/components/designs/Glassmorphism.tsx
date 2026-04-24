@@ -652,80 +652,67 @@ function SpendingReport() {
 
 
 
-      {/* ZONE 4: Inertia Strip */}
+      {/* ZONE 4: Monthly spend movement per commodity
+          CLAUDE_NOTE: spendHistory should come from Pillar E (recurring-pattern detector)
+          summing invoice line totals per calendar month for the trailing 4 months.
+          For now we synthesize it from priceHistory × thisMonthQty as a placeholder. */}
       <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-        <div className="mb-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational inertia</div>
-          <p className="mt-1 text-xs text-muted-foreground">Recurring commitments on top, one-off discretionary spend below. Sparklines show the last 4 unit prices.</p>
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Monthly spend movement</div>
+            <p className="mt-1 text-xs text-muted-foreground">How much each commodity grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
+          </div>
+          <div className="text-[10px] text-muted-foreground">Sorted by biggest growth first</div>
         </div>
 
-        {/* Row A — Recurring */}
-        <div className="mb-4">
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
-            <CalendarDays size={14} className="text-finance-indigo" /> Recurring (predictable cadence)
-            <span className="text-muted-foreground font-normal">· {recurring.length} commodities</span>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {recurring.filter(matchesSegment).map((d) => (
-              <button
-                key={d.id}
-                onClick={() => setSelectedCommodityId(d.id)}
-                className="flex items-center gap-3 rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-sm font-semibold text-foreground">{d.product}</span>
-                    {d.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
+        <div className="grid gap-2">
+          {derived
+            .map((d) => {
+              // CLAUDE_NOTE: replace with real per-month spend totals from invoice ledger.
+              // Synthesized: approximate monthly spend = unit price (each month) × this month's qty.
+              const spendHistory = d.priceHistory.map((p) => p * d.thisMonthQty);
+              const dollarDelta = d.thisMonthSpend - d.lastMonthSpend;
+              const pctDelta = d.lastMonthSpend > 0
+                ? ((d.thisMonthSpend - d.lastMonthSpend) / d.lastMonthSpend) * 100
+                : 100;
+              return { d, spendHistory, dollarDelta, pctDelta };
+            })
+            .sort((a, b) => b.pctDelta - a.pctDelta)
+            .map(({ d, spendHistory, dollarDelta, pctDelta }) => {
+              const up = pctDelta >= 0;
+              const tone = up
+                ? "hsl(var(--finance-emerald))"
+                : "hsl(var(--destructive))";
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedCommodityId(d.id)}
+                  className="flex items-center gap-4 rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-semibold text-foreground">{d.product}</span>
+                      {d.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
+                    </div>
+                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{d.vendor}</div>
                   </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>{d.vendor}</span>
-                    <span>·</span>
-                    <span className="capitalize">{d.cadence}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-0.5">
-                  <Sparkline data={d.priceHistory} drift={d.priceDeltaPct} />
-                  <span className="font-mono text-[11px] font-semibold" style={{ color: driftColor(d.priceDeltaPct) }}>
-                    {d.priceDeltaPct >= 0 ? "+" : ""}{d.priceDeltaPct.toFixed(1)}%
-                  </span>
-                </div>
-              </button>
-            ))}
-            {recurring.filter(matchesSegment).length === 0 && (
-              <div className="col-span-full rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">No recurring commodities match this segment.</div>
-            )}
-          </div>
-        </div>
 
-        {/* Row B — Discretionary */}
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
-            <FileText size={14} className="text-finance-indigo" /> Discretionary (one-off this month)
-            <span className="text-muted-foreground font-normal">· {discretionary.length} new commitments</span>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {discretionary.filter(matchesSegment).map((d) => (
-              <button
-                key={d.id}
-                onClick={() => setSelectedCommodityId(d.id)}
-                className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-foreground">{d.product}</div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">{d.vendor}</div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="font-mono text-sm font-semibold text-foreground">${(d.thisMonthSpend / 1000).toFixed(1)}K</span>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">new</span>
-                </div>
-              </button>
-            ))}
-            {discretionary.filter(matchesSegment).length === 0 && (
-              <div className="col-span-full rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">No discretionary commodities match this segment.</div>
-            )}
-          </div>
+                  <Sparkline data={spendHistory} drift={pctDelta} />
+
+                  <div className="flex w-[120px] flex-col items-end">
+                    <span className="font-mono text-sm font-bold" style={{ color: tone }}>
+                      {up ? "+" : ""}${(dollarDelta / 1000).toFixed(1)}K
+                    </span>
+                    <span className="font-mono text-[11px]" style={{ color: tone }}>
+                      {up ? "+" : ""}{pctDelta.toFixed(1)}%
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
         </div>
       </section>
+
 
       {/* DRILL-DOWN DRAWER */}
       <AnimatePresence>
