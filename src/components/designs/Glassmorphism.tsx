@@ -624,10 +624,26 @@ function SpendingReport() {
             <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Growth vs. Waste quadrant</div>
             <p className="mt-1 text-xs text-muted-foreground">Each dot is one commodity. <strong>Right</strong> = buying more units. <strong>Up</strong> = paying more per unit. <strong>Bigger</strong> = more spend. Click for the full breakdown.</p>
           </div>
-          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-finance-emerald" /> Flat / down</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(var(--risk-high))" }} /> 3–10% drift</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> {">"}10% drift</span>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-finance-emerald" /> Flat / down</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(var(--risk-high))" }} /> 3–10% drift</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> {">"}10% drift</span>
+            </div>
+            <Select value={commodityFilter} onValueChange={setCommodityFilter}>
+              <SelectTrigger className="h-8 w-[200px] rounded-full border-finance-indigo/30 bg-card/80 px-3 text-xs">
+                <Filter size={12} className="mr-1 text-finance-indigo" />
+                <SelectValue placeholder="Filter commodity" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All commodities ({derived.length})</SelectItem>
+                {derived.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.product} <span className="text-muted-foreground">· {d.vendor}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
