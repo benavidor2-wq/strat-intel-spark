@@ -590,8 +590,8 @@ function SpendingReport() {
                   return [`$${(v / 1000).toFixed(1)}K`, labels[n] ?? n];
                 }}
               />
-              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(var(--muted-foreground) / 0.35)" radius={[8, 0, 0, 8]} onClick={() => setDrillSegment("baseline")} cursor="pointer">
-                <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--foreground))" fontSize={11} fontWeight={600} />
+              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(217 91% 60%)" radius={[8, 0, 0, 8]} onClick={() => setDrillSegment("baseline")} cursor="pointer">
+                <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
               </RechartsBar>
               <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" onClick={() => setDrillSegment("growth")} cursor="pointer">
                 <LabelList dataKey="growth" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
