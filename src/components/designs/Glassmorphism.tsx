@@ -662,7 +662,7 @@ function SpendingReport() {
             <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Monthly spend movement</div>
             <p className="mt-1 text-xs text-muted-foreground">How much each {groupBy} grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
           </div>
-          <div className="text-[10px] text-muted-foreground">Sorted by biggest % change first</div>
+          {/* Sort logic preserved in render below: rows are sorted by pctDelta desc (biggest % change first) */}
         </div>
 
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
