@@ -491,6 +491,15 @@ function SpendingReport() {
   type VarianceSegment = "baseline" | "growth" | "waste" | "newVendor";
   const [drillSegment, setDrillSegment] = useState<VarianceSegment | null>(null);
   const [groupBy, setGroupBy] = useState<"commodity" | "vendor">("commodity");
+  // CLAUDE_NOTE: period toggle. Backend should re-aggregate the invoice ledger by the chosen bucket
+  // (calendar month, calendar quarter, or fiscal year) and recompute thisPeriodSpend / lastPeriodSpend
+  // and the trailing-4 spendHistory series. Front-end currently relabels the existing monthly mock data.
+  const [period, setPeriod] = useState<"monthly" | "quarterly" | "yearly">("monthly");
+  const periodLabels = {
+    monthly: { adj: "Monthly", unit: "month", compare: "month-over-month" },
+    quarterly: { adj: "Quarterly", unit: "quarter", compare: "quarter-over-quarter" },
+    yearly: { adj: "Yearly", unit: "year", compare: "year-over-year" },
+  } as const;
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
