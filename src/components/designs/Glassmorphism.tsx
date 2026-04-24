@@ -287,7 +287,7 @@ function ArbitrageReport() {
               {/* Annual savings - hero metric */}
               <div className="text-center px-5 py-3 rounded-xl" style={{ background: `${green}08`, border: `1px solid ${green}20` }}>
                 <div className="text-2xl font-bold font-mono leading-tight" style={{ color: green }}>${(opp.annualSavings / 1000).toFixed(0)}K</div>
-                <div className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: textSecondary }}>per year</div>
+                <div className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: textSecondary }}>Yearly Savings</div>
               </div>
 
               {/* Secondary metrics */}
