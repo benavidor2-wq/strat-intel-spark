@@ -636,28 +636,6 @@ function SpendingReport() {
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {segmentTabs.map((tab) => {
-            const isActive = selectedSegment === tab.key;
-            const amount =
-              tab.key === "growth" ? totalGrowth :
-              tab.key === "waste" ? totalWaste :
-              tab.key === "new" ? totalNewVendor :
-              totalThisMonth - baseline;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setSelectedSegment(tab.key)}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${isActive ? "border-foreground/30 bg-foreground/5 text-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted/50"}`}
-              >
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: tab.color }} />
-                <span>{tab.label}</span>
-                {tab.key !== "all" && <span className="font-mono font-semibold" style={{ color: tab.color }}>+${(amount / 1000).toFixed(1)}K</span>}
-                {tab.key === "all" && <span className="font-mono font-semibold text-foreground">Δ ${((totalThisMonth - baseline) / 1000).toFixed(1)}K</span>}
-              </button>
-            );
-          })}
-        </div>
       </section>
 
       {/* ZONE 3: Growth vs. Waste Quadrant Map */}
