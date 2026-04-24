@@ -1,228 +1,101 @@
 
-## Approved plan update: Anomaly & Risk redesign with Claud cookie details
 
-### Goal
+# Spending Patterns Redesign — Updated (Zones 1 & 5 removed)
 
-Redesign the Anomaly & Risk page into a clearer investigation workspace, while adding cookie-themed details throughout for Claud so the experience feels more personalized and memorable.
+## Page Structure
 
----
-
-## What will change
-
-### 1. Replace the current alert list with an investigation dashboard
-
-The Anomaly & Risk page will become a two-column command center:
+### Zone 2 — Variance Decomposition Bar (now top of page)
+A single horizontal stacked bar showing **Last Month → This Month** broken into 4 segments:
 
 ```text
-┌──────────────────────────────┬────────────────────────────────┐
-│ Risk Queue                   │ Investigation Detail            │
-│                              │                                │
-│ Critical alert               │ Selected risk details           │
-│ High alert                   │ Evidence checklist              │
-│ Medium alert                 │ Recommended action              │
-│                              │ Claud cookie insight            │
-└──────────────────────────────┴────────────────────────────────┘
+[ Baseline spend ][ + Volume (Growth) ][ + Price Drift (Waste) ][ + New Vendors ]
+   $245K              +$31K green         +$16K red               +$4K indigo
 ```
 
-The left side lets the user select an anomaly.  
-The right side shows all details for the selected anomaly.
+- Hover any segment → tooltip explains the math (units × unit price delta).
+- Click a segment → filters Zone 3 & 4 to only commodities driving that segment.
 
----
-
-### 2. Add a risk summary header
-
-At the top of the page, add summary cards for:
-
-- Total flagged exposure
-- Critical alerts
-- High-risk alerts
-- Total anomalies
-- Latest detection date
-
-Example:
+### Zone 3 — Growth vs. Waste Quadrant Map
+A 2×2 scatter plot. Each dot = one commodity (vendor + product).
 
 ```text
-Anomaly & Risk
-AI-detected invoice, vendor, and payment integrity risks
-
-[$241,600 Exposure] [2 Critical] [2 High Risk] [5 Alerts]
+                  PRICE DRIFT (Waste) ↑
+                  │
+   QUIET LEAK     │   ACTIVE BLEED
+   (low vol,      │   (high vol,
+    high price)   │    high price) ← biggest fix targets
+   ───────────────┼───────────────→  VOLUME CHANGE
+   STABLE         │   HEALTHY GROWTH
+   (low vol,      │   (high vol,
+    flat price)   │    flat price) ← what "good" looks like
+                  │
 ```
 
----
+- **X-axis**: Volume change % (MoM)
+- **Y-axis**: Unit-price drift % vs 90-day average
+- **Bubble size**: Total $ spent on that commodity this month
+- **Color**: Emerald (price flat or down) → Amber (3–10% drift) → Red (>10% drift)
+- **Pulse animation**: commodities with active integrity alerts
+- **Hover**: "Copper Wire from MetalWorks — bought 11% more units AND paid 15.7% more per kg. $4.2K of the increase is waste."
+- **Click**: opens drill-down drawer pre-filtered to that commodity.
 
-### 3. Add severity filtering
+### Zone 4 — Inertia Strip (Recurring vs. Discretionary)
+A compact two-row visualization below the quadrant:
 
-Add filter pills above the risk queue:
+**Row A — Operational Inertia (Recurring)**
+Horizontal track of commodities the engine identified as recurring (matching interval pattern). Shows: cadence (monthly/weekly), last 3 invoice unit-prices as sparkline, drift indicator.
 
-```text
-All | Critical | High | Medium
-```
+**Row B — Discretionary (One-Off)**
+Same layout for invoices that broke pattern this month. These are the "new commitments" worth reviewing.
 
-Clicking a filter updates the visible alert list.
+This visualizes the **"Operational Inertia" pattern recognition** concept — predictable intervals on top, variable spend below.
 
----
+### Drill-Down Drawer (right side, opens from Zone 3 or 4)
+When a commodity is selected:
 
-### 4. Add a clickable Risk Queue
+- **Decomposition**: "$13.4K spent. $8.2K explained by volume (+15% units). $3.1K explained by unit-price drift (+12%). $2.1K baseline."
+- **Last 4 invoices** with unit price, qty, total — sparkline showing price trajectory
+- **Verdict**: Growth / Mixed / Waste with one-line reasoning
+- **Action button**: *"Find arbitrage alternatives"* or *"Negotiate with vendor"*
 
-Each alert becomes a compact clickable card showing:
+## Visual & Interaction Rules
 
-- Severity badge
-- Vendor name
-- Risk amount
-- Anomaly type
-- Short description
-- Detection date
+- **Color semantics** (consistent across all zones):
+  - Emerald `#22c55e` = Growth / Healthy
+  - Indigo `#6366f1` = Baseline / Neutral
+  - Amber = Watch (3–10% drift)
+  - Red = Waste / Fix now (>10% drift or active alert)
+- **No line charts** — replaced by Variance Bar + Quadrant Map + Inertia Strip.
+- **Single source of truth**: every zone reacts to the same selected commodity.
+- **Stupid-simple framing**: each zone answers one English question (Where did the change come from, Which commodities are bleeding, What's recurring vs new).
 
-The selected alert will be highlighted.
+## Technical Implementation
 
----
+- **File**: rewrite Spending Patterns section in `src/components/designs/Glassmorphism.tsx` (replace current Efficiency Ring + Bubble Map block).
+- **Data layer** — extend `src/data/mockData.ts`:
+  - `commodityVariance`: per-commodity object `{ product, vendor, lastMonthQty, thisMonthQty, lastUnitPrice, thisUnitPrice, baseline90d, isRecurring, cadence }`
+  - Derived in component memo: `volumeDelta`, `priceDelta`, `growthDollars`, `wasteDollars`, `quadrant`.
+- **Charts**:
+  - Zone 2: Recharts `BarChart` stacked + custom tooltip.
+  - Zone 3: Recharts `ScatterChart` with `ReferenceLine` at x=0 and y=0 for quadrant cross-hairs; absolute-positioned quadrant labels.
+  - Zone 4: flex layout of mini cards with inline SVG sparklines (no Recharts needed).
+- **State**: single `useState` for `selectedCommodityId` and `selectedSegment`. Zones derive via `useMemo`.
+- **Drawer**: reuse existing `Dialog` from `src/components/ui/dialog.tsx`.
+- **Animations**: keep existing `risk-pulse` keyframe.
+- **Remove**: Efficiency Ring doughnut, Discovery Bubble Map, AI Narrative block, leftover `groupedMatrix` / `matrixMode` references.
+- **Backend cookies** (kept as `// CLAUDE_NOTE` comments):
+  - Pillar B Price Drift → Waste segment math.
+  - Pillar C Lazy Tax → drawer "arbitrage alternatives" CTA.
+  - Pillar A Integrity alerts → red pulse on quadrant dots.
+  - Pillar E recurring-pattern detector → drives Zone 4 Row A.
 
-### 5. Add a full Investigation Detail panel
+## What Stays vs Goes
 
-When an alert is selected, the detail panel will show:
+| Keeps | Removes |
+|---|---|
+| Color tokens (emerald, indigo, amber, red) | Efficiency Ring doughnut |
+| `risk-pulse` animation | Discovery Bubble Map |
+| Dialog drill-down pattern | AI Narrative banner (Zone 1) |
+| Existing `mockData.ts` interfaces | Semantic Dimension pills (Zone 5) |
+| Glassmorphism card styling | Any line/area chart for spend over time |
 
-- Vendor name
-- Risk amount
-- Severity
-- Detection date
-- Full description
-- Why it was flagged
-- Evidence checklist
-- Recommended next action
-- Action buttons
-
-Example actions:
-
-- Mark for Review
-- Export Evidence
-- Contact Vendor
-- Dismiss Risk
-
-These can be visual-only for now unless functionality is requested later.
-
----
-
-## Cookie details for Claud
-
-### 6. Add cookie-themed UI accents throughout the Anomaly & Risk experience
-
-To personalize the page for Claud, add subtle cookie references across the redesigned page.
-
-This will be visual and UX-focused, not browser tracking cookies.
-
-Examples:
-
-- A small cookie icon or cookie badge in the page header
-- “Claud’s Risk Cookie Jar” as a friendly label for the risk queue
-- “Cookie crumb trail” section in the investigation detail panel to show evidence steps
-- Cookie-themed empty state copy if filters return no results
-- Small cookie-style circular markers in the evidence checklist
-- A “Claud’s recommendation” callout in the detail panel
-
-Example detail panel section:
-
-```text
-Cookie crumb trail
-• Invoice pattern detected
-• Vendor/payment behavior checked
-• Approval threshold reviewed
-• Recommended next action generated
-```
-
-The cookie theme will stay subtle so the page still feels professional.
-
----
-
-## Technical implementation
-
-### Main file to update
-
-- `src/components/designs/Glassmorphism.tsx`
-
-The existing `IntegrityReport` component will be redesigned.
-
-### Existing data source
-
-Use the current mock data:
-
-- `integrityAlerts` from `src/data/mockData.ts`
-
-No database changes are required.
-
-### State to add
-
-Add state for selected alert and severity filter:
-
-```ts
-const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
-const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high" | "medium">("all");
-```
-
-### Helper functions to add
-
-Add helper functions to keep the component clean:
-
-```ts
-getSeverityStyles(severity)
-getAnomalyLabel(type)
-getRiskExplanation(type)
-getRecommendedAction(type)
-getEvidenceItems(alert)
-getCookieCrumbTrail(alert)
-```
-
-### Layout approach
-
-Use responsive Tailwind grid classes:
-
-```tsx
-grid grid-cols-1 lg:grid-cols-[0.9fr_1.4fr]
-```
-
-Desktop:
-
-```text
-Risk Queue | Investigation Detail
-```
-
-Mobile:
-
-```text
-Summary cards
-Risk Queue
-Investigation Detail
-```
-
-### Styling approach
-
-Keep the current glassmorphism style but make the investigation content solid and readable:
-
-- Solid detail cards
-- High-contrast text
-- Clear severity colors
-- Subtle borders
-- No pop-up overlays
-- No clipped content
-
-Severity colors:
-
-- Critical: red
-- High: amber/orange
-- Medium: purple/indigo
-
-Cookie accents should use warm amber/brown tones sparingly so they do not conflict with severity colors.
-
----
-
-## Final experience
-
-After implementation:
-
-1. User opens Anomaly & Risk
-2. They see total exposure and risk counts immediately
-3. They scan Claud’s cookie-themed risk queue
-4. They filter by severity if needed
-5. They click an alert
-6. The detail panel updates with full investigation information
-7. The user can follow the “cookie crumb trail” to understand why the anomaly was flagged
-8. The user sees a clear recommended next action
