@@ -606,36 +606,36 @@ function SpendingReport() {
           </ResponsiveContainer>
         </div>
 
-        {/* Static color legend — always visible below the bar */}
+        {/* Static color legend — clickable to drill down */}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          <button onClick={() => setDrillSegment("baseline")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-muted-foreground/40" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">Baseline</div>
               <div className="text-[10px] leading-snug text-muted-foreground">Recurring spend carried over from last month.</div>
             </div>
-          </div>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          </button>
+          <button onClick={() => setDrillSegment("growth")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-emerald/50 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-emerald" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">Volume (Growth)</div>
               <div className="text-[10px] leading-snug text-muted-foreground">Bought more units at the same unit price.</div>
             </div>
-          </div>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          </button>
+          <button onClick={() => setDrillSegment("waste")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-destructive/50 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">Price Drift (Waste)</div>
               <div className="text-[10px] leading-snug text-muted-foreground">Same units now cost more vs. 90-day average.</div>
             </div>
-          </div>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          </button>
+          <button onClick={() => setDrillSegment("newVendor")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-indigo/50 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-indigo" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">New Vendors</div>
               <div className="text-[10px] leading-snug text-muted-foreground">First-time vendor spend with no prior basis.</div>
             </div>
-          </div>
+          </button>
         </div>
 
       </section>
