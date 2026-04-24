@@ -964,6 +964,101 @@ function SpendingReport() {
           document.body,
         )}
       </AnimatePresence>
+
+      {/* VARIANCE SEGMENT DRILL-DOWN */}
+      <AnimatePresence>
+        {drillSegment && createPortal(
+          (() => {
+            const meta = {
+              baseline:  { title: "Baseline spend",       subtitle: "Recurring spend carried over from last month",            color: "hsl(var(--muted-foreground))",  total: baseline,        explainer: "This is the floor. Every commodity you bought last month at last month's unit price." },
+              growth:    { title: "Volume (Growth)",      subtitle: "You bought more units at the same unit price",            color: "hsl(var(--finance-emerald))",   total: totalGrowth,     explainer: "Healthy: extra spend is explained by buying more, not by paying more per unit. This is your business scaling." },
+              waste:     { title: "Price Drift (Waste)",  subtitle: "Same units now cost more vs. 90-day average",             color: "hsl(var(--destructive))",       total: totalWaste,      explainer: "Fixable: same volume, higher unit price. Likely vendor inflation, surcharges, or expired pricing tiers." },
+              newVendor: { title: "New Vendor spend",     subtitle: "First-time vendor invoices with no prior-month basis",    color: "hsl(var(--finance-indigo))",    total: totalNewVendor,  explainer: "New commitments worth reviewing. Make sure these are intentional and have approved budgets." },
+            }[drillSegment];
+
+            const rows = derived
+              .map((d) => {
+                const value =
+                  drillSegment === "baseline"  ? d.lastMonthSpend :
+                  drillSegment === "growth"    ? Math.max(0, d.growthDollars) :
+                  drillSegment === "waste"     ? Math.max(0, d.wasteDollars) :
+                                                 d.newVendorDollars;
+                return { d, value };
+              })
+              .filter((r) => r.value > 0)
+              .sort((a, b) => b.value - a.value);
+
+            const totalForPct = rows.reduce((s, r) => s + r.value, 0) || 1;
+
+            return (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex justify-end bg-foreground/30" onClick={() => setDrillSegment(null)}>
+                <motion.aside
+                  initial={{ x: 460, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 460, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                  className="h-full w-full max-w-md overflow-y-auto border-l border-border bg-card p-6 text-card-foreground shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: meta.color }}>
+                        <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} />
+                        Variance segment
+                      </div>
+                      <h4 className="mt-1 text-lg font-semibold">{meta.title}</h4>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{meta.subtitle}</p>
+                    </div>
+                    <button onClick={() => setDrillSegment(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
+                  </div>
+
+                  <div className="mb-4 rounded-xl border p-3" style={{ borderColor: `${meta.color.replace("))", ") / 0.3)")}`, background: `${meta.color.replace("))", ") / 0.08)")}` }}>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: meta.color }}>Total</div>
+                    <div className="mt-1 font-mono text-2xl font-bold text-foreground">${meta.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">{meta.explainer}</p>
+                  </div>
+
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Top contributors</div>
+                    <div className="text-[10px] text-muted-foreground">{rows.length} commodit{rows.length === 1 ? "y" : "ies"}</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {rows.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No commodities contribute to this segment.</div>
+                    )}
+                    {rows.map(({ d, value }) => {
+                      const pct = (value / totalForPct) * 100;
+                      return (
+                        <button
+                          key={d.id}
+                          onClick={() => { setSelectedCommodityId(d.id); setDrillSegment(null); }}
+                          className="w-full rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-semibold text-foreground">{d.product}</div>
+                              <div className="truncate text-[11px] text-muted-foreground">{d.vendor}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-mono text-sm font-bold" style={{ color: meta.color }}>${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                              <div className="text-[10px] text-muted-foreground">{pct.toFixed(0)}% of segment</div>
+                            </div>
+                          </div>
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: meta.color }} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.aside>
+              </motion.div>
+            );
+          })(),
+          document.body,
+        )}
+      </AnimatePresence>
     </div>
   );
 }
