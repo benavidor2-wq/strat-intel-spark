@@ -486,6 +486,8 @@ function SpendingReport() {
   const [selectedCommodityId, setSelectedCommodityId] = useState<string | null>(null);
   const [commodityFilter, setCommodityFilter] = useState<string>("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  type VarianceSegment = "baseline" | "growth" | "waste" | "newVendor";
+  const [drillSegment, setDrillSegment] = useState<VarianceSegment | null>(null);
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
@@ -588,52 +590,52 @@ function SpendingReport() {
                   return [`$${(v / 1000).toFixed(1)}K`, labels[n] ?? n];
                 }}
               />
-              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(var(--muted-foreground) / 0.35)" radius={[8, 0, 0, 8]} onClick={() => setSelectedSegment("all")} cursor="pointer">
+              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(var(--muted-foreground) / 0.35)" radius={[8, 0, 0, 8]} onClick={() => setDrillSegment("baseline")} cursor="pointer">
                 <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--foreground))" fontSize={11} fontWeight={600} />
               </RechartsBar>
-              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" onClick={() => setSelectedSegment("growth")} cursor="pointer">
+              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" onClick={() => setDrillSegment("growth")} cursor="pointer">
                 <LabelList dataKey="growth" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
               </RechartsBar>
-              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" onClick={() => setSelectedSegment("waste")} cursor="pointer">
+              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" onClick={() => setDrillSegment("waste")} cursor="pointer">
                 <LabelList dataKey="waste" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--destructive-foreground))" fontSize={11} fontWeight={700} />
               </RechartsBar>
-              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} onClick={() => setSelectedSegment("new")} cursor="pointer">
+              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} onClick={() => setDrillSegment("newVendor")} cursor="pointer">
                 <LabelList dataKey="newVendor" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
               </RechartsBar>
             </RechartsBarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Static color legend — always visible below the bar */}
+        {/* Static color legend — clickable to drill down */}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          <button onClick={() => setDrillSegment("baseline")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-muted-foreground/40" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">Baseline</div>
               <div className="text-[10px] leading-snug text-muted-foreground">Recurring spend carried over from last month.</div>
             </div>
-          </div>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          </button>
+          <button onClick={() => setDrillSegment("growth")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-emerald/50 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-emerald" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">Volume (Growth)</div>
               <div className="text-[10px] leading-snug text-muted-foreground">Bought more units at the same unit price.</div>
             </div>
-          </div>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          </button>
+          <button onClick={() => setDrillSegment("waste")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-destructive/50 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">Price Drift (Waste)</div>
               <div className="text-[10px] leading-snug text-muted-foreground">Same units now cost more vs. 90-day average.</div>
             </div>
-          </div>
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+          </button>
+          <button onClick={() => setDrillSegment("newVendor")} className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2 text-left transition hover:border-finance-indigo/50 hover:bg-muted/40">
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-indigo" />
             <div>
               <div className="text-[11px] font-semibold text-foreground">New Vendors</div>
               <div className="text-[10px] leading-snug text-muted-foreground">First-time vendor spend with no prior basis.</div>
             </div>
-          </div>
+          </button>
         </div>
 
       </section>
@@ -959,6 +961,101 @@ function SpendingReport() {
               </div>
             </motion.aside>
           </motion.div>,
+          document.body,
+        )}
+      </AnimatePresence>
+
+      {/* VARIANCE SEGMENT DRILL-DOWN */}
+      <AnimatePresence>
+        {drillSegment && createPortal(
+          (() => {
+            const meta = {
+              baseline:  { title: "Baseline spend",       subtitle: "Recurring spend carried over from last month",            color: "hsl(var(--muted-foreground))",  total: baseline,        explainer: "This is the floor. Every commodity you bought last month at last month's unit price." },
+              growth:    { title: "Volume (Growth)",      subtitle: "You bought more units at the same unit price",            color: "hsl(var(--finance-emerald))",   total: totalGrowth,     explainer: "Healthy: extra spend is explained by buying more, not by paying more per unit. This is your business scaling." },
+              waste:     { title: "Price Drift (Waste)",  subtitle: "Same units now cost more vs. 90-day average",             color: "hsl(var(--destructive))",       total: totalWaste,      explainer: "Fixable: same volume, higher unit price. Likely vendor inflation, surcharges, or expired pricing tiers." },
+              newVendor: { title: "New Vendor spend",     subtitle: "First-time vendor invoices with no prior-month basis",    color: "hsl(var(--finance-indigo))",    total: totalNewVendor,  explainer: "New commitments worth reviewing. Make sure these are intentional and have approved budgets." },
+            }[drillSegment];
+
+            const rows = derived
+              .map((d) => {
+                const value =
+                  drillSegment === "baseline"  ? d.lastMonthSpend :
+                  drillSegment === "growth"    ? Math.max(0, d.growthDollars) :
+                  drillSegment === "waste"     ? Math.max(0, d.wasteDollars) :
+                                                 d.newVendorDollars;
+                return { d, value };
+              })
+              .filter((r) => r.value > 0)
+              .sort((a, b) => b.value - a.value);
+
+            const totalForPct = rows.reduce((s, r) => s + r.value, 0) || 1;
+
+            return (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex justify-end bg-foreground/30" onClick={() => setDrillSegment(null)}>
+                <motion.aside
+                  initial={{ x: 460, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 460, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                  className="h-full w-full max-w-md overflow-y-auto border-l border-border bg-card p-6 text-card-foreground shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: meta.color }}>
+                        <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} />
+                        Variance segment
+                      </div>
+                      <h4 className="mt-1 text-lg font-semibold">{meta.title}</h4>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{meta.subtitle}</p>
+                    </div>
+                    <button onClick={() => setDrillSegment(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
+                  </div>
+
+                  <div className="mb-4 rounded-xl border p-3" style={{ borderColor: `${meta.color.replace("))", ") / 0.3)")}`, background: `${meta.color.replace("))", ") / 0.08)")}` }}>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: meta.color }}>Total</div>
+                    <div className="mt-1 font-mono text-2xl font-bold text-foreground">${meta.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">{meta.explainer}</p>
+                  </div>
+
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Top contributors</div>
+                    <div className="text-[10px] text-muted-foreground">{rows.length} commodit{rows.length === 1 ? "y" : "ies"}</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {rows.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No commodities contribute to this segment.</div>
+                    )}
+                    {rows.map(({ d, value }) => {
+                      const pct = (value / totalForPct) * 100;
+                      return (
+                        <button
+                          key={d.id}
+                          onClick={() => { setSelectedCommodityId(d.id); setDrillSegment(null); }}
+                          className="w-full rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-semibold text-foreground">{d.product}</div>
+                              <div className="truncate text-[11px] text-muted-foreground">{d.vendor}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-mono text-sm font-bold" style={{ color: meta.color }}>${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                              <div className="text-[10px] text-muted-foreground">{pct.toFixed(0)}% of segment</div>
+                            </div>
+                          </div>
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: meta.color }} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.aside>
+              </motion.div>
+            );
+          })(),
           document.body,
         )}
       </AnimatePresence>
