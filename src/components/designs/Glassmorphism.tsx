@@ -1011,18 +1011,6 @@ function SpendingReport() {
                     </div>
                   </div>
 
-                  {sd.commodityId && (
-                    <button
-                      onClick={() => {
-                        const id = sd.commodityId!;
-                        setSpendDetail(null);
-                        setSelectedCommodityId(id);
-                      }}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-finance-indigo px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20 transition hover:opacity-90"
-                    >
-                      Open full commodity drill-down
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
