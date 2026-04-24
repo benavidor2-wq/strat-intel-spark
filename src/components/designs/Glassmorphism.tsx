@@ -633,20 +633,55 @@ function SpendingReport() {
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(var(--risk-high))" }} /> 3–10% drift</span>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> {">"}10% drift</span>
             </div>
-            <Select value={commodityFilter} onValueChange={setCommodityFilter}>
-              <SelectTrigger className="h-8 w-[200px] rounded-full border-finance-indigo/30 bg-card/80 px-3 text-xs">
-                <Filter size={12} className="mr-1 text-finance-indigo" />
-                <SelectValue placeholder="Filter commodity" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="all">All commodities ({derived.length})</SelectItem>
-                {derived.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.product} <span className="text-muted-foreground">· {d.vendor}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  role="combobox"
+                  aria-expanded={filterOpen}
+                  className="flex h-8 w-[220px] items-center justify-between rounded-full border border-finance-indigo/30 bg-card/80 px-3 text-xs font-medium text-foreground transition hover:bg-muted/40"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Filter size={12} className="text-finance-indigo" />
+                    <span className="truncate">
+                      {commodityFilter === "all"
+                        ? `All commodities (${derived.length})`
+                        : derived.find((d) => d.id === commodityFilter)?.product ?? "Filter commodity"}
+                    </span>
+                  </span>
+                  <ChevronsUpDown size={12} className="ml-1 shrink-0 opacity-50" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="end">
+                <Command>
+                  <CommandInput placeholder="Search commodity or vendor..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>No commodities found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => { setCommodityFilter("all"); setFilterOpen(false); }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", commodityFilter === "all" ? "opacity-100" : "opacity-0")} />
+                        All commodities ({derived.length})
+                      </CommandItem>
+                      {derived.map((d) => (
+                        <CommandItem
+                          key={d.id}
+                          value={`${d.product} ${d.vendor}`}
+                          onSelect={() => { setCommodityFilter(d.id); setFilterOpen(false); }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", commodityFilter === d.id ? "opacity-100" : "opacity-0")} />
+                          <span className="truncate">
+                            {d.product} <span className="text-muted-foreground">· {d.vendor}</span>
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
