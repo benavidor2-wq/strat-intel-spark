@@ -491,6 +491,19 @@ function SpendingReport() {
   type VarianceSegment = "baseline" | "growth" | "waste" | "newVendor";
   const [drillSegment, setDrillSegment] = useState<VarianceSegment | null>(null);
   const [groupBy, setGroupBy] = useState<"commodity" | "vendor">("commodity");
+  // Spend-movement detail dialog (Zone 4 row click)
+  type SpendDetail = {
+    title: string;
+    subtitle: string;
+    spendHistory: number[];
+    thisMonthSpend: number;
+    lastMonthSpend: number;
+    dollarDelta: number;
+    pctDelta: number;
+    riskAlert: boolean;
+    commodityId: string | null;
+  };
+  const [spendDetail, setSpendDetail] = useState<SpendDetail | null>(null);
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
