@@ -755,9 +755,18 @@ function SpendingReport() {
                 return (
                   <button
                     key={r.id}
-                    onClick={() => r.commodityId && setSelectedCommodityId(r.commodityId)}
-                    disabled={!r.commodityId}
-                    className="flex items-center gap-2 rounded-lg border border-border bg-card/80 px-2.5 py-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-card/80"
+                    onClick={() => setSpendDetail({
+                      title: r.title,
+                      subtitle: r.subtitle,
+                      spendHistory,
+                      thisMonthSpend: r.thisMonthSpend,
+                      lastMonthSpend: r.lastMonthSpend,
+                      dollarDelta,
+                      pctDelta,
+                      riskAlert: r.riskAlert,
+                      commodityId: r.commodityId,
+                    })}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-card/80 px-2.5 py-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
