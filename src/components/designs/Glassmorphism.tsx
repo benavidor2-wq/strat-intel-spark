@@ -485,6 +485,7 @@ function SpendingReport() {
   const [selectedSegment, setSelectedSegment] = useState<SegmentKey>("all");
   const [selectedCommodityId, setSelectedCommodityId] = useState<string | null>(null);
   const [commodityFilter, setCommodityFilter] = useState<string>("all");
+  const [filterOpen, setFilterOpen] = useState(false);
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
