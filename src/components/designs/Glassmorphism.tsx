@@ -574,7 +574,17 @@ function SpendingReport() {
 
         <div className="mt-4 h-[110px]">
           <ResponsiveContainer width="100%" height="100%">
-            <RechartsBarChart data={varianceData} layout="vertical" stackOffset="sign" margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+            <RechartsBarChart
+              data={varianceData}
+              layout="vertical"
+              stackOffset="sign"
+              margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              onClick={(state: { activeTooltipIndex?: number; activePayload?: Array<{ dataKey?: string }> } | null) => {
+                const key = state?.activePayload?.[0]?.dataKey as VarianceSegment | undefined;
+                if (key) setDrillSegment(key);
+              }}
+              style={{ cursor: "pointer" }}
+            >
               <XAxis type="number" hide domain={[0, baseline + totalGrowth + totalWaste + totalNewVendor]} />
               <YAxis type="category" dataKey="name" hide />
               <RechartsTooltip
@@ -582,24 +592,24 @@ function SpendingReport() {
                 contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))", background: "hsl(var(--popover))", color: "hsl(var(--popover-foreground))" }}
                 formatter={(v: number, n: string) => {
                   const labels: Record<string, string> = {
-                    baseline: "Baseline (recurring spend carried over)",
-                    growth: "Volume — bought more units at the same unit price",
-                    waste: "Price drift — same units cost more vs. 90-day average",
-                    newVendor: "New vendor spend — no prior-month basis",
+                    baseline: "Baseline (recurring spend carried over) — click to drill down",
+                    growth: "Volume — bought more units · click to drill down",
+                    waste: "Price drift — same units cost more · click to drill down",
+                    newVendor: "New vendor spend — click to drill down",
                   };
                   return [`$${(v / 1000).toFixed(1)}K`, labels[n] ?? n];
                 }}
               />
-              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(217 91% 60%)" radius={[8, 0, 0, 8]} onClick={() => setDrillSegment("baseline")} cursor="pointer">
+              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(215 20% 55%)" radius={[8, 0, 0, 8]} cursor="pointer">
                 <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
               </RechartsBar>
-              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" onClick={() => setDrillSegment("growth")} cursor="pointer">
+              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" cursor="pointer">
                 <LabelList dataKey="growth" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
               </RechartsBar>
-              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" onClick={() => setDrillSegment("waste")} cursor="pointer">
+              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" cursor="pointer">
                 <LabelList dataKey="waste" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--destructive-foreground))" fontSize={11} fontWeight={700} />
               </RechartsBar>
-              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} onClick={() => setDrillSegment("newVendor")} cursor="pointer">
+              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} cursor="pointer">
                 <LabelList dataKey="newVendor" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
               </RechartsBar>
             </RechartsBarChart>
