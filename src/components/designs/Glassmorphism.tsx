@@ -651,25 +651,39 @@ function SpendingReport() {
         {/* CLAUDE_NOTE: groupBy toggle. When "vendor", aggregate across commodities for the same vendor.
             Reminder: a single commodity may be sourced from multiple vendors — when grouping by commodity,
             back-end should sum spend across all vendors for that product key (not just one vendor row). */}
-        <div className="absolute right-5 top-5 inline-flex rounded-xl border border-finance-indigo/30 bg-card/80 p-1 text-xs font-semibold shadow-sm">
-          <button
-            onClick={() => setGroupBy("commodity")}
-            className={`rounded-lg px-4 py-2 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            By commodity
-          </button>
-          <button
-            onClick={() => setGroupBy("vendor")}
-            className={`rounded-lg px-4 py-2 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            By vendor
-          </button>
+        <div className="absolute right-5 top-5 flex flex-col items-end gap-1.5">
+          <div className="inline-flex rounded-xl border border-finance-indigo/30 bg-card/80 p-1 text-xs font-semibold shadow-sm">
+            <button
+              onClick={() => setGroupBy("commodity")}
+              className={`rounded-lg px-4 py-2 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              By commodity
+            </button>
+            <button
+              onClick={() => setGroupBy("vendor")}
+              className={`rounded-lg px-4 py-2 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              By vendor
+            </button>
+          </div>
+          {/* CLAUDE_NOTE: period toggle — re-buckets the ledger by month / quarter / year. */}
+          <div className="inline-flex rounded-xl border border-finance-indigo/30 bg-card/80 p-1 text-[11px] font-semibold shadow-sm">
+            {(["monthly", "quarterly", "yearly"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`rounded-lg px-3 py-1.5 capitalize transition ${period === p ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3 pr-44">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Monthly spend movement</div>
-            <p className="mt-1 text-xs text-muted-foreground">How much each {groupBy} grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">{periodLabels[period].adj} spend movement</div>
+            <p className="mt-1 text-xs text-muted-foreground">How much each {groupBy} grew or dropped {periodLabels[period].compare}. Sparkline shows total spend over the last 4 {periodLabels[period].unit}s.</p>
           </div>
           <div className="text-[10px] text-muted-foreground">Sorted by biggest % change first</div>
         </div>
