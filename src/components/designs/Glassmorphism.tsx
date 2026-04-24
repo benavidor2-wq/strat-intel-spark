@@ -482,6 +482,7 @@ function SpendingReport() {
   type SegmentKey = "all" | "growth" | "waste" | "new";
   const [selectedSegment, setSelectedSegment] = useState<SegmentKey>("all");
   const [selectedCommodityId, setSelectedCommodityId] = useState<string | null>(null);
+  const [commodityFilter, setCommodityFilter] = useState<string>("all");
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
@@ -500,7 +501,9 @@ function SpendingReport() {
     (selectedSegment === "waste" && d.wasteDollars > 200) ||
     (selectedSegment === "new" && d.newVendorDollars > 0);
 
-  const visible = derived.filter(matchesSegment);
+  const matchesCommodity = (d: Derived) => commodityFilter === "all" || d.id === commodityFilter;
+
+  const visible = derived.filter((d) => matchesSegment(d) && matchesCommodity(d));
 
   // Color by price drift
   const driftColor = (priceDeltaPct: number) => {
