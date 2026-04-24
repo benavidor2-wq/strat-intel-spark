@@ -1037,6 +1037,15 @@ function SpendingReport() {
       )}
 
 
+      {/* VARIANCE SEGMENT DRILL-DOWN
+          CLAUDE_NOTE: opens when user clicks any segment in the Variance Decomposition bar.
+          Backend should expose `value` per commodity per segment so this drawer stays read-only:
+            baseline.value  = lastMonthSpend
+            growth.value    = MAX(0, growthDollars)        (qtyDelta * lastUnitPrice)
+            waste.value     = MAX(0, wasteDollars)         (priceDrift * thisQty)
+            newVendor.value = newVendorDollars             (full thisMonthSpend if vendor is new)
+          Identity: SUM across all 4 segments == thisMonthSpend - lastMonthSpend + lastMonthSpend.
+          Sorted by `value DESC`, filtered to `value > 0`. */}
       <AnimatePresence>
         {drillSegment && createPortal(
           (() => {
