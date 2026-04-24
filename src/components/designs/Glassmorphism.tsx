@@ -124,6 +124,9 @@ export default function Glassmorphism() {
 
 /* ── Vendor Popover ── */
 
+// CLAUDE_NOTE: VendorPopover surfaces the per-vendor invoice evidence behind each Lazy Tax pill.
+// Backend should hydrate this from invoice_lines (vendor_id, product_id) over the trailing 30-day window.
+// The `isBest` flag = (vendor.price === MIN(price across vendors for that product)).
 function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: number; invoiceNo: string; invoiceDate: string; qty: number; total: number }; isBest: boolean }) {
   const [open, setOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
@@ -209,6 +212,9 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
   );
 }
 
+// CLAUDE_NOTE: QtyPopover decomposes monthlyQty into source invoices.
+// monthlyQty MUST equal SUM(qty) of vendors[] — backend should aggregate invoice_lines.qty
+// for the same product across the rolling 30-day window before sending to the client.
 function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { name: string; price: number; invoiceNo: string; invoiceDate: string; qty: number; total: number }[] }) {
   const [open, setOpen] = useState(false);
   const totalFromInvoices = vendors.reduce((s, v) => s + v.qty, 0);
@@ -261,6 +267,14 @@ function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { na
 
 /* ── Report Components ── */
 
+// CLAUDE_NOTE: Pillar C — Lazy Tax / Vendor Arbitrage.
+// Math contract per opportunity:
+//   bestPrice      = MIN(vendors[].price)
+//   lazyTax        = currentPrice - bestPrice           (per-unit overpayment)
+//   monthlyQty     = SUM(vendors[].qty) over trailing 30d
+//   monthlySavings = lazyTax * monthlyQty
+//   annualSavings  = monthlySavings * 12
+// Backend: source from invoice_lines joined to vendors; expire opportunities at contractEnd.
 function ArbitrageReport() {
   return (
     <div className="grid gap-3">
@@ -314,6 +328,9 @@ function ArbitrageReport() {
   );
 }
 
+// CLAUDE_NOTE: Pillar B — Price Drift drill-down panel.
+// Compares the most-recent invoice unit price vs. the prior 90-day invoice history for the same SKU.
+// driftPercent = ((currentPrice - avg90Day) / avg90Day) * 100. Status thresholds: alert >5%, warning 2-5%, stable <2%.
 function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClose: () => void }) {
   return (
     <div className="my-3 flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xl">
@@ -352,6 +369,9 @@ function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClo
   );
 }
 
+// CLAUDE_NOTE: Pillar B — Price Drift Monitor list view.
+// Backend should compute drift server-side and send sorted by absolute drift desc.
+// Selection state is local-only; no persistence required.
 function PriceDriftReport() {
   const [selectedItem, setSelectedItem] = useState<PriceDriftItem | null>(null);
 
@@ -1116,6 +1136,10 @@ function SpendingReport() {
     </div>
   );
 }
+// CLAUDE_NOTE: Pillar D — Vendor Bloat / Consolidation report.
+// vendorMonthlySpend & spendByCategory are aggregations over the current month.
+// Click handlers cross-link vendor ↔ category for drill-down. Backend should ship both views
+// so the UI does not have to re-aggregate client-side.
 function VendorReport() {
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -1442,6 +1466,10 @@ function getBackendHandoffSteps(alert: IntegrityAlert) {
   ];
 }
 
+// CLAUDE_NOTE: Pillar A — Invoice Integrity / Anomaly investigation queue.
+// Alert types: phantom_vendor | duplicate_invoice | split_invoice | mandate_fraud.
+// Severity drives the risk-pulse animation upstream (quadrant dots in SpendingReport).
+// Backend: alerts table keyed by anomaly_id; investigation steps persist as investigation_events.
 function IntegrityReport() {
   const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
