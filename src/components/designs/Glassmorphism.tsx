@@ -811,7 +811,10 @@ function SpendingReport() {
       </section>
 
 
-      {/* DRILL-DOWN DRAWER */}
+      {/* DRILL-DOWN DRAWER (per-commodity)
+          CLAUDE_NOTE: read-only. Surfaces the same `derived` row already computed for the quadrant map.
+          The "Find arbitrage alternatives" CTA should deep-link to ArbitrageReport filtered by product_id;
+          "Negotiate with {vendor}" should open a vendor-scoped negotiation flow (Pillar C/D handoff). */}
       <AnimatePresence>
         {selected && createPortal(
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex justify-end bg-foreground/30" onClick={() => setSelectedCommodityId(null)}>
