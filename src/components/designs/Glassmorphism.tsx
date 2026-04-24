@@ -588,19 +588,6 @@ function SpendingReport() {
             >
               <XAxis type="number" hide domain={[0, baseline + totalGrowth + totalWaste + totalNewVendor]} />
               <YAxis type="category" dataKey="name" hide />
-              <RechartsTooltip
-                cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
-                contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))", background: "hsl(var(--popover))", color: "hsl(var(--popover-foreground))" }}
-                formatter={(v: number, n: string) => {
-                  const labels: Record<string, string> = {
-                    baseline: "Baseline (recurring spend carried over) — click to drill down",
-                    growth: "Volume — bought more units · click to drill down",
-                    waste: "Price drift — same units cost more · click to drill down",
-                    newVendor: "New vendor spend — click to drill down",
-                  };
-                  return [`$${(v / 1000).toFixed(1)}K`, labels[n] ?? n];
-                }}
-              />
               <RechartsBar dataKey="baseline" stackId="v" fill="hsl(215 20% 55%)" radius={[8, 0, 0, 8]} cursor="pointer">
                 <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
               </RechartsBar>
