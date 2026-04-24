@@ -661,16 +661,16 @@ function SpendingReport() {
         {/* CLAUDE_NOTE: groupBy toggle. When "vendor", aggregate across commodities for the same vendor.
             Reminder: a single commodity may be sourced from multiple vendors — when grouping by commodity,
             back-end should sum spend across all vendors for that product key (not just one vendor row). */}
-        <div className="absolute right-5 top-5 inline-flex rounded-lg border border-border bg-card/60 p-0.5 text-[10px] font-semibold">
+        <div className="absolute right-5 top-5 inline-flex rounded-xl border border-finance-indigo/30 bg-card/80 p-1 text-xs font-semibold shadow-sm">
           <button
             onClick={() => setGroupBy("commodity")}
-            className={`rounded-md px-2.5 py-1 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            className={`rounded-lg px-4 py-2 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
           >
             By commodity
           </button>
           <button
             onClick={() => setGroupBy("vendor")}
-            className={`rounded-md px-2.5 py-1 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            className={`rounded-lg px-4 py-2 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
           >
             By vendor
           </button>
