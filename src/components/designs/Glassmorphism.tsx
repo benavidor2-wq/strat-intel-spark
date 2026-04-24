@@ -19,7 +19,7 @@ import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, C
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Cell, PieChart, Pie, AreaChart, Area, CartesianGrid, ScatterChart, Scatter, ZAxis, ReferenceLine, BarChart as RechartsBarChart, Bar as RechartsBar } from "recharts";
+import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Cell, PieChart, Pie, AreaChart, Area, CartesianGrid, ScatterChart, Scatter, ZAxis, ReferenceLine, BarChart as RechartsBarChart, Bar as RechartsBar, LabelList } from "recharts";
 
 const purple = "hsl(239 84% 67%)";
 const green = "hsl(142 71% 45%)";
@@ -588,12 +588,52 @@ function SpendingReport() {
                   return [`$${(v / 1000).toFixed(1)}K`, labels[n] ?? n];
                 }}
               />
-              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(var(--muted-foreground) / 0.35)" radius={[8, 0, 0, 8]} onClick={() => setSelectedSegment("all")} cursor="pointer" />
-              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" onClick={() => setSelectedSegment("growth")} cursor="pointer" />
-              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" onClick={() => setSelectedSegment("waste")} cursor="pointer" />
-              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} onClick={() => setSelectedSegment("new")} cursor="pointer" />
+              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(var(--muted-foreground) / 0.35)" radius={[8, 0, 0, 8]} onClick={() => setSelectedSegment("all")} cursor="pointer">
+                <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--foreground))" fontSize={11} fontWeight={600} />
+              </RechartsBar>
+              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" onClick={() => setSelectedSegment("growth")} cursor="pointer">
+                <LabelList dataKey="growth" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
+              </RechartsBar>
+              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" onClick={() => setSelectedSegment("waste")} cursor="pointer">
+                <LabelList dataKey="waste" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--destructive-foreground))" fontSize={11} fontWeight={700} />
+              </RechartsBar>
+              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} onClick={() => setSelectedSegment("new")} cursor="pointer">
+                <LabelList dataKey="newVendor" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={11} fontWeight={700} />
+              </RechartsBar>
             </RechartsBarChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* Static color legend — always visible below the bar */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-muted-foreground/40" />
+            <div>
+              <div className="text-[11px] font-semibold text-foreground">Baseline</div>
+              <div className="text-[10px] leading-snug text-muted-foreground">Recurring spend carried over from last month.</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-emerald" />
+            <div>
+              <div className="text-[11px] font-semibold text-foreground">Volume (Growth)</div>
+              <div className="text-[10px] leading-snug text-muted-foreground">Bought more units at the same unit price.</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
+            <div>
+              <div className="text-[11px] font-semibold text-foreground">Price Drift (Waste)</div>
+              <div className="text-[10px] leading-snug text-muted-foreground">Same units now cost more vs. 90-day average.</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-card/60 p-2">
+            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-finance-indigo" />
+            <div>
+              <div className="text-[11px] font-semibold text-foreground">New Vendors</div>
+              <div className="text-[10px] leading-snug text-muted-foreground">First-time vendor spend with no prior basis.</div>
+            </div>
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
