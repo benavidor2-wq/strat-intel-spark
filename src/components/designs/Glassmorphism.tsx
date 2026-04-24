@@ -1467,6 +1467,14 @@ function getBackendHandoffSteps(alert: IntegrityAlert) {
 }
 
 function IntegrityReport() {
+  // CLAUDE_NOTE — Pillar A (Anomaly & Risk / Integrity). Each row = one anomaly case:
+  //   alert.type      ∈ {duplicate_invoice, ghost_vendor, off_contract, round_dollar, weekend_invoice, ...}
+  //   alert.severity  ∈ {critical, high, medium}  → drives MetricTile color + Risk Queue sort order
+  //   alert.evidence  = invoice_ids / vendor_ids the rule fired on (see getEvidenceItems)
+  //   alert.handoff   = ordered investigator workflow steps (see getBackendHandoffSteps).
+  //                     Persist these as `investigation_events` keyed by anomaly_id for audit trail.
+  //   alert.recommendedAction = canned next-step (see getRecommendedAction); becomes the CTA label.
+  // Backend rules engine fires alerts; UI never recomputes severity — it trusts the server.
   const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const filteredAlerts = severityFilter === "all" ? integrityAlerts : integrityAlerts.filter((alert) => alert.severity === severityFilter);
