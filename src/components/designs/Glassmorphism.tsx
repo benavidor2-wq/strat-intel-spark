@@ -148,10 +148,10 @@ function VendorPopover({ vendor, isBest }: { vendor: { name: string; price: numb
         onClick={togglePopover}
         className="text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer"
         style={{
-          background: isBest ? `${green}12` : "rgba(255,255,255,0.8)",
-          border: isBest ? `1.5px solid ${green}55` : "1px solid rgba(0,0,0,0.08)",
+          background: isBest ? `${green}1F` : "rgba(255,255,255,0.8)",
+          border: isBest ? `1.5px solid ${green}` : "1px solid rgba(0,0,0,0.08)",
           color: isBest ? "#166534" : textSecondary,
-          boxShadow: isBest ? `0 2px 8px ${green}20` : "none",
+          boxShadow: isBest ? `0 2px 8px ${green}33` : "none",
         }}
       >
         {vendor.name}: ${vendor.price} {isBest && "✓"}
