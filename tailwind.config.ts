@@ -40,6 +40,8 @@ export default {
         finance: {
           indigo: "hsl(var(--finance-indigo))",
           "indigo-soft": "hsl(var(--finance-indigo-soft))",
+          emerald: "hsl(var(--finance-emerald))",
+          "emerald-soft": "hsl(var(--finance-emerald-soft))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -90,10 +92,15 @@ export default {
             height: "0",
           },
         },
+        "risk-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--destructive) / 0.55)" },
+          "50%": { boxShadow: "0 0 0 12px hsl(var(--destructive) / 0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "risk-pulse": "risk-pulse 1.8s ease-out infinite",
       },
     },
   },
