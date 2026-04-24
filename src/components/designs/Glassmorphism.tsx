@@ -665,7 +665,7 @@ function SpendingReport() {
           <div className="text-[10px] text-muted-foreground">Sorted by biggest growth first</div>
         </div>
 
-        <div className="grid gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
           {derived
             .map((d) => {
               // CLAUDE_NOTE: replace with real per-month spend totals from invoice ledger.
@@ -687,23 +687,25 @@ function SpendingReport() {
                 <button
                   key={d.id}
                   onClick={() => setSelectedCommodityId(d.id)}
-                  className="flex items-center gap-4 rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
+                  className="flex flex-col gap-2 rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate text-sm font-semibold text-foreground">{d.product}</span>
-                      {d.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-xs font-semibold text-foreground">{d.product}</span>
+                        {d.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
+                      </div>
+                      <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{d.vendor}</div>
                     </div>
-                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{d.vendor}</div>
                   </div>
 
                   <Sparkline data={spendHistory} drift={pctDelta} />
 
-                  <div className="flex w-[120px] flex-col items-end">
+                  <div className="flex items-end justify-between">
                     <span className="font-mono text-sm font-bold" style={{ color: tone }}>
                       {up ? "+" : ""}${(dollarDelta / 1000).toFixed(1)}K
                     </span>
-                    <span className="font-mono text-[11px]" style={{ color: tone }}>
+                    <span className="font-mono text-[10px]" style={{ color: tone }}>
                       {up ? "+" : ""}{pctDelta.toFixed(1)}%
                     </span>
                   </div>
