@@ -40,6 +40,8 @@ export default {
         finance: {
           indigo: "hsl(var(--finance-indigo))",
           "indigo-soft": "hsl(var(--finance-indigo-soft))",
+          emerald: "hsl(var(--finance-emerald))",
+          "emerald-soft": "hsl(var(--finance-emerald-soft))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
