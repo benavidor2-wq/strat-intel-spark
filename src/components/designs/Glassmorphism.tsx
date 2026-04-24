@@ -32,10 +32,10 @@ const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl s
 
 type PillarKey = "arbitrage" | "priceDrift" | "spending" | "vendor" | "integrity";
 
-const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string; badge: number | string }[] = [
+const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string; badge: number | string | null }[] = [
   { key: "arbitrage", label: "Vendor Arbitrage & Best Pricing", icon: Zap, color: purple, badge: 4 },
   { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple, badge: 3 },
-  { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple, badge: 1 },
+  { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple, badge: null },
   { key: "vendor", label: "Vendor Consolidation", icon: Users, color: purple, badge: 3 },
   { key: "integrity", label: "Anomaly & Risk", icon: Shield, color: purple, badge: 2 },
 ];
@@ -57,7 +57,7 @@ export default function Glassmorphism() {
 
       <div className="relative z-10">
 
-        {/* 6 Pillar Cards */}
+        {/* Pillar Cards */}
         <div className="max-w-[1400px] mx-auto px-8 pt-6 grid grid-cols-5 gap-3 mb-6">
           {pillars.map((p, i) => {
             const isActive = active === p.key;
@@ -70,9 +70,11 @@ export default function Glassmorphism() {
                 onClick={() => setActive(p.key)}
                 className={`${glass} p-4 text-left cursor-pointer transition-all relative ${isActive ? "ring-2 ring-indigo-400 bg-white/90" : "hover:bg-white/80"}`}
               >
-                <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: purple }}>
-                  {p.badge}
-                </div>
+                {p.badge !== null && (
+                  <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: purple }}>
+                    {p.badge}
+                  </div>
+                )}
                 <p.icon size={16} style={{ color: purple }} />
                 <div className="text-[10px] uppercase tracking-widest font-semibold mt-2" style={{ color: isActive ? purple : textSecondary }}>
                   {p.label}
@@ -660,7 +662,7 @@ function SpendingReport() {
             <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Monthly spend movement</div>
             <p className="mt-1 text-xs text-muted-foreground">How much each {groupBy} grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
           </div>
-          <div className="text-[10px] text-muted-foreground">Sorted by biggest growth first</div>
+          <div className="text-[10px] text-muted-foreground">Sorted by biggest % change first</div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
