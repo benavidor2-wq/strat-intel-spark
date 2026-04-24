@@ -262,16 +262,6 @@ function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { na
 /* ── Report Components ── */
 
 function ArbitrageReport() {
-  // CLAUDE_NOTE — Pillar C (Lazy Tax / Vendor Arbitrage). Per-row math:
-  //   bestPrice       = MIN(unit_price) across vendors for this product (90-day window)
-  //   currentPrice    = unit_price from most recent invoice with current preferred vendor
-  //   lazyTax         = currentPrice - bestPrice                    (red, $/unit)
-  //   overpaying %    = lazyTax / bestPrice * 100                   (markup-over-best)
-  //   monthlyQty      = SUM(invoice.qty) across vendors, trailing 30 days
-  //   monthlySavings  = lazyTax * monthlyQty
-  //   annualSavings   = monthlySavings * 12   (or contracted annual qty * lazyTax)
-  // Backend should expose these on `arbitrage_opportunities` view; UI is read-only.
-  // Note: mock data has duplicate `savingsPerUnit` and `lazyTax` — backend can drop savingsPerUnit.
   return (
     <div className="grid gap-3">
       {arbitrageOpportunities.map((opp) => (
@@ -363,13 +353,6 @@ function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClo
 }
 
 function PriceDriftReport() {
-  // CLAUDE_NOTE — Pillar B (Price Drift Monitor). Per-row math:
-  //   currentPrice  = unit_price on most recent invoice for (product, vendor)
-  //   avg90Day      = AVG(unit_price) over last 90 days for (product, vendor)
-  //   driftPercent  = (currentPrice - avg90Day) / avg90Day * 100
-  //   status        = "alert" if driftPercent > 10, "warning" if > 3, else "ok"
-  // The drift thresholds (3%, 10%) must stay in sync with Spending Patterns Quadrant Map color bands.
-  // Click row → PriceDriftInvoicePanel shows the underlying invoice trail (proof of drift).
   const [selectedItem, setSelectedItem] = useState<PriceDriftItem | null>(null);
 
   return (
@@ -811,10 +794,7 @@ function SpendingReport() {
       </section>
 
 
-      {/* DRILL-DOWN DRAWER (per-commodity)
-          CLAUDE_NOTE: read-only. Surfaces the same `derived` row already computed for the quadrant map.
-          The "Find arbitrage alternatives" CTA should deep-link to ArbitrageReport filtered by product_id;
-          "Negotiate with {vendor}" should open a vendor-scoped negotiation flow (Pillar C/D handoff). */}
+      {/* DRILL-DOWN DRAWER */}
       <AnimatePresence>
         {selected && createPortal(
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex justify-end bg-foreground/30" onClick={() => setSelectedCommodityId(null)}>
@@ -1040,15 +1020,6 @@ function SpendingReport() {
       )}
 
 
-      {/* VARIANCE SEGMENT DRILL-DOWN
-          CLAUDE_NOTE: opens when user clicks any segment in the Variance Decomposition bar.
-          Backend should expose `value` per commodity per segment so this drawer stays read-only:
-            baseline.value  = lastMonthSpend
-            growth.value    = MAX(0, growthDollars)        (qtyDelta * lastUnitPrice)
-            waste.value     = MAX(0, wasteDollars)         (priceDrift * thisQty)
-            newVendor.value = newVendorDollars             (full thisMonthSpend if vendor is new)
-          Identity: SUM across all 4 segments == thisMonthSpend - lastMonthSpend + lastMonthSpend.
-          Sorted by `value DESC`, filtered to `value > 0`. */}
       <AnimatePresence>
         {drillSegment && createPortal(
           (() => {
@@ -1146,13 +1117,6 @@ function SpendingReport() {
   );
 }
 function VendorReport() {
-  // CLAUDE_NOTE — Pillar D (Vendor Consolidation). Two pies, mutually exclusive drill-downs:
-  //   Vendor pie    : slices = vendorMonthlySpend, slice angle = monthlySpend / SUM(monthlySpend)
-  //   Category pie  : slices = spendByCategory,    slice angle = monthlySpend / SUM(monthlySpend)
-  //   Click vendor slice  → vendorProducts[vendor] (line-items + matching priceDrift rows for that vendor)
-  //   Click category slice→ categoryVendors[category] + vendorConsolidation row (consolidation savings est.)
-  // Backend should compute monthlySpend by SUM(invoice.total) trailing 30 days, grouped by vendor/category.
-  // Consolidation savings model: assume best-vendor unit price applied to total category volume.
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -1479,14 +1443,6 @@ function getBackendHandoffSteps(alert: IntegrityAlert) {
 }
 
 function IntegrityReport() {
-  // CLAUDE_NOTE — Pillar A (Anomaly & Risk / Integrity). Each row = one anomaly case:
-  //   alert.type      ∈ {duplicate_invoice, ghost_vendor, off_contract, round_dollar, weekend_invoice, ...}
-  //   alert.severity  ∈ {critical, high, medium}  → drives MetricTile color + Risk Queue sort order
-  //   alert.evidence  = invoice_ids / vendor_ids the rule fired on (see getEvidenceItems)
-  //   alert.handoff   = ordered investigator workflow steps (see getBackendHandoffSteps).
-  //                     Persist these as `investigation_events` keyed by anomaly_id for audit trail.
-  //   alert.recommendedAction = canned next-step (see getRecommendedAction); becomes the CTA label.
-  // Backend rules engine fires alerts; UI never recomputes severity — it trusts the server.
   const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const filteredAlerts = severityFilter === "all" ? integrityAlerts : integrityAlerts.filter((alert) => alert.severity === severityFilter);
