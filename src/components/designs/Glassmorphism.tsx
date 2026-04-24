@@ -363,6 +363,13 @@ function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClo
 }
 
 function PriceDriftReport() {
+  // CLAUDE_NOTE — Pillar B (Price Drift Monitor). Per-row math:
+  //   currentPrice  = unit_price on most recent invoice for (product, vendor)
+  //   avg90Day      = AVG(unit_price) over last 90 days for (product, vendor)
+  //   driftPercent  = (currentPrice - avg90Day) / avg90Day * 100
+  //   status        = "alert" if driftPercent > 10, "warning" if > 3, else "ok"
+  // The drift thresholds (3%, 10%) must stay in sync with Spending Patterns Quadrant Map color bands.
+  // Click row → PriceDriftInvoicePanel shows the underlying invoice trail (proof of drift).
   const [selectedItem, setSelectedItem] = useState<PriceDriftItem | null>(null);
 
   return (
