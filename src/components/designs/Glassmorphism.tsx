@@ -491,6 +491,19 @@ function SpendingReport() {
   type VarianceSegment = "baseline" | "growth" | "waste" | "newVendor";
   const [drillSegment, setDrillSegment] = useState<VarianceSegment | null>(null);
   const [groupBy, setGroupBy] = useState<"commodity" | "vendor">("commodity");
+  // Spend-movement detail dialog (Zone 4 row click)
+  type SpendDetail = {
+    title: string;
+    subtitle: string;
+    spendHistory: number[];
+    thisMonthSpend: number;
+    lastMonthSpend: number;
+    dollarDelta: number;
+    pctDelta: number;
+    riskAlert: boolean;
+    commodityId: string | null;
+  };
+  const [spendDetail, setSpendDetail] = useState<SpendDetail | null>(null);
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
@@ -742,9 +755,18 @@ function SpendingReport() {
                 return (
                   <button
                     key={r.id}
-                    onClick={() => r.commodityId && setSelectedCommodityId(r.commodityId)}
-                    disabled={!r.commodityId}
-                    className="flex items-center gap-2 rounded-lg border border-border bg-card/80 px-2.5 py-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-card/80"
+                    onClick={() => setSpendDetail({
+                      title: r.title,
+                      subtitle: r.subtitle,
+                      spendHistory,
+                      thisMonthSpend: r.thisMonthSpend,
+                      lastMonthSpend: r.lastMonthSpend,
+                      dollarDelta,
+                      pctDelta,
+                      riskAlert: r.riskAlert,
+                      commodityId: r.commodityId,
+                    })}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-card/80 px-2.5 py-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
@@ -879,7 +901,150 @@ function SpendingReport() {
         )}
       </AnimatePresence>
 
-      {/* VARIANCE SEGMENT DRILL-DOWN */}
+      {/* SPEND MOVEMENT DETAIL DIALOG (Zone 4 row click)
+          CLAUDE_NOTE: spendHistory comes from Pillar E aggregation. Period labels follow the
+          selected `period` state (monthly/quarterly/yearly). Backend should return the trailing
+          4 buckets of total spend per row id. */}
+      <AnimatePresence>
+        {spendDetail && createPortal(
+          (() => {
+            const sd = spendDetail;
+            const up = sd.pctDelta >= 0;
+            const tone = up ? "hsl(var(--finance-emerald))" : "hsl(var(--destructive))";
+            const periodUnit = "month"; // CLAUDE_NOTE: replace with periodLabels[period].unit when period state is wired here
+            const labels = Array.from({ length: sd.spendHistory.length }, (_, i) => {
+              const offset = sd.spendHistory.length - 1 - i;
+              return offset === 0 ? `This ${periodUnit}` : `-${offset} ${periodUnit}${offset > 1 ? "s" : ""}`;
+            });
+            const max = Math.max(...sd.spendHistory);
+            const min = Math.min(...sd.spendHistory);
+            const range = max - min || 1;
+            const w = 320;
+            const h = 110;
+            const pts = sd.spendHistory.map((v, i) => `${(i / (sd.spendHistory.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ");
+            return (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[1000] flex items-center justify-center bg-foreground/40 p-4"
+                onClick={() => setSpendDetail(null)}
+              >
+                <motion.div
+                  initial={{ y: 16, opacity: 0, scale: 0.98 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  exit={{ y: 16, opacity: 0, scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 26 }}
+                  className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between gap-3 border-b border-border p-5">
+                    <div>
+                      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
+                        <span className="h-2 w-2 rounded-full" style={{ background: tone }} />
+                        Spend movement
+                        {sd.riskAlert && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-risk-pulse" />}
+                      </div>
+                      <h4 className="mt-1 text-lg font-semibold text-foreground">{sd.title}</h4>
+                      <div className="text-xs text-muted-foreground">{sd.subtitle}</div>
+                    </div>
+                    <button onClick={() => setSpendDetail(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted">
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 p-5">
+                    {/* Headline delta */}
+                    <div className="flex items-baseline justify-between rounded-xl bg-muted/40 p-3">
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">This {periodUnit}</div>
+                        <div className="font-mono text-lg font-bold text-foreground">${sd.thisMonthSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">vs prev</div>
+                        <div className="font-mono text-lg font-bold" style={{ color: tone }}>
+                          {up ? "+" : ""}${(sd.dollarDelta / 1000).toFixed(1)}K
+                        </div>
+                        <div className="font-mono text-[10px]" style={{ color: tone }}>
+                          {up ? "+" : ""}{sd.pctDelta.toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Big sparkline */}
+                    <div>
+                      <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
+                        Last {sd.spendHistory.length} {periodUnit}s
+                      </div>
+                      <div className="rounded-xl border border-border p-3">
+                        <svg width="100%" height={h + 20} viewBox={`0 0 ${w} ${h + 20}`} className="overflow-visible">
+                          <polyline points={pts} fill="none" stroke={tone} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                          {sd.spendHistory.map((v, i) => {
+                            const cx = (i / (sd.spendHistory.length - 1)) * w;
+                            const cy = h - ((v - min) / range) * h;
+                            return (
+                              <g key={i}>
+                                <circle cx={cx} cy={cy} r={i === sd.spendHistory.length - 1 ? 4 : 3} fill={tone} />
+                                <text x={cx} y={cy - 8} textAnchor="middle" className="fill-foreground font-mono" fontSize="9" fontWeight={700}>
+                                  ${(v / 1000).toFixed(1)}K
+                                </text>
+                                <text x={cx} y={h + 14} textAnchor="middle" className="fill-muted-foreground" fontSize="9">
+                                  {labels[i]}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Per-period breakdown table */}
+                    <div>
+                      <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Breakdown</div>
+                      <div className="space-y-1 rounded-xl border border-border p-3 text-xs">
+                        {sd.spendHistory.map((v, i) => {
+                          const prev = i > 0 ? sd.spendHistory[i - 1] : null;
+                          const delta = prev != null ? v - prev : 0;
+                          const pct = prev && prev > 0 ? (delta / prev) * 100 : 0;
+                          const dUp = delta >= 0;
+                          return (
+                            <div key={i} className="flex items-center justify-between border-b border-border/60 py-1 last:border-b-0">
+                              <span className="text-muted-foreground">{labels[i]}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="font-mono font-semibold text-foreground">${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                <span className="w-16 text-right font-mono text-[10px]" style={{ color: prev == null ? "hsl(var(--muted-foreground))" : dUp ? "hsl(var(--finance-emerald))" : "hsl(var(--destructive))" }}>
+                                  {prev == null ? "—" : `${dUp ? "+" : ""}${pct.toFixed(1)}%`}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Optional CTA to open commodity drill-down (single-commodity rows only) */}
+                    {sd.commodityId && (
+                      <button
+                        onClick={() => {
+                          const id = sd.commodityId!;
+                          setSpendDetail(null);
+                          setSelectedCommodityId(id);
+                        }}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-finance-indigo px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20 transition hover:opacity-90"
+                      >
+                        Open full commodity drill-down
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              </motion.div>
+            );
+          })(),
+          document.body,
+        )}
+      </AnimatePresence>
+
+
       <AnimatePresence>
         {drillSegment && createPortal(
           (() => {
