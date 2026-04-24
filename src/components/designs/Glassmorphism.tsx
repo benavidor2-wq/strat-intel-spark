@@ -776,10 +776,10 @@ function SpendingReport() {
                     <Sparkline data={spendHistory} drift={pctDelta} />
 
                     <div className="flex shrink-0 flex-col items-end leading-tight">
-                      <span className="font-mono text-xs font-bold" style={{ color: tone }}>
+                      <span className="font-mono text-xs font-bold text-foreground">
                         {up ? "+" : ""}${(dollarDelta / 1000).toFixed(1)}K
                       </span>
-                      <span className="font-mono text-[9px]" style={{ color: tone }}>
+                      <span className="font-mono text-[9px] text-foreground">
                         {up ? "+" : ""}{pctDelta.toFixed(1)}%
                       </span>
                     </div>
