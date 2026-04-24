@@ -262,6 +262,16 @@ function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { na
 /* ── Report Components ── */
 
 function ArbitrageReport() {
+  // CLAUDE_NOTE — Pillar C (Lazy Tax / Vendor Arbitrage). Per-row math:
+  //   bestPrice       = MIN(unit_price) across vendors for this product (90-day window)
+  //   currentPrice    = unit_price from most recent invoice with current preferred vendor
+  //   lazyTax         = currentPrice - bestPrice                    (red, $/unit)
+  //   overpaying %    = lazyTax / bestPrice * 100                   (markup-over-best)
+  //   monthlyQty      = SUM(invoice.qty) across vendors, trailing 30 days
+  //   monthlySavings  = lazyTax * monthlyQty
+  //   annualSavings   = monthlySavings * 12   (or contracted annual qty * lazyTax)
+  // Backend should expose these on `arbitrage_opportunities` view; UI is read-only.
+  // Note: mock data has duplicate `savingsPerUnit` and `lazyTax` — backend can drop savingsPerUnit.
   return (
     <div className="grid gap-3">
       {arbitrageOpportunities.map((opp) => (
