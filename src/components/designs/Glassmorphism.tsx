@@ -16,7 +16,7 @@ import {
   type PriceDriftItem,
 } from "@/data/mockData";
 import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays } from "lucide-react";
-import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Cell, PieChart, Pie, AreaChart, Area, CartesianGrid, ScatterChart, Scatter, ZAxis, ReferenceLine } from "recharts";
+import { XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Cell, PieChart, Pie, AreaChart, Area, CartesianGrid, ScatterChart, Scatter, ZAxis, ReferenceLine, BarChart as RechartsBarChart, Bar as RechartsBar } from "recharts";
 
 const purple = "hsl(239 84% 67%)";
 const green = "hsl(142 71% 45%)";
@@ -400,248 +400,488 @@ function PriceDriftReport() {
 
 
 function SpendingReport() {
-  // CLAUDE_NOTE: Use the 'Integrity Layer' to flag bubbles with active 'risk_alerts' using a red pulse animation.
-  // CLAUDE_NOTE: Map the 'Lazy Tax' from the 'Arbitrage' pillar to calculate the size of the 'Waste' layer in the Efficiency Ring.
-  // CLAUDE_NOTE: Reference 'Pillar E: Spending Patterns' to define the size of bubbles based on MoM/QoQ growth variance.
-  // CLAUDE_NOTE: Use 'suggested_viz' logic to automatically highlight the bubble with the single largest savings opportunity.
+  // CLAUDE_NOTE: Pillar B Price Drift → drives the Waste segment math (unit-price delta × this-month qty).
+  // CLAUDE_NOTE: Pillar C Lazy Tax → powers the drawer "Find arbitrage alternatives" CTA.
+  // CLAUDE_NOTE: Pillar A Integrity alerts → red pulse animation on quadrant dots.
+  // CLAUDE_NOTE: Pillar E recurring-pattern detector → drives Zone 4 Row A (Operational Inertia).
 
-  type Bubble = {
+  type Commodity = {
     id: string;
+    product: string;
     vendor: string;
-    category: string;
-    spend: number;
-    efficiency: number; // 0-100 (higher = more efficient)
-    bucket: "growth" | "base" | "leakage";
-    why: string;
-    topVendors: { name: string; spend: number }[];
-    identifiedSavings: number;
-    fixAction: string;
+    lastMonthQty: number;
+    thisMonthQty: number;
+    lastUnitPrice: number;
+    thisUnitPrice: number;
+    baseline90d: number;
+    isRecurring: boolean;
+    cadence?: "weekly" | "monthly" | "quarterly";
     riskAlert: boolean;
+    priceHistory: number[]; // last 4 unit prices, oldest → newest
   };
 
-  const bubbles: Bubble[] = [
-    { id: "vendor-a", vendor: "Vendor A", category: "Specialty Materials", spend: 86500, efficiency: 18, bucket: "leakage", why: "Spend is up because of a 24% unit-price hike by Vendor A while order volume actually fell 6%.", topVendors: [{ name: "Vendor A", spend: 86500 }, { name: "Verified Supply Co.", spend: 12200 }, { name: "MetroParts", spend: 8100 }], identifiedSavings: 47500, fixAction: "Switch to Verified Supply Co.", riskAlert: true },
-    { id: "saas", vendor: "CloudLedger SaaS", category: "Software", spend: 38400, efficiency: 28, bucket: "leakage", why: "Seat-count creep + 18% renewal price increase. Lazy tax on auto-renewal.", topVendors: [{ name: "CloudLedger SaaS", spend: 38400 }, { name: "StackSuite", spend: 9600 }, { name: "LedgerLite", spend: 4200 }], identifiedSavings: 26400, fixAction: "Consolidate to StackSuite", riskAlert: true },
-    { id: "freight", vendor: "Northline Freight", category: "Logistics", spend: 64200, efficiency: 55, bucket: "growth", why: "Shipment frequency up 18% to support scaling; pricing only up 11%.", topVendors: [{ name: "Northline Freight", spend: 64200 }, { name: "QuickHaul Preferred", spend: 14800 }, { name: "RegionRoute", spend: 6300 }], identifiedSavings: 22900, fixAction: "Negotiate volume tier with QuickHaul", riskAlert: false },
-    { id: "raw", vendor: "AlloyWorks", category: "Raw Materials", spend: 95000, efficiency: 82, bucket: "growth", why: "Volume up 31% to fuel production; unit cost actually dropped 4%.", topVendors: [{ name: "AlloyWorks", spend: 95000 }, { name: "MetalWorks", spend: 18200 }, { name: "CoreSteel", spend: 7400 }], identifiedSavings: 11200, fixAction: "Lock in 12-month rate card", riskAlert: false },
-    { id: "facilities", vendor: "Metro Facilities", category: "Facilities", spend: 31200, efficiency: 62, bucket: "base", why: "Steady recurring baseline. Up 9% vs prior period in line with footprint.", topVendors: [{ name: "Metro Facilities", spend: 31200 }, { name: "BuildOps", spend: 6100 }, { name: "SiteCare", spend: 3200 }], identifiedSavings: 4200, fixAction: "Benchmark against BuildOps", riskAlert: false },
-    { id: "utility", vendor: "UtilityGrid", category: "Utilities", spend: 22100, efficiency: 70, bucket: "base", why: "Indexed monthly contract. Recurring inertia, low volatility.", topVendors: [{ name: "UtilityGrid", spend: 22100 }, { name: "PowerPool", spend: 4800 }, { name: "GridDirect", spend: 2100 }], identifiedSavings: 1800, fixAction: "Audit usage floor", riskAlert: false },
-    { id: "marketing", vendor: "MarketMakers", category: "Marketing", spend: 21000, efficiency: 74, bucket: "base", why: "Controlled contraction: scope reduced 14%, unit cost improved 8%.", topVendors: [{ name: "MarketMakers", spend: 21000 }, { name: "BrandLab", spend: 5400 }, { name: "GrowthForge", spend: 2800 }], identifiedSavings: 6100, fixAction: "Hold current vendor", riskAlert: false },
+  const commodities: Commodity[] = [
+    { id: "copper-wire", product: "Copper Wire (kg)", vendor: "MetalWorks", lastMonthQty: 450, thisMonthQty: 500, lastUnitPrice: 10.5, thisUnitPrice: 11.8, baseline90d: 10.2, isRecurring: true, cadence: "monthly", riskAlert: true, priceHistory: [9.9, 10.1, 10.5, 11.8] },
+    { id: "diesel", product: "Diesel Fuel (L)", vendor: "FuelDirect", lastMonthQty: 2800, thisMonthQty: 3000, lastUnitPrice: 1.75, thisUnitPrice: 1.89, baseline90d: 1.72, isRecurring: true, cadence: "monthly", riskAlert: true, priceHistory: [1.70, 1.75, 1.82, 1.89] },
+    { id: "steel-rebar", product: "Steel Rebar (ton)", vendor: "SteelCo", lastMonthQty: 20, thisMonthQty: 15, lastUnitPrice: 855, thisUnitPrice: 892, baseline90d: 845, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [838, 840, 855, 892] },
+    { id: "lubricant", product: "Industrial Lubricant", vendor: "ChemSupply", lastMonthQty: 100, thisMonthQty: 120, lastUnitPrice: 41, thisUnitPrice: 42, baseline90d: 40.5, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [40, 40.5, 41, 42] },
+    { id: "cement", product: "Cement (bag)", vendor: "BuildMat", lastMonthQty: 350, thisMonthQty: 400, lastUnitPrice: 8.2, thisUnitPrice: 8.4, baseline90d: 8.2, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [8.15, 8.2, 8.2, 8.4] },
+    { id: "gloves", product: "Nitrile Gloves (box)", vendor: "MedSupply", lastMonthQty: 180, thisMonthQty: 240, lastUnitPrice: 9.2, thisUnitPrice: 9.2, baseline90d: 9.3, isRecurring: false, riskAlert: false, priceHistory: [9.4, 9.3, 9.2, 9.2] },
+    { id: "paper", product: "A4 Copier Paper", vendor: "BulkSupply", lastMonthQty: 100, thisMonthQty: 100, lastUnitPrice: 4.8, thisUnitPrice: 4.8, baseline90d: 4.85, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [4.9, 4.85, 4.8, 4.8] },
+    { id: "cable-ties", product: "Cable Ties (1000pk)", vendor: "CableCo", lastMonthQty: 30, thisMonthQty: 50, lastUnitPrice: 19.5, thisUnitPrice: 19.5, baseline90d: 19.8, isRecurring: false, riskAlert: false, priceHistory: [20, 19.8, 19.5, 19.5] },
+    { id: "saas-seats", product: "CloudLedger Seats", vendor: "CloudLedger", lastMonthQty: 42, thisMonthQty: 42, lastUnitPrice: 78, thisUnitPrice: 92, baseline90d: 80, isRecurring: true, cadence: "monthly", riskAlert: true, priceHistory: [76, 78, 78, 92] },
+    { id: "freight-route", product: "Freight Route NW", vendor: "Northline", lastMonthQty: 28, thisMonthQty: 34, lastUnitPrice: 1180, thisUnitPrice: 1195, baseline90d: 1175, isRecurring: true, cadence: "weekly", riskAlert: false, priceHistory: [1170, 1175, 1180, 1195] },
+    { id: "consult", product: "Strategy Consulting (hr)", vendor: "PeakAdvisors", lastMonthQty: 0, thisMonthQty: 60, lastUnitPrice: 0, thisUnitPrice: 285, baseline90d: 285, isRecurring: false, riskAlert: false, priceHistory: [0, 0, 0, 285] },
+    { id: "safety-helmets", product: "Safety Helmets", vendor: "SafetyFirst", lastMonthQty: 40, thisMonthQty: 50, lastUnitPrice: 33.5, thisUnitPrice: 34, baseline90d: 33.5, isRecurring: false, riskAlert: false, priceHistory: [33.5, 33.5, 33.5, 34] },
   ];
 
-  // CLAUDE_NOTE: 'suggested_viz' — auto-highlight the single largest savings opportunity
-  const heroBubble = [...bubbles].sort((a, b) => b.identifiedSavings - a.identifiedSavings)[0];
-  const totalSpend = bubbles.reduce((s, b) => s + b.spend, 0);
-  const growthSpend = bubbles.filter((b) => b.bucket === "growth").reduce((s, b) => s + b.spend, 0);
-  const baseSpend = bubbles.filter((b) => b.bucket === "base").reduce((s, b) => s + b.spend, 0);
-  const leakageSpend = bubbles.filter((b) => b.bucket === "leakage").reduce((s, b) => s + b.spend, 0);
-  const totalSavings = bubbles.reduce((s, b) => s + b.identifiedSavings, 0);
+  type Derived = Commodity & {
+    thisMonthSpend: number;
+    lastMonthSpend: number;
+    volumeDeltaPct: number; // % change in qty MoM
+    priceDeltaPct: number; // % drift vs 90-day baseline
+    spendDelta: number;
+    growthDollars: number; // attributable to volume change at last month's unit price
+    wasteDollars: number;  // attributable to unit-price drift at this month's qty
+    newVendorDollars: number; // brand-new spend (no last-month basis)
+    quadrant: "active-bleed" | "quiet-leak" | "healthy-growth" | "stable";
+    verdict: "Growth" | "Mixed" | "Waste" | "Stable";
+  };
 
-  const ringData = [
-    { name: "Growth Spend", value: growthSpend, fill: "hsl(var(--finance-emerald))", desc: "Increased volume to fuel scaling" },
-    { name: "Base Spend", value: baseSpend, fill: "hsl(var(--finance-indigo))", desc: "Recurring operational inertia" },
-    { name: "Leakage", value: leakageSpend, fill: "hsl(var(--destructive))", desc: "Price drift & lazy tax" },
+  const derived: Derived[] = commodities.map((c) => {
+    const thisMonthSpend = c.thisMonthQty * c.thisUnitPrice;
+    const lastMonthSpend = c.lastMonthQty * c.lastUnitPrice;
+    const isNew = c.lastMonthQty === 0 && c.lastUnitPrice === 0;
+    const volumeDeltaPct = isNew ? 100 : ((c.thisMonthQty - c.lastMonthQty) / c.lastMonthQty) * 100;
+    const priceDeltaPct = ((c.thisUnitPrice - c.baseline90d) / c.baseline90d) * 100;
+    // CLAUDE_NOTE: variance decomposition — growth = qtyDelta × lastUnitPrice; waste = priceDrift × thisQty
+    const growthDollars = isNew ? 0 : (c.thisMonthQty - c.lastMonthQty) * c.lastUnitPrice;
+    const wasteDollars = isNew ? 0 : (c.thisUnitPrice - c.baseline90d) * c.thisMonthQty;
+    const newVendorDollars = isNew ? thisMonthSpend : 0;
+    const spendDelta = thisMonthSpend - lastMonthSpend;
+    let quadrant: Derived["quadrant"];
+    if (priceDeltaPct > 3 && volumeDeltaPct > 5) quadrant = "active-bleed";
+    else if (priceDeltaPct > 3 && volumeDeltaPct <= 5) quadrant = "quiet-leak";
+    else if (priceDeltaPct <= 3 && volumeDeltaPct > 5) quadrant = "healthy-growth";
+    else quadrant = "stable";
+    let verdict: Derived["verdict"];
+    if (priceDeltaPct > 5 && volumeDeltaPct > 5) verdict = "Mixed";
+    else if (priceDeltaPct > 3) verdict = "Waste";
+    else if (volumeDeltaPct > 5) verdict = "Growth";
+    else verdict = "Stable";
+    return { ...c, thisMonthSpend, lastMonthSpend, volumeDeltaPct, priceDeltaPct, spendDelta, growthDollars, wasteDollars, newVendorDollars, quadrant, verdict };
+  });
+
+  const baseline = derived.reduce((s, d) => s + d.lastMonthSpend, 0);
+  const totalGrowth = derived.reduce((s, d) => s + Math.max(0, d.growthDollars), 0);
+  const totalWaste = derived.reduce((s, d) => s + Math.max(0, d.wasteDollars), 0);
+  const totalNewVendor = derived.reduce((s, d) => s + d.newVendorDollars, 0);
+  const totalThisMonth = derived.reduce((s, d) => s + d.thisMonthSpend, 0);
+
+  type SegmentKey = "all" | "growth" | "waste" | "new";
+  const [selectedSegment, setSelectedSegment] = useState<SegmentKey>("all");
+  const [selectedCommodityId, setSelectedCommodityId] = useState<string | null>(null);
+  const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
+
+  // Variance bar data — single stacked row
+  const varianceData = [{
+    name: "MoM",
+    baseline,
+    growth: totalGrowth,
+    waste: totalWaste,
+    newVendor: totalNewVendor,
+  }];
+
+  // Filter helper
+  const matchesSegment = (d: Derived) =>
+    selectedSegment === "all" ||
+    (selectedSegment === "growth" && d.growthDollars > 500) ||
+    (selectedSegment === "waste" && d.wasteDollars > 200) ||
+    (selectedSegment === "new" && d.newVendorDollars > 0);
+
+  const visible = derived.filter(matchesSegment);
+
+  // Color by price drift
+  const driftColor = (priceDeltaPct: number) => {
+    if (priceDeltaPct > 10) return "hsl(var(--destructive))";
+    if (priceDeltaPct > 3) return "hsl(var(--risk-high))";
+    return "hsl(var(--finance-emerald))";
+  };
+
+  // Bubble radius for scatter (z value)
+  const maxSpend = Math.max(...derived.map((d) => d.thisMonthSpend));
+
+  // Sparkline component
+  const Sparkline = ({ data, drift }: { data: number[]; drift: number }) => {
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+    const w = 60;
+    const h = 20;
+    const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ");
+    const stroke = driftColor(drift);
+    return (
+      <svg width={w} height={h} className="overflow-visible">
+        <polyline points={pts} fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+        {data.map((v, i) => (
+          <circle key={i} cx={(i / (data.length - 1)) * w} cy={h - ((v - min) / range) * h} r={i === data.length - 1 ? 2.5 : 1.5} fill={stroke} />
+        ))}
+      </svg>
+    );
+  };
+
+  const recurring = derived.filter((d) => d.isRecurring);
+  const discretionary = derived.filter((d) => !d.isRecurring);
+
+  // Segment styles
+  const segmentTabs: { key: SegmentKey; label: string; color: string }[] = [
+    { key: "all", label: "All", color: "hsl(var(--finance-indigo))" },
+    { key: "growth", label: "Volume (Growth)", color: "hsl(var(--finance-emerald))" },
+    { key: "waste", label: "Price Drift (Waste)", color: "hsl(var(--destructive))" },
+    { key: "new", label: "New Vendors", color: "hsl(var(--finance-indigo-soft))" },
   ];
-
-  const [selected, setSelected] = useState<Bubble | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-
-  const efficiencyColor = (eff: number) => {
-    if (eff >= 60) return "hsl(var(--finance-emerald))";
-    if (eff >= 40) return "hsl(var(--finance-indigo))";
-    return "hsl(var(--destructive))";
-  };
-
-  // Layout the bubbles in a tidy grid-on-canvas (size = spend)
-  const minR = 32;
-  const maxR = 78;
-  const spendMin = Math.min(...bubbles.map((b) => b.spend));
-  const spendMax = Math.max(...bubbles.map((b) => b.spend));
-  const radius = (spend: number) => minR + ((spend - spendMin) / (spendMax - spendMin)) * (maxR - minR);
-
-  // Pre-computed positions (% of canvas) — clusters by bucket
-  const positions: Record<string, { x: number; y: number }> = {
-    "vendor-a": { x: 22, y: 32 },
-    saas: { x: 38, y: 62 },
-    freight: { x: 56, y: 30 },
-    raw: { x: 78, y: 50 },
-    facilities: { x: 16, y: 74 },
-    utility: { x: 50, y: 82 },
-    marketing: { x: 78, y: 78 },
-  };
 
   return (
     <div className={`${glass} p-6`}>
-      {/* ZONE 1: AI Narrative — Executive BLUF */}
-      <section className="mb-6 rounded-2xl border border-finance-indigo/15 bg-card/70 p-6">
-        <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
-          <Zap size={12} /> Executive pulse
+      {/* ZONE 2: Variance Decomposition Bar */}
+      <section className="mb-6 rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Variance decomposition</div>
+            <p className="mt-1 text-xs text-muted-foreground">Where did this month's spend actually come from? Volume change vs. unit-price drift.</p>
+          </div>
+          <div className="flex items-baseline gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Last month </span>
+              <span className="font-mono font-bold text-foreground">${(baseline / 1000).toFixed(0)}K</span>
+            </div>
+            <span className="text-muted-foreground">→</span>
+            <div>
+              <span className="text-muted-foreground">This month </span>
+              <span className="font-mono font-bold text-foreground">${(totalThisMonth / 1000).toFixed(0)}K</span>
+            </div>
+          </div>
         </div>
-        <p className="text-2xl font-semibold leading-snug tracking-tight text-finance-indigo md:text-3xl">
-          Your spend is healthy on growth, but{" "}
-          <span className="text-destructive">${(leakageSpend / 1000).toFixed(0)}K of monthly leakage</span>{" "}
-          across {bubbles.filter((b) => b.bucket === "leakage").length} vendors is hiding{" "}
-          <span className="rounded-md bg-finance-emerald/15 px-2 py-0.5 text-finance-emerald">
-            ${(totalSavings / 1000).toFixed(0)}K in identified savings
-          </span>
-          . Start with <span className="text-finance-indigo">{heroBubble.vendor}</span>.
-        </p>
+
+        <div className="mt-4 h-[110px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <RechartsBarChart data={varianceData} layout="vertical" stackOffset="sign" margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+              <XAxis type="number" hide domain={[0, baseline + totalGrowth + totalWaste + totalNewVendor]} />
+              <YAxis type="category" dataKey="name" hide />
+              <RechartsTooltip
+                cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))", background: "hsl(var(--popover))", color: "hsl(var(--popover-foreground))" }}
+                formatter={(v: number, n: string) => {
+                  const labels: Record<string, string> = {
+                    baseline: "Baseline (recurring spend carried over)",
+                    growth: "Volume — bought more units at the same unit price",
+                    waste: "Price drift — same units cost more vs. 90-day average",
+                    newVendor: "New vendor spend — no prior-month basis",
+                  };
+                  return [`$${(v / 1000).toFixed(1)}K`, labels[n] ?? n];
+                }}
+              />
+              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(var(--muted-foreground) / 0.35)" radius={[8, 0, 0, 8]} onClick={() => setSelectedSegment("all")} cursor="pointer" />
+              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" onClick={() => setSelectedSegment("growth")} cursor="pointer" />
+              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" onClick={() => setSelectedSegment("waste")} cursor="pointer" />
+              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 8, 8, 0]} onClick={() => setSelectedSegment("new")} cursor="pointer" />
+            </RechartsBarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {segmentTabs.map((tab) => {
+            const isActive = selectedSegment === tab.key;
+            const amount =
+              tab.key === "growth" ? totalGrowth :
+              tab.key === "waste" ? totalWaste :
+              tab.key === "new" ? totalNewVendor :
+              totalThisMonth - baseline;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setSelectedSegment(tab.key)}
+                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${isActive ? "border-foreground/30 bg-foreground/5 text-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted/50"}`}
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: tab.color }} />
+                <span>{tab.label}</span>
+                {tab.key !== "all" && <span className="font-mono font-semibold" style={{ color: tab.color }}>+${(amount / 1000).toFixed(1)}K</span>}
+                {tab.key === "all" && <span className="font-mono font-semibold text-foreground">Δ ${((totalThisMonth - baseline) / 1000).toFixed(1)}K</span>}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-        {/* ZONE 2: Efficiency Ring */}
-        <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Efficiency Ring</div>
-          <p className="mb-3 text-xs text-muted-foreground">How every dollar of monthly spend is behaving.</p>
-          <div className="relative h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={ringData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={78} outerRadius={120} paddingAngle={3} stroke="hsl(var(--card))" strokeWidth={3}>
-                  {ringData.map((d) => <Cell key={d.name} fill={d.fill} />)}
-                </Pie>
-                <RechartsTooltip formatter={(v: number, n: string) => [`$${v.toLocaleString()} (${((v / totalSpend) * 100).toFixed(0)}%)`, n]} contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))" }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Total monthly</div>
-              <div className="font-mono text-2xl font-bold text-foreground">${(totalSpend / 1000).toFixed(0)}K</div>
-            </div>
+      {/* ZONE 3: Growth vs. Waste Quadrant Map */}
+      <section className="mb-6 rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Growth vs. Waste quadrant</div>
+            <p className="mt-1 text-xs text-muted-foreground">Each dot is one commodity. <strong>Right</strong> = buying more units. <strong>Up</strong> = paying more per unit. <strong>Bigger</strong> = more spend. Click for the full breakdown.</p>
           </div>
-          <div className="mt-4 space-y-2">
-            {ringData.map((d) => (
-              <div key={d.name} className="flex items-start gap-3 rounded-xl bg-muted/50 p-3">
-                <span className="mt-1 h-3 w-3 shrink-0 rounded-sm" style={{ background: d.fill }} />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between text-sm font-semibold text-foreground">
-                    <span>{d.name}</span>
-                    <span className="font-mono">{((d.value / totalSpend) * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">{d.desc}</div>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-finance-emerald" /> Flat / down</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(var(--risk-high))" }} /> 3–10% drift</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> {">"}10% drift</span>
           </div>
-        </section>
+        </div>
 
-        {/* ZONE 3: Discovery Bubble Map */}
-        <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Discovery Map</div>
-              <p className="mt-1 text-xs text-muted-foreground">Bubble <strong>size</strong> = monthly spend. Bubble <strong>color</strong> = efficiency score (emerald = healthy, red = price drift). Click any bubble to drill down.</p>
-            </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-finance-emerald" /> High</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-finance-indigo" /> Mid</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> Drift</span>
-            </div>
-          </div>
+        <div className="relative h-[420px] rounded-xl border border-border/60 bg-gradient-to-br from-muted/30 via-card/60 to-muted/20 p-2">
+          {/* Quadrant labels */}
+          <div className="pointer-events-none absolute left-4 top-3 z-10 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">Quiet leak</div>
+          <div className="pointer-events-none absolute right-4 top-3 z-10 text-[10px] font-semibold uppercase tracking-wider text-destructive/80">Active bleed</div>
+          <div className="pointer-events-none absolute bottom-3 left-4 z-10 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">Stable</div>
+          <div className="pointer-events-none absolute bottom-3 right-4 z-10 text-[10px] font-semibold uppercase tracking-wider text-finance-emerald/80">Healthy growth</div>
 
-          <div className="relative mt-3 h-[440px] overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-muted/40 via-card/60 to-muted/30">
-            {bubbles.map((b) => {
-              const pos = positions[b.id];
-              const r = radius(b.spend);
-              const isHero = b.id === heroBubble.id;
-              const isHover = hoveredId === b.id;
-              return (
-                <button
-                  key={b.id}
-                  onClick={() => setSelected(b)}
-                  onMouseEnter={() => setHoveredId(b.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  className={`group absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-200 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-finance-indigo ${b.riskAlert ? "animate-risk-pulse" : ""}`}
-                  style={{
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`,
-                    width: r * 2,
-                    height: r * 2,
-                    background: `radial-gradient(circle at 30% 30%, ${efficiencyColor(b.efficiency)}ee, ${efficiencyColor(b.efficiency)}aa)`,
-                    boxShadow: isHero ? `0 0 0 3px hsl(var(--card)), 0 0 0 5px ${efficiencyColor(b.efficiency)}, 0 12px 28px -8px ${efficiencyColor(b.efficiency)}` : `0 8px 22px -8px ${efficiencyColor(b.efficiency)}`,
-                  }}
-                >
-                  <span className="pointer-events-none flex h-full w-full flex-col items-center justify-center px-2 text-center text-primary-foreground">
-                    <span className="text-[11px] font-bold leading-tight drop-shadow">{b.vendor}</span>
-                    <span className="font-mono text-[10px] opacity-90">${(b.spend / 1000).toFixed(0)}K</span>
-                  </span>
-                  {isHero && (
-                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full bg-finance-emerald px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground shadow-lg">
-                      Top opportunity
-                    </span>
-                  )}
-                  {isHover && (
-                    <div className="absolute left-1/2 top-full z-20 mt-3 w-64 -translate-x-1/2 rounded-xl border border-border bg-popover p-3 text-left text-popover-foreground shadow-xl">
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Why</div>
-                      <p className="mt-1 text-xs leading-relaxed">{b.why}</p>
-                      {b.bucket === "leakage" && (
-                        <div className="mt-2 flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Savings</span>
-                          <span className="font-mono font-bold text-finance-emerald">${b.identifiedSavings.toLocaleString()}</span>
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 24, right: 32, bottom: 32, left: 32 }}>
+              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" opacity={0.4} />
+              <XAxis
+                type="number"
+                dataKey="volumeDeltaPct"
+                name="Volume Δ"
+                domain={[-30, 60]}
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                tickFormatter={(v) => `${v > 0 ? "+" : ""}${v}%`}
+                label={{ value: "Volume change (units MoM)", position: "insideBottom", offset: -16, fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              />
+              <YAxis
+                type="number"
+                dataKey="priceDeltaPct"
+                name="Price drift"
+                domain={[-5, 25]}
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                tickFormatter={(v) => `${v > 0 ? "+" : ""}${v}%`}
+                label={{ value: "Unit-price drift vs. 90-day", angle: -90, position: "insideLeft", offset: 10, fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              />
+              <ZAxis type="number" dataKey="thisMonthSpend" range={[120, 1400]} domain={[0, maxSpend]} />
+              <ReferenceLine x={0} stroke="hsl(var(--foreground) / 0.35)" strokeDasharray="2 2" />
+              <ReferenceLine y={0} stroke="hsl(var(--foreground) / 0.35)" strokeDasharray="2 2" />
+              <RechartsTooltip
+                cursor={{ strokeDasharray: "3 3" }}
+                contentStyle={{ borderRadius: 12, borderColor: "hsl(var(--border))", background: "hsl(var(--popover))", color: "hsl(var(--popover-foreground))", fontSize: 12 }}
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload as Derived;
+                  return (
+                    <div className="max-w-[260px] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-xl">
+                      <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">{d.vendor}</div>
+                      <div className="text-sm font-semibold">{d.product}</div>
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                        Bought <span className="font-semibold text-foreground">{d.volumeDeltaPct >= 0 ? "+" : ""}{d.volumeDeltaPct.toFixed(0)}%</span> units AND paid{" "}
+                        <span className="font-semibold" style={{ color: driftColor(d.priceDeltaPct) }}>{d.priceDeltaPct >= 0 ? "+" : ""}{d.priceDeltaPct.toFixed(1)}%</span> per unit vs. 90-day avg.
+                      </p>
+                      {d.wasteDollars > 0 && (
+                        <div className="mt-2 rounded-md bg-destructive/10 px-2 py-1 text-xs">
+                          <span className="font-mono font-bold text-destructive">${d.wasteDollars.toFixed(0)}</span>
+                          <span className="text-muted-foreground"> of the increase is waste</span>
                         </div>
                       )}
                     </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      </div>
+                  );
+                }}
+              />
+              <Scatter
+                data={visible}
+                onClick={(p: { id?: string }) => p?.id && setSelectedCommodityId(p.id)}
+                shape={(props: { cx?: number; cy?: number; payload?: Derived; node?: { z?: number } }) => {
+                  const { cx, cy, payload, node } = props;
+                  if (cx == null || cy == null || !payload) return <g />;
+                  const r = Math.sqrt((node?.z ?? 200) / Math.PI);
+                  const fill = driftColor(payload.priceDeltaPct);
+                  return (
+                    <g style={{ cursor: "pointer" }}>
+                      {payload.riskAlert && (
+                        <circle cx={cx} cy={cy} r={r + 4} fill="none" stroke={fill} strokeWidth={1.5} className="animate-risk-pulse" />
+                      )}
+                      <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.75} stroke="hsl(var(--card))" strokeWidth={2} />
+                    </g>
+                  );
+                }}
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
 
-      {/* DRILL-DOWN MODAL — Semantic Pivot */}
+      {/* ZONE 4: Inertia Strip */}
+      <section className="rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
+        <div className="mb-4">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Operational inertia</div>
+          <p className="mt-1 text-xs text-muted-foreground">Recurring commitments on top, one-off discretionary spend below. Sparklines show the last 4 unit prices.</p>
+        </div>
+
+        {/* Row A — Recurring */}
+        <div className="mb-4">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+            <CalendarDays size={14} className="text-finance-indigo" /> Recurring (predictable cadence)
+            <span className="text-muted-foreground font-normal">· {recurring.length} commodities</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {recurring.filter(matchesSegment).map((d) => (
+              <button
+                key={d.id}
+                onClick={() => setSelectedCommodityId(d.id)}
+                className="flex items-center gap-3 rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-sm font-semibold text-foreground">{d.product}</span>
+                    {d.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{d.vendor}</span>
+                    <span>·</span>
+                    <span className="capitalize">{d.cadence}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-0.5">
+                  <Sparkline data={d.priceHistory} drift={d.priceDeltaPct} />
+                  <span className="font-mono text-[11px] font-semibold" style={{ color: driftColor(d.priceDeltaPct) }}>
+                    {d.priceDeltaPct >= 0 ? "+" : ""}{d.priceDeltaPct.toFixed(1)}%
+                  </span>
+                </div>
+              </button>
+            ))}
+            {recurring.filter(matchesSegment).length === 0 && (
+              <div className="col-span-full rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">No recurring commodities match this segment.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Row B — Discretionary */}
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+            <FileText size={14} className="text-finance-indigo" /> Discretionary (one-off this month)
+            <span className="text-muted-foreground font-normal">· {discretionary.length} new commitments</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {discretionary.filter(matchesSegment).map((d) => (
+              <button
+                key={d.id}
+                onClick={() => setSelectedCommodityId(d.id)}
+                className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-foreground">{d.product}</div>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">{d.vendor}</div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="font-mono text-sm font-semibold text-foreground">${(d.thisMonthSpend / 1000).toFixed(1)}K</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">new</span>
+                </div>
+              </button>
+            ))}
+            {discretionary.filter(matchesSegment).length === 0 && (
+              <div className="col-span-full rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">No discretionary commodities match this segment.</div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* DRILL-DOWN DRAWER */}
       <AnimatePresence>
         {selected && createPortal(
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] grid place-items-center bg-foreground/30 p-6" onClick={() => setSelected(null)}>
-            <motion.div initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }} className="w-full max-w-xl rounded-2xl border border-finance-indigo/20 bg-card p-6 text-card-foreground shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-4 flex items-start justify-between gap-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex justify-end bg-foreground/30" onClick={() => setSelectedCommodityId(null)}>
+            <motion.aside
+              initial={{ x: 420, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 420, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 28 }}
+              className="h-full w-full max-w-md overflow-y-auto border-l border-border bg-card p-6 text-card-foreground shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
-                    <span className="h-2 w-2 rounded-full" style={{ background: efficiencyColor(selected.efficiency) }} />
-                    {selected.category}
+                    <span className="h-2 w-2 rounded-full" style={{ background: driftColor(selected.priceDeltaPct) }} />
+                    {selected.vendor}
                   </div>
-                  <h4 className="mt-1 text-lg font-semibold">{selected.vendor}</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">{selected.why}</p>
+                  <h4 className="mt-1 text-lg font-semibold">{selected.product}</h4>
                 </div>
-                <button onClick={() => setSelected(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
+                <button onClick={() => setSelectedCommodityId(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl bg-muted/50 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Monthly spend</div>
-                  <div className="mt-1 font-mono text-xl font-bold text-foreground">${(selected.spend / 1000).toFixed(0)}K</div>
-                </div>
-                <div className="rounded-xl bg-muted/50 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Efficiency</div>
-                  <div className="mt-1 font-mono text-xl font-bold" style={{ color: efficiencyColor(selected.efficiency) }}>{selected.efficiency}/100</div>
-                </div>
-                <div className="rounded-xl bg-finance-emerald/10 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-finance-emerald">Savings</div>
-                  <div className="mt-1 font-mono text-xl font-bold text-finance-emerald">${(selected.identifiedSavings / 1000).toFixed(0)}K</div>
+              {/* Verdict */}
+              <div
+                className="mb-4 rounded-xl border p-3"
+                style={{
+                  borderColor: selected.verdict === "Waste" ? "hsl(var(--destructive) / 0.3)" : selected.verdict === "Growth" ? "hsl(var(--finance-emerald) / 0.3)" : "hsl(var(--border))",
+                  background: selected.verdict === "Waste" ? "hsl(var(--destructive) / 0.08)" : selected.verdict === "Growth" ? "hsl(var(--finance-emerald) / 0.08)" : "hsl(var(--muted) / 0.4)",
+                }}
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: selected.verdict === "Waste" ? "hsl(var(--destructive))" : selected.verdict === "Growth" ? "hsl(var(--finance-emerald))" : "hsl(var(--muted-foreground))" }}>Verdict</div>
+                <div className="mt-1 text-lg font-bold text-foreground">{selected.verdict}</div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {selected.verdict === "Growth" && `Volume up ${selected.volumeDeltaPct.toFixed(0)}% with unit price flat — you're scaling efficiently.`}
+                  {selected.verdict === "Waste" && `Unit price drifted ${selected.priceDeltaPct.toFixed(1)}% above 90-day average. This is fixable.`}
+                  {selected.verdict === "Mixed" && `Volume AND unit price are both up — partly scaling, partly leaking.`}
+                  {selected.verdict === "Stable" && `Both volume and unit price are within normal bands. No action needed.`}
+                </p>
+              </div>
+
+              {/* Decomposition */}
+              <div className="mb-4">
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Spend decomposition</div>
+                <div className="space-y-2 rounded-xl bg-muted/40 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Total this month</span>
+                    <span className="font-mono font-bold text-foreground">${selected.thisMonthSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border pt-2">
+                    <span className="text-muted-foreground">Baseline (last month)</span>
+                    <span className="font-mono text-foreground">${selected.lastMonthSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-finance-emerald">+ Volume change</span>
+                    <span className="font-mono font-semibold text-finance-emerald">{selected.growthDollars >= 0 ? "+" : ""}${selected.growthDollars.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-destructive">+ Price drift</span>
+                    <span className="font-mono font-semibold text-destructive">{selected.wasteDollars >= 0 ? "+" : ""}${selected.wasteDollars.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Top 3 vendors in this bucket</div>
-                <div className="space-y-2">
-                  {selected.topVendors.map((v, i) => (
-                    <div key={v.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
-                      <span className="font-semibold text-foreground">{i + 1}. {v.name}</span>
-                      <span className="font-mono text-foreground">${v.spend.toLocaleString()}</span>
+              {/* Last 4 invoices (synthetic from priceHistory) */}
+              <div className="mb-4">
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Unit-price trajectory</div>
+                <div className="rounded-xl border border-border p-3">
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="space-y-1">
+                      {selected.priceHistory.map((p, i) => (
+                        <div key={i} className="flex items-center gap-3 text-xs">
+                          <span className="w-12 text-muted-foreground">Inv {selected.priceHistory.length - i}</span>
+                          <span className="font-mono font-semibold text-foreground">${p.toFixed(2)}</span>
+                        </div>
+                      )).reverse()}
                     </div>
-                  ))}
+                    <Sparkline data={selected.priceHistory} drift={selected.priceDeltaPct} />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-border pt-2 text-xs">
+                    <span className="text-muted-foreground">90-day baseline</span>
+                    <span className="font-mono text-foreground">${selected.baseline90d.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
-              {selected.bucket === "leakage" && (
-                <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-3 text-sm font-bold text-destructive-foreground shadow-lg shadow-destructive/30 transition hover:opacity-90">
-                  <Zap size={14} /> Fix Now — {selected.fixAction}
+              {/* Actions */}
+              <div className="space-y-2">
+                {selected.verdict === "Waste" || selected.verdict === "Mixed" ? (
+                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-3 text-sm font-bold text-destructive-foreground shadow-lg shadow-destructive/20 transition hover:opacity-90">
+                    <Zap size={14} /> Find arbitrage alternatives
+                  </button>
+                ) : (
+                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-finance-indigo px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20 transition hover:opacity-90">
+                    <CheckCircle2 size={14} /> Lock in current rate
+                  </button>
+                )}
+                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">
+                  Negotiate with {selected.vendor}
                 </button>
-              )}
-              {selected.bucket !== "leakage" && (
-                <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-finance-indigo px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20 transition hover:opacity-90">
-                  <CheckCircle2 size={14} /> {selected.fixAction}
-                </button>
-              )}
-            </motion.div>
+              </div>
+            </motion.aside>
           </motion.div>,
           document.body,
         )}
