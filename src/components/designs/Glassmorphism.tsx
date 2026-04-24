@@ -488,6 +488,7 @@ function SpendingReport() {
   const [filterOpen, setFilterOpen] = useState(false);
   type VarianceSegment = "baseline" | "growth" | "waste" | "newVendor";
   const [drillSegment, setDrillSegment] = useState<VarianceSegment | null>(null);
+  const [groupBy, setGroupBy] = useState<"commodity" | "vendor">("commodity");
   const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
 
   // Variance bar data — single stacked row
@@ -660,56 +661,133 @@ function SpendingReport() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Monthly spend movement</div>
-            <p className="mt-1 text-xs text-muted-foreground">How much each commodity grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
+            <p className="mt-1 text-xs text-muted-foreground">How much each {groupBy} grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
           </div>
-          <div className="text-[10px] text-muted-foreground">Sorted by biggest growth first</div>
+          <div className="flex items-center gap-3">
+            {/* CLAUDE_NOTE: groupBy toggle. When "vendor", aggregate across commodities for the same vendor.
+                Reminder: a single commodity may be sourced from multiple vendors — when grouping by commodity,
+                back-end should sum spend across all vendors for that product key (not just one vendor row). */}
+            <div className="inline-flex rounded-lg border border-border bg-card/60 p-0.5 text-[10px] font-semibold">
+              <button
+                onClick={() => setGroupBy("commodity")}
+                className={`rounded-md px-2.5 py-1 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                By commodity
+              </button>
+              <button
+                onClick={() => setGroupBy("vendor")}
+                className={`rounded-md px-2.5 py-1 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                By vendor
+              </button>
+            </div>
+            <div className="text-[10px] text-muted-foreground">Sorted by biggest growth first</div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
-          {derived
-            .map((d) => {
-              // CLAUDE_NOTE: replace with real per-month spend totals from invoice ledger.
-              // Synthesized: approximate monthly spend = unit price (each month) × this month's qty.
-              const spendHistory = d.priceHistory.map((p) => p * d.thisMonthQty);
-              const dollarDelta = d.thisMonthSpend - d.lastMonthSpend;
-              const pctDelta = d.lastMonthSpend > 0
-                ? ((d.thisMonthSpend - d.lastMonthSpend) / d.lastMonthSpend) * 100
-                : 100;
-              return { d, spendHistory, dollarDelta, pctDelta };
-            })
-            .sort((a, b) => b.pctDelta - a.pctDelta)
-            .map(({ d, spendHistory, dollarDelta, pctDelta }) => {
-              const up = pctDelta >= 0;
-              const tone = up
-                ? "hsl(var(--finance-emerald))"
-                : "hsl(var(--destructive))";
-              return (
-                <button
-                  key={d.id}
-                  onClick={() => setSelectedCommodityId(d.id)}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-card/80 px-2.5 py-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <span className="truncate text-xs font-semibold text-foreground">{d.product}</span>
-                      {d.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
+          {(() => {
+            // CLAUDE_NOTE: Aggregation layer. In production, run this server-side over the invoice ledger
+            // grouped by either product key (commodity) or vendor key. A commodity sold by multiple vendors
+            // should sum across vendors when groupBy === "commodity"; here mock data has 1 vendor per commodity.
+            type Row = {
+              id: string;
+              title: string;
+              subtitle: string;
+              thisMonthSpend: number;
+              lastMonthSpend: number;
+              priceHistory: number[]; // average unit price per period
+              thisMonthQty: number;
+              riskAlert: boolean;
+              commodityId: string | null; // null when vendor row aggregates multiple commodities
+            };
+
+            let rows: Row[] = [];
+            if (groupBy === "commodity") {
+              rows = derived.map((d) => ({
+                id: `c-${d.id}`,
+                title: d.product,
+                subtitle: d.vendor,
+                thisMonthSpend: d.thisMonthSpend,
+                lastMonthSpend: d.lastMonthSpend,
+                priceHistory: d.priceHistory,
+                thisMonthQty: d.thisMonthQty,
+                riskAlert: d.riskAlert,
+                commodityId: d.id,
+              }));
+            } else {
+              const byVendor = new Map<string, Derived[]>();
+              derived.forEach((d) => {
+                const arr = byVendor.get(d.vendor) ?? [];
+                arr.push(d);
+                byVendor.set(d.vendor, arr);
+              });
+              rows = Array.from(byVendor.entries()).map(([vendor, items]) => {
+                const thisMonthSpend = items.reduce((s, x) => s + x.thisMonthSpend, 0);
+                const lastMonthSpend = items.reduce((s, x) => s + x.lastMonthSpend, 0);
+                // Build a 4-period spend history by summing each item's synthesized spend per period.
+                const periods = items[0]?.priceHistory.length ?? 4;
+                const spendHistory = Array.from({ length: periods }, (_, i) =>
+                  items.reduce((s, x) => s + (x.priceHistory[i] ?? 0) * x.thisMonthQty, 0),
+                );
+                return {
+                  id: `v-${vendor}`,
+                  title: vendor,
+                  subtitle: `${items.length} ${items.length === 1 ? "commodity" : "commodities"}`,
+                  thisMonthSpend,
+                  lastMonthSpend,
+                  priceHistory: spendHistory.map((s) => (items[0]?.thisMonthQty ? s / items[0].thisMonthQty : s)), // placeholder; real spendHistory used below
+                  thisMonthQty: 1,
+                  riskAlert: items.some((x) => x.riskAlert),
+                  commodityId: items.length === 1 ? items[0].id : null,
+                };
+              });
+            }
+
+            return rows
+              .map((r) => {
+                const spendHistory = groupBy === "commodity"
+                  ? r.priceHistory.map((p) => p * r.thisMonthQty)
+                  : r.priceHistory.map((p) => p * r.thisMonthQty); // vendor rows already store summed spend / qty=1
+                const dollarDelta = r.thisMonthSpend - r.lastMonthSpend;
+                const pctDelta = r.lastMonthSpend > 0
+                  ? ((r.thisMonthSpend - r.lastMonthSpend) / r.lastMonthSpend) * 100
+                  : 100;
+                return { r, spendHistory, dollarDelta, pctDelta };
+              })
+              .sort((a, b) => b.pctDelta - a.pctDelta)
+              .map(({ r, spendHistory, dollarDelta, pctDelta }) => {
+                const up = pctDelta >= 0;
+                const tone = up ? "hsl(var(--finance-emerald))" : "hsl(var(--destructive))";
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => r.commodityId && setSelectedCommodityId(r.commodityId)}
+                    disabled={!r.commodityId}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-card/80 px-2.5 py-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-card/80"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate text-xs font-semibold text-foreground">{r.title}</span>
+                        {r.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
+                      </div>
+                      <div className="truncate text-[10px] text-muted-foreground">{r.subtitle}</div>
                     </div>
-                    <div className="truncate text-[10px] text-muted-foreground">{d.vendor}</div>
-                  </div>
 
-                  <Sparkline data={spendHistory} drift={pctDelta} />
+                    <Sparkline data={spendHistory} drift={pctDelta} />
 
-                  <div className="flex shrink-0 flex-col items-end leading-tight">
-                    <span className="font-mono text-xs font-bold" style={{ color: tone }}>
-                      {up ? "+" : ""}${(dollarDelta / 1000).toFixed(1)}K
-                    </span>
-                    <span className="font-mono text-[9px]" style={{ color: tone }}>
-                      {up ? "+" : ""}{pctDelta.toFixed(1)}%
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+                    <div className="flex shrink-0 flex-col items-end leading-tight">
+                      <span className="font-mono text-xs font-bold" style={{ color: tone }}>
+                        {up ? "+" : ""}${(dollarDelta / 1000).toFixed(1)}K
+                      </span>
+                      <span className="font-mono text-[9px]" style={{ color: tone }}>
+                        {up ? "+" : ""}{pctDelta.toFixed(1)}%
+                      </span>
+                    </div>
+                  </button>
+                );
+              });
+          })()}
         </div>
       </section>
 
