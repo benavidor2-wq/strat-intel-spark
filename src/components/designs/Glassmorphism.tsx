@@ -1134,6 +1134,13 @@ function SpendingReport() {
   );
 }
 function VendorReport() {
+  // CLAUDE_NOTE — Pillar D (Vendor Consolidation). Two pies, mutually exclusive drill-downs:
+  //   Vendor pie    : slices = vendorMonthlySpend, slice angle = monthlySpend / SUM(monthlySpend)
+  //   Category pie  : slices = spendByCategory,    slice angle = monthlySpend / SUM(monthlySpend)
+  //   Click vendor slice  → vendorProducts[vendor] (line-items + matching priceDrift rows for that vendor)
+  //   Click category slice→ categoryVendors[category] + vendorConsolidation row (consolidation savings est.)
+  // Backend should compute monthlySpend by SUM(invoice.total) trailing 30 days, grouped by vendor/category.
+  // Consolidation savings model: assume best-vendor unit price applied to total category volume.
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
