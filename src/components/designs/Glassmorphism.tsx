@@ -16,7 +16,7 @@ import {
   summaryStats,
   vendorProducts,
   categoryVendors,
-  hasAnyData,
+  useHasAnyData,
   type IntegrityAlert,
   type PriceDriftItem,
 } from "@/lib/dataSource";
@@ -47,15 +47,16 @@ const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string;
 
 export default function Glassmorphism() {
   const [active, setActive] = useState<PillarKey>("arbitrage");
+  const anyData = useHasAnyData();
 
   // CLAUDE_NOTE (empty state)
   // Purpose: MyCFO is data-driven — none of the six pillar reports mean
   //   anything without ingested invoices. Show a single placeholder until
   //   Supabase has data.
-  // Data contract: `hasAnyData()` from @/lib/dataSource returns true once
-  //   receipts / integrity / arbitrage / vendor-spend arrays are non-empty.
+  // Data contract: `useHasAnyData()` from @/lib/dataSource returns true once
+  //   dataset_stats() reports at least one non-duplicate receipt.
   // Owner: cross-pillar shell (A–E).
-  if (!hasAnyData()) {
+  if (!anyData) {
     return (
       <div
         className="min-h-screen relative overflow-hidden flex items-center justify-center"
