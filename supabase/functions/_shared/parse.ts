@@ -289,7 +289,21 @@ type ParseResult = {
   confidence: number | null;
   extracted: any;
   page_count: number | null;
+  isStatement?: boolean;
 };
+
+// Monthly statements / remittance advice look like invoices but list dozens
+// of transactions and a giant "TOTAL DUE" — ingesting one would double-count
+// every invoice it summarizes. Detect from text BEFORE any LLM spend.
+function isStatement(text: string): boolean {
+  if (!text) return false;
+  const t = text.toUpperCase();
+  if (t.includes("REMITTANCE ADVICE")) return true;
+  if (t.includes("STATEMENT OF ACCOUNT")) return true;
+  const aging = /\b1\s*-\s*30\s*DAYS\b/.test(t) && /\b31\s*-\s*60\s*DAYS\b/.test(t);
+  if (aging) return true;
+  return false;
+}
 
 async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
   let pageCount: number | null = null;
