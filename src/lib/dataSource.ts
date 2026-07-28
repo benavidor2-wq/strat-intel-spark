@@ -255,19 +255,34 @@ const num = (v: unknown): number => {
 // RLS:     `user_id = auth.uid()`. Never called with service role.
 // Cache:   staleTime Infinity — invalidation is driven by Realtime events
 //          on `receipts` (see installRealtimeInvalidation below).
+// Paging:  PostgREST enforces `db.max_rows` (1000 by default) on every
+//          SELECT and returns the truncated page WITHOUT ERROR. For a
+//          finance tool this is the worst failure mode possible — at 1001
+//          receipts every chart would silently understate spend. We page
+//          with `.range(from, to)` in blocks of PAGE_SIZE and stop when
+//          a page comes back shorter than PAGE_SIZE.
+const PAGE_SIZE = 1000;
 export function useReceipts() {
   return useQuery({
     queryKey: ["receipts"],
     staleTime: Infinity,
     queryFn: async (): Promise<Receipt[]> => {
-      const { data, error } = await supabase
-        .from("receipts_full" as any)
-        .select("*")
-        .is("duplicate_of", null)
-        .not("date", "is", null)
-        .order("date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map((r: any) => ({
+      const rows: any[] = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await supabase
+          .from("receipts_full" as any)
+          .select("*")
+          .is("duplicate_of", null)
+          .not("date", "is", null)
+          .order("date", { ascending: false })
+          .range(from, to);
+        if (error) throw error;
+        const page = data ?? [];
+        rows.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      return rows.map((r: any) => ({
         id: r.id,
         merchant: r.merchant ?? "",
         date: r.date,
@@ -357,32 +372,60 @@ let realtimeInstalled = false;
 // Purpose: keep the react-query cache honest without polling. `uploads`
 //   flips queued -> processing -> complete/needs_review/failed on its own,
 //   and `receipts` inserts drop into the Canvas / stats without a refresh.
+// Debounce: `receipts` and `dataset_stats` are trailing-debounced ~1500ms
+//   because `useReceipts` refetches the ENTIRE receipt history on every
+//   invalidation. Dropping 50 invoices in one dialog fires ~50 INSERTs;
+//   without debouncing that's 50 full re-downloads of the receipt table,
+//   quadratically worse as the dataset grows. `uploads` stays snappy
+//   (250ms) since it's a tiny query and drives the live status badges.
 // Owner: infra glue.
+const RECEIPTS_DEBOUNCE_MS = 1500;
+const UPLOADS_DEBOUNCE_MS = 250;
+let receiptsTimer: ReturnType<typeof setTimeout> | null = null;
+let uploadsTimer: ReturnType<typeof setTimeout> | null = null;
+
 export function installRealtimeInvalidation(qc: QueryClient) {
   if (realtimeInstalled) return;
   realtimeInstalled = true;
 
+  const scheduleUploads = () => {
+    if (uploadsTimer) clearTimeout(uploadsTimer);
+    uploadsTimer = setTimeout(() => {
+      uploadsTimer = null;
+      qc.invalidateQueries({ queryKey: ["uploads"] });
+    }, UPLOADS_DEBOUNCE_MS);
+  };
+
+  const scheduleReceipts = () => {
+    if (receiptsTimer) clearTimeout(receiptsTimer);
+    receiptsTimer = setTimeout(() => {
+      receiptsTimer = null;
+      qc.invalidateQueries({ queryKey: ["receipts"] });
+      qc.invalidateQueries({ queryKey: ["dataset_stats"] });
+    }, RECEIPTS_DEBOUNCE_MS);
+  };
+
   supabase
     .channel("uploads-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "uploads" }, () => {
-      qc.invalidateQueries({ queryKey: ["uploads"] });
-    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "uploads" }, scheduleUploads)
     .subscribe();
 
   supabase
     .channel("receipts-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, () => {
-      qc.invalidateQueries({ queryKey: ["receipts"] });
-      qc.invalidateQueries({ queryKey: ["dataset_stats"] });
-    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "receipts" }, scheduleReceipts)
     .subscribe();
 }
 
-/** Small hook that installs the realtime listener once. */
+/** Small hook that installs the realtime listener once. Clears any pending
+ * debounce timers on teardown so an unmount doesn't leak a trailing fetch. */
 export function useInstallRealtime() {
   const qc = useQueryClient();
   useEffect(() => {
     installRealtimeInvalidation(qc);
+    return () => {
+      if (receiptsTimer) { clearTimeout(receiptsTimer); receiptsTimer = null; }
+      if (uploadsTimer)  { clearTimeout(uploadsTimer);  uploadsTimer  = null; }
+    };
   }, [qc]);
 }
 
