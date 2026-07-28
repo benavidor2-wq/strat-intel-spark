@@ -25,9 +25,10 @@ export const CATEGORIES = [
   "Taxes & Fees", "Repairs & Maintenance", "Other",
 ] as const;
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const LLM_MODEL = "google/gemini-3.6-flash";
-const LLM_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const LLM_MODEL = "gemini-3.6-flash";
+const LLM_URL = `https://generativelanguage.googleapis.com/v1beta/models/${LLM_MODEL}:generateContent`; // uses native Gemini parts
+const LOVABLE_AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions"; // kept as reference only
 
 export function serviceClient(): SupabaseClient {
   return createClient(
@@ -98,55 +99,129 @@ HARD RULES:
 - Do not round or reformat numbers unnecessarily; return them as numbers (e.g. 1234.56, not "$1,234.56").
 - "confidence" is your own 0..1 certainty about the overall extraction.`;
 
+type GeminiPart =
+  | { text: string }
+  | { inline_data: { mime_type: string; data: string } }
+  | { file_data: { mime_type: string; file_uri: string } };
+
+function normalizeGeminiParts(userContent: unknown): GeminiPart[] {
+  // Text-only path: a plain string.
+  if (typeof userContent === "string") {
+    return [{ text: userContent }];
+  }
+
+  // OpenAI-style message array produced by the format parsers.
+  if (!Array.isArray(userContent)) return [{ text: String(userContent) }];
+
+  const parts: GeminiPart[] = [];
+  for (const item of userContent) {
+    if (typeof item !== "object" || item === null) continue;
+    const type = (item as any).type;
+    if (type === "text") {
+      parts.push({ text: String((item as any).text ?? "") });
+    } else if (type === "image_url") {
+      const url = String((item as any).image_url?.url ?? "");
+      const m = url.match(/^data:([^;]+);base64,(.+)$/);
+      if (m) {
+        parts.push({ inline_data: { mime_type: m[1], data: m[2] } });
+      } else {
+        parts.push({ text: `[Image URL not inline: ${url}]` });
+      }
+    } else if (type === "file_ref" || type === "file") {
+      const file = (item as any).file;
+      const file_uri = (item as any).file_uri ?? file?.file_data;
+      const mime_type = (item as any).mime_type ?? file?.mime_type ?? "application/pdf";
+      if (file_uri && file_uri.startsWith("http")) {
+        parts.push({ file_data: { mime_type, file_uri } });
+      } else {
+        parts.push({ text: `[File attachment not inline: ${file?.filename ?? ""}]` });
+      }
+    } else {
+      parts.push({ text: String(item) });
+    }
+  }
+  return parts;
+}
+
+async function uploadGeminiFile(bytes: Uint8Array, mime: string, displayName: string): Promise<string> {
+  const boundary = "----InvoiciifyGeminiBoundary";
+  const metadata = JSON.stringify({ file: { display_name: displayName } });
+  const encoder = new TextEncoder();
+  const body = new Uint8Array([
+    ...encoder.encode(`--${boundary}\r\nContent-Type: application/json; charset=utf-8\r\n\r\n${metadata}\r\n`),
+    ...encoder.encode(`--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`),
+    ...bytes,
+    ...encoder.encode(`\r\n--${boundary}--\r\n`),
+  ]);
+
+  const uploadRes = await fetch(
+    `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "X-Goog-Upload-Protocol": "multipart", "Content-Type": `multipart/related; boundary=${boundary}` },
+      body,
+    },
+  );
+  if (!uploadRes.ok) {
+    throw new Error(`Gemini file upload ${uploadRes.status}: ${await uploadRes.text()}`);
+  }
+  const uploadJson = await uploadRes.json();
+  const name = uploadJson.file?.name;
+  const fileUri = uploadJson.file?.uri;
+  if (!fileUri) throw new Error("Gemini file upload did not return a URI");
+
+  // Poll until the file is active (usually immediate, but not guaranteed).
+  for (let i = 0; i < 15; i++) {
+    const statusRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/files/${name}?key=${GEMINI_API_KEY}`,
+    );
+    if (statusRes.ok) {
+      const statusJson = await statusRes.json();
+      if (statusJson.state === "ACTIVE") return fileUri;
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return fileUri; // proceed anyway; model will error if still processing
+}
+
 async function callLLM(
   userContent: unknown,
-  { timeoutMs = 90_000 }: { timeoutMs?: number } = {},
+  { timeoutMs = 120_000 }: { timeoutMs?: number } = {},
 ): Promise<{ parsed: any; raw: any }> {
   const controller = new AbortController();
   const to = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    const res = await fetch(LLM_URL, {
+    const parts = normalizeGeminiParts(userContent);
+    const body = {
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: receiptsSchema,
+      },
+    };
+
+    const res = await fetch(`${LLM_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: LLM_MODEL,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userContent },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "receipts_extraction", strict: true, schema: receiptsSchema },
-        },
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
+
     if (!res.ok) {
-      const body = await res.text();
-      if (res.status === 402) {
-        throw new LlmBudgetError(
-          "credits_exhausted",
-          "AI credits exhausted — add credits in your workspace billing settings before retrying.",
-        );
-      }
-      if (res.status === 429) {
-        throw new LlmBudgetError(
-          "rate_limited",
-          "AI Gateway rate limit hit — wait a minute and retry.",
-        );
-      }
-      throw new Error(`LLM ${res.status}: ${body.slice(0, 500)}`);
+      const text = await res.text();
+      if (res.status === 429) throw new LlmBudgetError("rate_limited", "Gemini API rate limit hit — wait a minute and retry.");
+      if (res.status === 400 && text.includes("API key not valid")) throw new Error(`Gemini API key invalid: ${text.slice(0, 200)}`);
+      throw new Error(`LLM ${res.status}: ${text.slice(0, 500)}`);
     }
+
     const raw = await res.json();
-    const text = raw?.choices?.[0]?.message?.content ?? "";
+    const text = raw?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     let parsed: any;
     try {
       parsed = typeof text === "string" ? JSON.parse(text) : text;
     } catch {
-      // Some providers wrap json_object in prose fences; try to recover.
       const m = String(text).match(/\{[\s\S]*\}$/);
       parsed = m ? JSON.parse(m[0]) : { receipts: [], confidence: 0 };
     }
@@ -154,6 +229,19 @@ async function callLLM(
   } finally {
     clearTimeout(to);
   }
+}
+
+async function callLLMWithFile(
+  bytes: Uint8Array,
+  mime: string,
+  displayName: string,
+  prompt: string,
+): Promise<{ parsed: any; raw: any }> {
+  const fileUri = await uploadGeminiFile(bytes, mime, displayName);
+  return callLLM([
+    { type: "text", text: prompt },
+    { type: "file_ref", mime_type: mime, file_uri: fileUri },
+  ]);
 }
 
 // ------ Format-specific parsers ---------------------------------------------
@@ -190,12 +278,13 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
       page_count: pageCount,
     };
   }
-  // Fallback: send the PDF itself to the multimodal model.
-  const b64 = base64Encode(bytes);
-  const { parsed, raw } = await callLLM([
-    { type: "text", text: "Extract all invoices from this PDF." },
-    { type: "file", file: { filename: "invoice.pdf", file_data: `data:application/pdf;base64,${b64}` } },
-  ]);
+  // Fallback: send the PDF itself to the multimodal model via Gemini Files API.
+  const { parsed, raw } = await callLLMWithFile(
+    bytes,
+    "application/pdf",
+    "invoice.pdf",
+    "Extract all invoices from this PDF. If you cannot read it, return empty receipts and confidence 0.",
+  );
   return {
     receipts: parsed.receipts ?? [],
     parser: "pdf-vision",
