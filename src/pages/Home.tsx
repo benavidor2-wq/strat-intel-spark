@@ -14,7 +14,7 @@ import { SettingsTab } from "@/components/settings/SettingsTab";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIChatBubble } from "@/components/AIChatBubble";
 import { cn } from "@/lib/utils";
-import { cfoMessages } from "@/data/sampleData";
+import { cfoMessages } from "@/lib/dataSource";
 import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "canvas" | "library" | "mycfo" | "settings";
