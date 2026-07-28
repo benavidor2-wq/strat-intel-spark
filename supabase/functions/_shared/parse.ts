@@ -188,6 +188,7 @@ async function callLLM(
   try {
     const parts = normalizeGeminiParts(userContent);
     const body = {
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [{ role: "user", parts }],
       generationConfig: {
         responseMimeType: "application/json",
