@@ -276,11 +276,53 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
   }
   const stripped = text.replace(/\s+/g, "");
   if (stripped.length >= 200) {
+    // 1) Try vendor templates before spending an LLM call.
+    const tpl = tryTemplates(text);
+    if (tpl) {
+      return {
+        receipts: tpl.receipts,
+        parser: tpl.template,
+        confidence: 0.97,
+        extracted: { mode: "template", template: tpl.template, receipt_count: tpl.receipts.length },
+        page_count: pageCount,
+      };
+    }
+
+    // 2) Text-path LLM extraction.
     const { parsed, raw } = await callLLM(
       `Extract all invoices from this PDF text:\n\n${text.slice(0, 200_000)}`,
     );
+    const receipts = parsed.receipts ?? [];
+
+    // 3) Vision escalation: if the text-path couldn't identify a real vendor
+    //    (every merchant is null or equals the account holder — common when
+    //    the letterhead is a logo image with no OCR-able text), re-run the
+    //    file through Gemini Files API vision so the model can read the logo.
+    const noVendor =
+      receipts.length === 0 ||
+      receipts.every((r: any) => !r?.merchant || isAccountHolder(r.merchant));
+    if (noVendor) {
+      try {
+        const vision = await callLLMWithFile(
+          bytes,
+          "application/pdf",
+          "invoice.pdf",
+          "Extract all invoices from this PDF. Pay special attention to logos/letterheads for the vendor name.",
+        );
+        return {
+          receipts: vision.parsed.receipts ?? [],
+          parser: "pdf-text-then-vision",
+          confidence: vision.parsed.confidence ?? null,
+          extracted: { text: raw, vision: vision.raw },
+          page_count: pageCount,
+        };
+      } catch (_) {
+        // Fall through to returning the text-path result rather than failing hard.
+      }
+    }
+
     return {
-      receipts: parsed.receipts ?? [],
+      receipts,
       parser: "pdf-text",
       confidence: parsed.confidence ?? null,
       extracted: raw,
@@ -301,6 +343,16 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
     extracted: raw,
     page_count: pageCount,
   };
+}
+
+// Case-insensitive account-holder detector — mirrors the DB is_self_identity()
+// SQL function so client-side escalation decisions stay in sync.
+function isAccountHolder(name: string): boolean {
+  const n = name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  if (!n) return false;
+  if (n.startsWith("gilad avidor")) return true;
+  if (["ga foundations", "g a foundations", "gafoundations"].includes(n)) return true;
+  return false;
 }
 
 async function parseImage(bytes: Uint8Array, mime: string): Promise<ParseResult> {
