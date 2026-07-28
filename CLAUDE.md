@@ -19,9 +19,8 @@ backend is expected to feed it.
   page. Email + password only, via Lovable Cloud (Supabase) auth.
 - `/app` (`src/pages/Home.tsx`) is auth-gated: no session -> redirect to `/`.
 - Auto-confirm email is enabled at the project level so signup lands the
-  owner straight into a session. Signup is currently enabled so the owner
-  can create the first account; flip `disable_signup: true` via
-  `configure_auth` once that account exists to lock the door behind you.
+  owner straight into a session. Signup is now `disable_signup: true` — the
+  owner account is created and the door is locked behind them.
 - No profiles table and no roles table exist. This is a single-user app.
   If you ever add multi-user, follow the project auth guidance: create a
   separate `user_roles` table with a `has_role()` SECURITY DEFINER function
