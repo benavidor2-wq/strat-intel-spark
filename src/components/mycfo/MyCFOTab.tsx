@@ -108,7 +108,7 @@ export function MyCFOTab({ onUnreadChange }: { onUnreadChange?: (n: number) => v
             <div className="mt-3 rounded-2xl border border-border bg-card p-4">
               <ChartRenderer
                 type="bar"
-                data={sampleReceipts.slice(0, 6).map((r) => ({ Vendor: r.merchant, Total: r.total }))}
+                data={[]}
                 dims={[{ id: "Vendor" }]}
                 meas={[{ id: "Total" }]}
               />
