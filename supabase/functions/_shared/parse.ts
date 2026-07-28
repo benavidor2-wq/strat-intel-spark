@@ -127,9 +127,15 @@ function normalizeGeminiParts(userContent: unknown): GeminiPart[] {
       } else {
         parts.push({ text: `[Image URL not inline: ${url}]` });
       }
-    } else if (type === "file") {
-      // This is handled by uploadGeminiFile before calling callLLM; kept here as a no-op fallback.
-      parts.push({ text: `[File attachment not inline: ${(item as any).file?.filename ?? ""}]` });
+    } else if (type === "file_ref" || type === "file") {
+      const file = (item as any).file;
+      const file_uri = (item as any).file_uri ?? file?.file_data;
+      const mime_type = (item as any).mime_type ?? file?.mime_type ?? "application/pdf";
+      if (file_uri && file_uri.startsWith("http")) {
+        parts.push({ file_data: { mime_type, file_uri } });
+      } else {
+        parts.push({ text: `[File attachment not inline: ${file?.filename ?? ""}]` });
+      }
     } else {
       parts.push({ text: String(item) });
     }
