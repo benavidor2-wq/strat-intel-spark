@@ -85,9 +85,7 @@ export default function Home() {
           {tab === "canvas" && (
             <Button size="sm"><Save size={14} className="mr-1" />Save</Button>
           )}
-          <NotificationBell />
           <Button size="icon" variant="ghost" onClick={() => setTab("settings")}><SettingsIcon size={18} /></Button>
-          <Button size="icon" variant="ghost" onClick={signOut} title="Sign out"><LogOut size={18} /></Button>
         </div>
       </header>
 
