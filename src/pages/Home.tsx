@@ -83,10 +83,7 @@ export default function Home() {
             <Upload size={14} className="mr-1" />Upload Invoice
           </Button>
           {tab === "canvas" && (
-            <>
-              <Button size="sm"><Save size={14} className="mr-1" />Save</Button>
-              <Button variant="ghost" size="sm">Save as New</Button>
-            </>
+            <Button size="sm"><Save size={14} className="mr-1" />Save</Button>
           )}
           <NotificationBell />
           <Button size="icon" variant="ghost" onClick={() => setTab("settings")}><SettingsIcon size={18} /></Button>
