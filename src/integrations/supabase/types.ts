@@ -426,6 +426,17 @@ export type Database = {
         Args: { p_error: string; p_upload_id: string }
         Returns: undefined
       }
+      ingest_receipts: {
+        Args: {
+          p_confidence: number
+          p_extracted: Json
+          p_page_count: number
+          p_parser: string
+          p_receipts: Json
+          p_upload_id: string
+        }
+        Returns: Json
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
