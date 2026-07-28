@@ -1,61 +1,57 @@
-# Split into two projects
+## Goal
 
-Goal: this project becomes the app-only Invoiciify (routed at `/app`, backend intact). A remixed sibling project becomes the marketing site (landing page at `/`, no backend).
+Prep the repo for Claude Code (desktop, via MCP) to build the real Invoiciify backend — uploads (PDF/JPEG/DOCX/XLSX), Google Drive ingestion, background parsing jobs — against Supabase. No mock data anywhere; every backend hand-off point documented; one authoritative `CLAUDE.md` you can hand to Claude.
 
-Since Lovable can only write into the *current* project, the split happens in two phases: you remix in the UI, then I clean up each side from inside its own project.
+## What I'll change
 
----
+### 1. Rip out all mock/sample data
 
-## Phase 1 — You do this in the Lovable UI
+Delete `src/data/mockData.ts` and `src/data/sampleData.js` (299 + 161 lines of fake data). Create `src/lib/dataSource.ts` — the single boundary between the UI and Supabase — that keeps the TypeScript types as the API contract but exports empty arrays for every collection until Claude wires it to the real database.
 
-1. Open this project's title menu (top-left) → **Remix this project**.
-2. Name the remix something like `invoiciify-marketing`.
-3. Leave this project as-is until Phase 2 is approved — we don't want to delete the landing page here before the remix exists.
+Update every consumer to import from `dataSource` and render empty states:
+- `src/components/designs/Glassmorphism.tsx` — top-level guard: if no data has been ingested yet, render one "MyCFO will appear once invoices are ingested" placeholder instead of the 6 empty report cards
+- `src/components/canvas/CanvasTab.tsx` — Canvas stays visible as an empty scaffold (per your approval)
+- `src/components/library/LibraryTab.tsx` — already has an empty state; just swap the import
+- `src/components/mycfo/MyCFOTab.tsx` — swap imports (this file is currently unused but must still compile)
+- `src/pages/Home.tsx` — swap `cfoMessages` import; unread badge count starts at 0
+- `src/components/NotificationBell.tsx` — swap import; bell shows no notifications
 
-Result: two identical projects, each with its own URL, chat, and (empty on the remix) Lovable Cloud backend.
+Nothing structural is removed — every tab and card still exists, they just render empty until real data lands.
 
----
+### 2. `CLAUDE_NOTE` cookies audit
 
-## Phase 2a — Clean up THIS project (app only)
+Every backend hand-off point gets a 4-part cookie:
+1. **Purpose** — what the block does for the user
+2. **Data contract** — the exact type / table / column shape it consumes
+3. **Math** — formulas, thresholds, edge cases (if analytical)
+4. **Owner** — which Pillar (A–F) or feature it belongs to
 
-Scope of edits, all frontend:
+New/upgraded cookies at: `src/lib/dataSource.ts` (top of file — the master contract), every sub-report inside `Glassmorphism.tsx`, `CanvasTab.tsx`, `LibraryTab.tsx`, `Home.tsx` (auth + tab shell), and `NotificationBell.tsx`.
 
-- `src/App.tsx`: remove the `/` route that renders `Website`. Make `/app` (or `/`) render `Home` directly. Redirect unknown paths to the app.
-- Delete `src/pages/Website.tsx` and any landing-only assets it imports (hero image, marketing-only sections) that nothing else uses.
-- Remove `framer-motion` from `package.json` **only if** nothing in the app tab uses it. I'll grep first before removing.
-- Update `index.html` `<title>` + meta description to app-only copy ("Invoiciify — Invoice analytics dashboard").
-- Leave Lovable Cloud, `sampleData`, `vizql`, `Glassmorphism` MyCFO hub, recharts, lodash all in place.
+### 3. Rewrite `CLAUDE.md` as the Claude-Code handoff
 
-## Phase 2b — Clean up the REMIX project (marketing only)
+Reorganised so Claude Code can start work from a single read:
+- **Repo tour** — stack, routes, key files, tab layout
+- **Auth model** — single-user, signup locked, session handling rules
+- **Data ingestion (new)** — supported formats (PDF, JPEG, DOCX, XLSX), the parse-pipeline contract, and the "long jobs run in the background" rule (queue table + polling from the UI)
+- **Google Drive (new)** — folder-watch model, Drive is a *source* not a target, which Supabase table records ingested files
+- **Backend expectations** — schema is user-defined; Claude must ask before creating tables; RLS + GRANT rules; storage bucket for raw uploads; edge functions for parsing + Drive polling; use the Lovable App connector for Drive (single-user)
+- **6 Logic Pillars** + **Math contracts** (kept, sharpened)
+- **Cookie convention** (kept, sharpened)
+- **Working rules** — no mock data, no invented business logic, always update the cookie when math changes
+- **MCP setup for Claude Desktop** — a copy-pasteable `claude_desktop_config.json` covering:
+  - Supabase MCP (project ref + access token placeholders, read-only recommended for first pass)
+  - GitHub MCP (this repo)
+  - Filesystem MCP (the local clone)
+- **Kickoff prompt** at the very bottom — a copy-pasteable first message to Claude Code that tells it to read this doc, grep `CLAUDE_NOTE`, and ask before running migrations
 
-I can't touch the remix from here. Once you open the remix and send me a message inside it, I'll:
+## What I will NOT do
 
-- Keep `src/pages/Website.tsx` unchanged so the landing page looks identical.
-- `src/App.tsx`: route `/` → `Website`, drop the `/app` route.
-- Delete `src/pages/Home.tsx`, `src/components/canvas/**`, `src/components/mycfo/**` (if present), `src/components/designs/Glassmorphism.tsx`, `src/data/sampleData.js`, `src/data/mockData.ts`, `src/lib/vizql.js`, `AIChatBubble`, `NotificationBell` — anything the landing page doesn't import.
-- Remove now-unused deps: `recharts`, `lodash`, `@types/lodash`, and the Lovable Cloud client files if the landing page doesn't call the backend.
-- Update `index.html` title/meta to marketing copy.
-- Leave CTA buttons as-is (per your answer).
+- Not create any Supabase tables, storage buckets, or edge functions — you're defining the schema.
+- Not touch auth config.
+- Not add the Google Drive App connector yet — the doc lists the exact tool call so Claude runs it after the schema exists.
+- Not build the upload UI yet — empty-state placeholders only; the doc tells Claude to build the flow.
 
-Before deleting anything I'll run an import graph from `Website.tsx` and only remove files with zero remaining references.
+## Deliverable
 
----
-
-## What each project ends up with
-
-```text
-THIS project (app)              REMIX project (marketing)
-├── /  or /app → Home           ├── / → Website
-├── Canvas / Library / MyCFO    ├── Landing hero, features, pricing
-├── Glassmorphism strategic hub ├── No backend, no charts
-├── sampleData + vizql          ├── Framer-motion + shadcn only
-└── Lovable Cloud backend       └── Static site
-```
-
-## Notes
-
-- No shared package — each project owns its own copy, per your answer ("connection does not matter").
-- CTAs stay pointing wherever they point today; you'll rewire them after publishing.
-- Publishing: each project publishes to its own `*.lovable.app` URL independently.
-
-Reply **"remix done"** once Phase 1 is complete and I'll execute Phase 2a here. Phase 2b happens from inside the remix.
+A mock-data-free repo that still renders (empty everywhere), every `CLAUDE_NOTE` upgraded, and a `CLAUDE.md` you can hand to Claude Code verbatim with an MCP config block and a kickoff prompt at the bottom.
