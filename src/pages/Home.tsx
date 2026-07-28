@@ -1,6 +1,6 @@
 // CLAUDE_NOTE: /app is auth-gated. This component checks for a Supabase
 // session on mount and redirects unauthenticated visitors back to "/".
-// The header exposes a Sign out button that clears the Supabase session.
+// Sign out is available through the Settings tab.
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
