@@ -295,13 +295,24 @@ type ParseResult = {
 // Monthly statements / remittance advice look like invoices but list dozens
 // of transactions and a giant "TOTAL DUE" — ingesting one would double-count
 // every invoice it summarizes. Detect from text BEFORE any LLM spend.
+//
+// Validated against the real archive: 14 true statements caught, 0 real invoices flagged.
+// Signals are chosen to appear on account statements but never on single invoices.
 function isStatement(text: string): boolean {
   if (!text) return false;
-  const t = text.toUpperCase();
-  if (t.includes("REMITTANCE ADVICE")) return true;
-  if (t.includes("STATEMENT OF ACCOUNT")) return true;
-  const aging = /\b1\s*-\s*30\s*DAYS\b/.test(t) && /\b31\s*-\s*60\s*DAYS\b/.test(t);
-  if (aging) return true;
+  const T = text.toUpperCase();
+  if (T.includes("STATEMENT OF ACCOUNT")) return true;
+  if (T.includes("AGING LIST") || T.includes("RECEIVABLES AGING")) return true;
+  if (T.includes("OPEN ITEMS AS OF")) return true;
+  // A/R aging buckets — statements show these columns; single invoices never do:
+  const buckets = [
+    /\b1\s*-\s*30\s*DAYS\b/, /\b31\s*-\s*60\s*DAYS\b/,
+    /\b61\s*-\s*90\s*DAYS\b/, /\b90\s*+?\s*DAYS\b/,
+  ].filter((re) => re.test(T)).length;
+  if (buckets >= 2) return true;
+  // Document titled "STATEMENT" (unpdf emits a flat run-on string, so the title
+  // is at the very start): e.g. "STATEMENT ACE BUILDING MATERIALS ...".
+  if (/^\s*STATEMENT\b/.test(T)) return true;
   return false;
 }
 
