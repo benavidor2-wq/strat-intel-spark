@@ -1,0 +1,11 @@
+REVOKE ALL ON FUNCTION public.sync_line_items_from_receipt() FROM anon;
+REVOKE ALL ON FUNCTION public.update_updated_at_column() FROM anon;
+REVOKE ALL ON FUNCTION public.claim_upload(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.claim_next_uploads(int) FROM anon;
+REVOKE ALL ON FUNCTION public.fail_upload(uuid, text) FROM anon;
+REVOKE ALL ON FUNCTION public.ingest_receipts(uuid, jsonb, text, numeric, jsonb, int) FROM anon;
+REVOKE ALL ON FUNCTION public.dataset_stats() FROM anon;
+REVOKE ALL ON FUNCTION public.suggest_vendor_merges() FROM anon;
+REVOKE ALL ON FUNCTION public.merge_vendors(uuid, uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.suggest_item_merges() FROM anon;
+REVOKE ALL ON FUNCTION public.merge_canonical_items(uuid, uuid) FROM anon;
