@@ -2,14 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Moon, Sun, LogOut } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const SECTIONS = ["Preferences"] as const;
-type Section = typeof SECTIONS[number];
+import { Moon, Sun } from "lucide-react";
 
 export function SettingsTab() {
-  const [section, setSection] = useState<Section>("Preferences");
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
 
   const toggleDark = () => {
@@ -19,18 +14,6 @@ export function SettingsTab() {
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card p-3">
-        {SECTIONS.map((s) => (
-          <button key={s} onClick={() => setSection(s)}
-            className={cn("rounded-lg px-3 py-2 text-left text-sm transition-colors",
-              section === s ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted")}>
-            {s}
-          </button>
-        ))}
-        <div className="mt-auto">
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground"><LogOut size={14} className="mr-2" />Log out</Button>
-        </div>
-      </aside>
       <section className="flex-1 overflow-y-auto p-8">
         <h1 className="mb-6 text-2xl font-extrabold tracking-display">{section}</h1>
         {section === "Preferences" && (
