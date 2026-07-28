@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon } from "lucide-react";
 import { CanvasTab } from "@/components/canvas/CanvasTab";
 import Glassmorphism from "@/components/designs/Glassmorphism";
 import { LibraryTab } from "@/components/library/LibraryTab";
