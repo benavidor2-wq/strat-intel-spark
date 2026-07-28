@@ -8,12 +8,6 @@ backend is expected to feed it.
 
 - React 18 + Vite + TypeScript + Tailwind. Single-page demo of a
   Strategic Intelligence Engine for procurement / spend analytics.
-- **Single-user app** — built for the repo owner only. `/app` is gated
-  by a hardcoded username/password check in `src/pages/Home.tsx`
-  (constants `AUTH_USER` / `AUTH_PASS`, sessionStorage flag
-  `invoiciify_auth`). No Supabase auth, no signup, no multi-user roles.
-  Do not re-introduce Supabase auth or a profiles table unless
-  explicitly asked.
 - Main surface: `src/components/designs/Glassmorphism.tsx`
   (one file, multiple report sub-components).
 - Mock data: `src/data/mockData.ts`. Treat its TypeScript interfaces
