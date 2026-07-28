@@ -6,10 +6,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, BookOpen, BrainCircuit, FolderKanban, Upload, Save, Settings as SettingsIcon } from "lucide-react";
 import { CanvasTab } from "@/components/canvas/CanvasTab";
 import Glassmorphism from "@/components/designs/Glassmorphism";
 import { LibraryTab } from "@/components/library/LibraryTab";
+import { ProjectsTab } from "@/components/projects/ProjectsTab";
 import { SettingsTab } from "@/components/settings/SettingsTab";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIChatBubble } from "@/components/AIChatBubble";
@@ -18,12 +19,13 @@ import { cn } from "@/lib/utils";
 import { cfoMessages, useInstallRealtime } from "@/lib/dataSource";
 import { supabase } from "@/integrations/supabase/client";
 
-type Tab = "canvas" | "library" | "mycfo" | "settings";
+type Tab = "canvas" | "library" | "mycfo" | "projects" | "settings";
 
 const TABS: { id: Tab; label: string; Icon: any }[] = [
   { id: "canvas", label: "Canvas", Icon: LayoutDashboard },
   { id: "library", label: "Library", Icon: BookOpen },
   { id: "mycfo", label: "MyCFO", Icon: BrainCircuit },
+  { id: "projects", label: "Projects", Icon: FolderKanban },
 ];
 
 export default function Home() {
