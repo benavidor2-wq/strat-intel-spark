@@ -6,12 +6,28 @@ backend is expected to feed it.
 
 ## Project shape
 
-- React 18 + Vite + TypeScript + Tailwind. Single-page demo of a
-  Strategic Intelligence Engine for procurement / spend analytics.
+- React 18 + Vite + TypeScript + Tailwind. Single-owner (private) deploy
+  of a Strategic Intelligence Engine for procurement / spend analytics.
 - Main surface: `src/components/designs/Glassmorphism.tsx`
   (one file, multiple report sub-components).
 - Mock data: `src/data/mockData.ts`. Treat its TypeScript interfaces
   as the API contract the backend must satisfy.
+
+## Authentication
+
+- `/` is a private sign-in gate (`src/pages/Website.tsx`), NOT a marketing
+  page. Email + password only, via Lovable Cloud (Supabase) auth.
+- `/app` (`src/pages/Home.tsx`) is auth-gated: no session -> redirect to `/`.
+- Auto-confirm email is enabled at the project level so signup lands the
+  owner straight into a session. Signup is currently enabled so the owner
+  can create the first account; flip `disable_signup: true` via
+  `configure_auth` once that account exists to lock the door behind you.
+- No profiles table and no roles table exist. This is a single-user app.
+  If you ever add multi-user, follow the project auth guidance: create a
+  separate `user_roles` table with a `has_role()` SECURITY DEFINER function
+  and RLS policies keyed off `auth.uid()`. Never store roles on a profile row.
+- Session handling: register `onAuthStateChange` early; use `getUser()` for
+  trust checks and `getSession()` only for token attachment.
 
 ## The 6 Logic Pillars
 
