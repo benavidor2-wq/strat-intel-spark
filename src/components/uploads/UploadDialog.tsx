@@ -24,6 +24,7 @@ import {
   Upload as UploadIcon,
   FolderUp,
   FileText,
+  FileX,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
