@@ -7,6 +7,7 @@ import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 import mammoth from "npm:mammoth@1.8.0";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { Buffer } from "node:buffer";
+import { tryTemplates } from "./templates/index.ts";
 
 // Sentinel error class for LLM budget/rate failures so the UI can show
 // "AI credits exhausted" instead of a raw provider dump.
