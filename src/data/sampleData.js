@@ -83,7 +83,7 @@ function makeReceipt(i) {
   };
 }
 
-export const receipts = Array.from({ length: 45 }, (_, i) => makeReceipt(i, 45));
+export const receipts = Array.from({ length: 45 }, (_, i) => makeReceipt(i));
 
 export const cfoMessages = [
   {
