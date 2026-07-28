@@ -1,12 +1,12 @@
 // CLAUDE_NOTE: /app is auth-gated. This component checks for a Supabase
 // session on mount and redirects unauthenticated visitors back to "/".
-// The header exposes a Sign out button that clears the Supabase session.
+// Sign out is available through the Settings tab.
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon } from "lucide-react";
 import { CanvasTab } from "@/components/canvas/CanvasTab";
 import Glassmorphism from "@/components/designs/Glassmorphism";
 import { LibraryTab } from "@/components/library/LibraryTab";
@@ -47,11 +47,6 @@ export default function Home() {
 
   if (!ready) return null;
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate("/", { replace: true });
-  }
-
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -85,9 +80,7 @@ export default function Home() {
           {tab === "canvas" && (
             <Button size="sm"><Save size={14} className="mr-1" />Save</Button>
           )}
-          <NotificationBell />
           <Button size="icon" variant="ghost" onClick={() => setTab("settings")}><SettingsIcon size={18} /></Button>
-          <Button size="icon" variant="ghost" onClick={signOut} title="Sign out"><LogOut size={18} /></Button>
         </div>
       </header>
 
