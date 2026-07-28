@@ -307,7 +307,7 @@ function isStatement(text: string): boolean {
   // A/R aging buckets — statements show these columns; single invoices never do:
   const buckets = [
     /\b1\s*-\s*30\s*DAYS\b/, /\b31\s*-\s*60\s*DAYS\b/,
-    /\b61\s*-\s*90\s*DAYS\b/, /\b90\s*+?\s*DAYS\b/,
+    /\b61\s*-\s*90\s*DAYS\b/, /\b90\s*\+?\s*DAYS\b/,
   ].filter((re) => re.test(T)).length;
   if (buckets >= 2) return true;
   // Document titled "STATEMENT" (unpdf emits a flat run-on string, so the title
