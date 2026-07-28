@@ -67,11 +67,12 @@ function prettyBytes(n: number | null): string {
 
 function statusMeta(s: UploadStatus): { label: string; className: string; Icon: any } {
   switch (s) {
-    case "queued":       return { label: "Queued",       className: "bg-muted text-muted-foreground",  Icon: Clock };
-    case "processing":   return { label: "Processing",   className: "bg-indigo-100 text-indigo-700",   Icon: Loader2 };
-    case "complete":     return { label: "Complete",     className: "bg-emerald-100 text-emerald-700", Icon: CheckCircle2 };
-    case "needs_review": return { label: "Needs review", className: "bg-amber-100 text-amber-700",     Icon: AlertCircle };
-    case "failed":       return { label: "Failed",       className: "bg-red-100 text-red-700",         Icon: AlertCircle };
+    case "queued":       return { label: "Queued",             className: "bg-muted text-muted-foreground",  Icon: Clock };
+    case "processing":   return { label: "Processing",         className: "bg-indigo-100 text-indigo-700",   Icon: Loader2 };
+    case "complete":     return { label: "Complete",           className: "bg-emerald-100 text-emerald-700", Icon: CheckCircle2 };
+    case "needs_review": return { label: "Needs review",       className: "bg-amber-100 text-amber-700",     Icon: AlertCircle };
+    case "failed":       return { label: "Failed",             className: "bg-red-100 text-red-700",         Icon: AlertCircle };
+    case "skipped":      return { label: "Statement — skipped", className: "bg-slate-100 text-slate-600",    Icon: FileX };
   }
 }
 
