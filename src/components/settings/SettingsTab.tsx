@@ -1,36 +1,53 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Cloud } from "lucide-react";
 
 export function SettingsTab() {
   return (
     <div className="flex flex-1 overflow-hidden">
       <section className="flex-1 overflow-y-auto p-8">
-        <h1 className="mb-6 text-2xl font-extrabold tracking-display">Preferences</h1>
-        <div className="max-w-xl space-y-4">
-          <SettingRow label="Email notifications" desc="Receive alerts for new CFO insights."><Switch defaultChecked /></SettingRow>
-          <SettingRow label="Weekly spend report" desc="A summary emailed every Monday."><Switch defaultChecked /></SettingRow>
-          <SettingRow label="Currency" desc="Default display currency.">
-            <Select defaultValue="USD">
-              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-              <SelectContent>{["USD", "EUR", "ILS", "GBP"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-            </Select>
-          </SettingRow>
-          <SettingRow label="Language" desc="Interface language.">
-            <Select defaultValue="English">
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>{["English", "Spanish", "French", "German", "Italian", "Portuguese", "Hebrew", "Dutch", "Japanese"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-            </Select>
-          </SettingRow>
-          <div>
-            <h3 className="mt-8 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Integrations</h3>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {["QuickBooks"].map((i) => (
-                <div key={i} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
-                  <span className="text-sm font-medium">{i}</span>
-                  <Button size="sm" variant="outline">Connect</Button>
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-extrabold tracking-display">Settings</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Manage your preferences and data connections.</p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Preferences</h2>
+              <div className="space-y-3">
+                <SettingRow label="Email notifications" desc="Receive alerts for new CFO insights."><Switch defaultChecked /></SettingRow>
+                <SettingRow label="Weekly spend report" desc="A summary emailed every Monday."><Switch defaultChecked /></SettingRow>
+                <SettingRow label="Currency" desc="Default display currency.">
+                  <Select defaultValue="USD">
+                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["USD", "EUR", "ILS", "GBP"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </SettingRow>
+                <SettingRow label="Language" desc="Interface language.">
+                  <Select defaultValue="English">
+                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["English", "Spanish", "French", "German", "Italian", "Portuguese", "Hebrew", "Dutch", "Japanese"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </SettingRow>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Integrations</h2>
+              <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Cloud size={20} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Google Drive</div>
+                    <div className="text-xs text-muted-foreground">Import invoices from a watched folder.</div>
+                  </div>
                 </div>
-              ))}
+                <Button size="sm" variant="outline">Connect</Button>
+              </div>
             </div>
           </div>
         </div>
