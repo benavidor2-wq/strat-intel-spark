@@ -278,12 +278,13 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
       page_count: pageCount,
     };
   }
-  // Fallback: send the PDF itself to the multimodal model.
-  const b64 = base64Encode(bytes);
-  const { parsed, raw } = await callLLM([
-    { type: "text", text: "Extract all invoices from this PDF." },
-    { type: "file", file: { filename: "invoice.pdf", file_data: `data:application/pdf;base64,${b64}` } },
-  ]);
+  // Fallback: send the PDF itself to the multimodal model via Gemini Files API.
+  const { parsed, raw } = await callLLMWithFile(
+    bytes,
+    "application/pdf",
+    "invoice.pdf",
+    "Extract all invoices from this PDF. If you cannot read it, return empty receipts and confidence 0.",
+  );
   return {
     receipts: parsed.receipts ?? [],
     parser: "pdf-vision",
