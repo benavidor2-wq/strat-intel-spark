@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
+import { Upload as UploadIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DataPane } from "./DataPane";
 import { ShelfSystem, Shelves } from "./ShelfSystem";
 import { VizCanvas } from "./VizCanvas";
 import { buildChartData, suggestChartType } from "@/lib/vizql";
+import { UploadDialog } from "@/components/uploads/UploadDialog";
 // CLAUDE_NOTE (data source)
-// Canvas is a BI shelf-and-chart builder driven entirely by `receipts`.
-// Today `receipts` is empty; the DataPane / ShelfSystem still render so
-// the layout is visible, but every chart resolves to an empty axis until
-// Supabase-backed receipts land through @/lib/dataSource.
-import { useReceipts } from "@/lib/dataSource";
+// Canvas is a BI shelf-and-chart builder driven entirely by receipts from
+// `useReceipts()` (view `receipts_full`). When the feed is empty, the pane
+// swaps to an ingestion CTA instead of rendering empty shelves.
+import { useReceipts, useHasAnyData } from "@/lib/dataSource";
 
 export function CanvasTab() {
   const { data: receipts = [] } = useReceipts();
