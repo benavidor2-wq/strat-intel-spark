@@ -422,6 +422,12 @@ async function parseDocx(bytes: Uint8Array): Promise<ParseResult> {
   // mammoth expects a Node Buffer under Deno's npm compat; a raw Uint8Array
   // throws "Can't find end of central directory".
   const { value: text } = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
+  if (isStatement(text)) {
+    return {
+      receipts: [], parser: "statement", confidence: null,
+      extracted: { mode: "statement" }, page_count: null, isStatement: true,
+    };
+  }
   const { parsed, raw } = await callLLM(
     `Extract all invoices from this Word document text:\n\n${text.slice(0, 200_000)}`,
   );
