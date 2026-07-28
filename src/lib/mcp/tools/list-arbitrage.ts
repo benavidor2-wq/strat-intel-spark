@@ -1,5 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
-import { arbitrageOpportunities } from "@/data/mockData";
+import { arbitrageOpportunities } from "../../data/mockData";
 
 export default defineTool({
   name: "list_arbitrage_opportunities",

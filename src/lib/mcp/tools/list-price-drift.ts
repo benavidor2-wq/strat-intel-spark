@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { priceDriftItems } from "@/data/mockData";
+import { priceDriftItems } from "../../data/mockData";
 
 export default defineTool({
   name: "list_price_drift",

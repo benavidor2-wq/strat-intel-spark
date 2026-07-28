@@ -1,5 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
-import { integrityAlerts } from "@/data/mockData";
+import { integrityAlerts } from "../../data/mockData";
 
 export default defineTool({
   name: "list_integrity_alerts",

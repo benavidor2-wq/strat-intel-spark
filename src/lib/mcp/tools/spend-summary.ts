@@ -4,7 +4,7 @@ import {
   vendorMonthlySpend,
   vendorConsolidation,
   summaryStats,
-} from "@/data/mockData";
+} from "../../data/mockData";
 
 export default defineTool({
   name: "get_spend_summary",
