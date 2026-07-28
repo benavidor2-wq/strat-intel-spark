@@ -5,7 +5,11 @@
 // validation, we discard the result and fall back to the LLM path. A silently
 // mis-parsed template is worse than an LLM call.
 
-import { whitecapTemplate } from "./whitecap.ts";
+// Templates are intentionally EMPTY. The White Cap template was removed because
+// `unpdf` extracts these PDFs as a flat run-on string rather than the
+// newline-separated columns the template needed — the LLM path handles them
+// correctly. The registry + validate-or-fallback machinery below stays in
+// place so future deterministic vendor parsers can be added in one line.
 
 export interface VendorTemplate {
   name: string;
@@ -13,12 +17,7 @@ export interface VendorTemplate {
   parse: (text: string) => any[];
 }
 
-// Registry — adding a new vendor is a one-line push.
-export const TEMPLATES: VendorTemplate[] = [
-  whitecapTemplate,
-  // future: harrisConcreteTemplate, homeDepotTemplate, quailtyBinTemplate,
-  // ganahlTemplate, hardwareExpressTemplate, ...
-];
+export const TEMPLATES: VendorTemplate[] = [];
 
 // Reconciliation tolerance: line-sum vs invoice total.
 const RECON_ABS = 5.0;    // $5
