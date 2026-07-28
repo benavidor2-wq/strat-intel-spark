@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Moon, Sun, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const SECTIONS = ["Preferences", "Account & Billing", "Team Management"] as const;
+const SECTIONS = ["Preferences"] as const;
 type Section = typeof SECTIONS[number];
 
 export function SettingsTab() {
@@ -65,24 +65,6 @@ export function SettingsTab() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
-        {section === "Account & Billing" && (
-          <div className="max-w-xl rounded-2xl border border-border bg-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold uppercase text-muted-foreground">Current plan</div>
-                <div className="mt-1 text-2xl font-extrabold tracking-display">Pro</div>
-                <div className="mt-1 text-xs text-emerald-600">Active · renews May 3, 2026</div>
-              </div>
-              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
-            </div>
-            <Button className="mt-6 rounded-full">Manage Billing</Button>
-          </div>
-        )}
-        {section === "Team Management" && (
-          <div className="max-w-xl rounded-2xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
-            <div className="text-sm">Team management is coming soon.</div>
           </div>
         )}
       </section>
