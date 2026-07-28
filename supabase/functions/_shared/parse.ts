@@ -699,6 +699,14 @@ export async function processClaimed(
       parseResult = await dispatchParse(bytes, job.mime_type, job.filename);
     }
 
+    if (parseResult.isStatement) {
+      await sb.rpc("skip_upload", {
+        p_upload_id: job.id,
+        p_reason: "Looks like a monthly statement / remittance advice, not an invoice — excluded from spend.",
+      });
+      return { upload_id: job.id, ok: true, result: { skipped: true, reason: "statement" } };
+    }
+
     const { data: ingest, error: ingErr } = await sb.rpc("ingest_receipts", {
       p_upload_id: job.id,
       p_receipts: parseResult.receipts,
