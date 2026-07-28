@@ -170,6 +170,8 @@ export type Database = {
       }
       receipts: {
         Row: {
+          bill_to: string | null
+          bill_to_is_self: boolean | null
           category: string | null
           confidence: number | null
           created_at: string
@@ -195,6 +197,8 @@ export type Database = {
           vendor_id: string | null
         }
         Insert: {
+          bill_to?: string | null
+          bill_to_is_self?: boolean | null
           category?: string | null
           confidence?: number | null
           created_at?: string
@@ -220,6 +224,8 @@ export type Database = {
           vendor_id?: string | null
         }
         Update: {
+          bill_to?: string | null
+          bill_to_is_self?: boolean | null
           category?: string | null
           confidence?: number | null
           created_at?: string
@@ -434,6 +440,8 @@ export type Database = {
     Views: {
       receipts_full: {
         Row: {
+          bill_to: string | null
+          bill_to_is_self: boolean | null
           category: string | null
           confidence: number | null
           created_at: string | null
@@ -511,6 +519,7 @@ export type Database = {
         }
         Returns: Json
       }
+      is_self_identity: { Args: { t: string }; Returns: boolean }
       merge_canonical_items: {
         Args: { p_keep_id: string; p_merge_id: string }
         Returns: Json
