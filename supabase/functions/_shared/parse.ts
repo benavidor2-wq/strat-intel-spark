@@ -43,7 +43,6 @@ export function serviceClient(): SupabaseClient {
 
 const receiptsSchema = {
   type: "object",
-  additionalProperties: false,
   required: ["receipts", "confidence"],
   properties: {
     confidence: { type: "number" },
@@ -51,35 +50,43 @@ const receiptsSchema = {
       type: "array",
       items: {
         type: "object",
-        additionalProperties: false,
         required: [
           "merchant", "bill_to", "invoice_no", "date", "subtotal", "tax", "total",
           "currency", "category", "custom_fields", "line_items",
         ],
         properties: {
-          merchant: { type: ["string", "null"] },
-          bill_to: { type: ["string", "null"], description: "Company the invoice is ADDRESSED TO (bill-to / sold-to), distinct from merchant/seller." },
-          invoice_no: { type: ["string", "null"] },
-          date: { type: ["string", "null"], description: "YYYY-MM-DD or null" },
-          subtotal: { type: ["number", "null"] },
-          tax: { type: ["number", "null"] },
-          total: { type: ["number", "null"] },
-          currency: { type: ["string", "null"] },
-          category: { type: ["string", "null"], enum: [...CATEGORIES, null] },
-          custom_fields: { type: "object", additionalProperties: { type: ["string", "number", "null"] } },
+          merchant: { type: "string", nullable: true },
+          bill_to: { type: "string", nullable: true, description: "Company the invoice is ADDRESSED TO (bill-to / sold-to), distinct from merchant/seller." },
+          invoice_no: { type: "string", nullable: true },
+          date: { type: "string", nullable: true, description: "YYYY-MM-DD or null" },
+          subtotal: { type: "number", nullable: true },
+          tax: { type: "number", nullable: true },
+          total: { type: "number", nullable: true },
+          currency: { type: "string", nullable: true },
+          category: { type: "string", nullable: true, enum: [...CATEGORIES] },
+          custom_fields: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["key", "value"],
+              properties: {
+                key: { type: "string" },
+                value: { type: "string" },
+              },
+            },
+          },
           line_items: {
             type: "array",
             items: {
               type: "object",
-              additionalProperties: false,
               required: ["name", "sku", "uom", "quantity", "unit_price", "total_price"],
               properties: {
                 name: { type: "string" },
-                sku: { type: ["string", "null"] },
-                uom: { type: ["string", "null"] },
-                quantity: { type: ["number", "null"] },
-                unit_price: { type: ["number", "null"] },
-                total_price: { type: ["number", "null"] },
+                sku: { type: "string", nullable: true },
+                uom: { type: "string", nullable: true },
+                quantity: { type: "number", nullable: true },
+                unit_price: { type: "number", nullable: true },
+                total_price: { type: "number", nullable: true },
               },
             },
           },
@@ -88,6 +95,7 @@ const receiptsSchema = {
     },
   },
 } as const;
+
 
 const SYSTEM_PROMPT = `You extract structured invoice/receipt data from documents.
 
@@ -234,11 +242,31 @@ async function callLLM(
       const m = String(text).match(/\{[\s\S]*\}$/);
       parsed = m ? JSON.parse(m[0]) : { receipts: [], confidence: 0 };
     }
+    // Gemini responseSchema can't express open-key objects, so custom_fields
+    // is returned as an array of {key,value} pairs — fold back to an object
+    // that ingest_receipts expects. Only touches LLM output; vendor templates
+    // already produce a plain object and go through a different path.
+    if (parsed && Array.isArray(parsed.receipts)) {
+      for (const r of parsed.receipts) {
+        if (r && Array.isArray(r.custom_fields)) {
+          const obj: Record<string, string> = {};
+          for (const it of r.custom_fields) {
+            const k = it?.key;
+            const v = it?.value;
+            if (typeof k === "string" && k.trim() && !(k in obj)) {
+              obj[k] = typeof v === "string" ? v : v == null ? "" : String(v);
+            }
+          }
+          r.custom_fields = obj;
+        }
+      }
+    }
     return { parsed, raw };
   } finally {
     clearTimeout(to);
   }
 }
+
 
 async function callLLMWithFile(
   bytes: Uint8Array,
