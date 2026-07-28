@@ -1,6 +1,10 @@
 import { Bell } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { notifications } from "@/data/sampleData";
+// CLAUDE_NOTE (data source)
+// Notifications are UI-only today (empty from dataSource). When you wire
+// this to Supabase, back it with a `notifications` table scoped to the
+// signed-in user via RLS; keep the shape defined in @/lib/dataSource.
+import { notifications } from "@/lib/dataSource";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 

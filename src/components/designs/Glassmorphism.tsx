@@ -1,6 +1,10 @@
 import { type MouseEvent, type ReactNode, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+// CLAUDE_NOTE (data source)
+// All analytics arrays come from the dataSource boundary. Today they're
+// empty; the early-return in Glassmorphism() below shows an empty state
+// until Claude Code wires these to Supabase.
 import {
   integrityAlerts,
   priceDriftItems,
@@ -12,9 +16,10 @@ import {
   summaryStats,
   vendorProducts,
   categoryVendors,
+  hasAnyData,
   type IntegrityAlert,
   type PriceDriftItem,
-} from "@/data/mockData";
+} from "@/lib/dataSource";
 import { ArrowLeft, Shield, TrendingDown, Zap, Users, Gift, Send, X, FileText, CheckCircle2, CalendarDays, Filter, Check, ChevronsUpDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -43,8 +48,36 @@ const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string;
 export default function Glassmorphism() {
   const [active, setActive] = useState<PillarKey>("arbitrage");
 
+  // CLAUDE_NOTE (empty state)
+  // Purpose: MyCFO is data-driven — none of the six pillar reports mean
+  //   anything without ingested invoices. Show a single placeholder until
+  //   Supabase has data.
+  // Data contract: `hasAnyData()` from @/lib/dataSource returns true once
+  //   receipts / integrity / arbitrage / vendor-spend arrays are non-empty.
+  // Owner: cross-pillar shell (A–E).
+  if (!hasAnyData()) {
+    return (
+      <div
+        className="min-h-screen relative overflow-hidden flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f0fdf4 50%, #eef2ff 100%)", color: textPrimary }}
+      >
+        <div className={cn(glass, "max-w-md p-8 text-center")}>
+          <Shield size={32} className="mx-auto mb-4 opacity-40" />
+          <h2 className="text-xl font-bold mb-2">MyCFO is waiting on data</h2>
+          <p className="text-sm" style={{ color: textSecondary }}>
+            Upload invoices or connect Google Drive from Settings. The six
+            pillar reports — Arbitrage, Price Drift, Spending Patterns,
+            Vendor Consolidation, and Anomaly &amp; Risk — will populate
+            automatically once ingestion runs.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
   const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
+
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f0fdf4 50%, #eef2ff 100%)", color: textPrimary }}>

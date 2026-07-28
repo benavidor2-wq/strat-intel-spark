@@ -2,10 +2,15 @@ import { useState } from "react";
 import { BookOpen, Pencil, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { savedModels as seed } from "@/data/sampleData";
+// CLAUDE_NOTE (data source)
+// `savedModels` = user-saved Canvas configs (rows/cols/filters/chartType).
+// When you wire this, persist to a `saved_models` table keyed by
+// auth.uid(); the shape lives in @/lib/dataSource. Empty state already
+// exists below.
+import { savedModels as seed } from "@/lib/dataSource";
 import { ChartRenderer } from "@/components/canvas/ChartRenderer";
 import { buildChartData } from "@/lib/vizql";
-import { receipts } from "@/data/sampleData";
+import { receipts } from "@/lib/dataSource";
 
 export function LibraryTab({ onEdit }: { onEdit?: (m: any) => void }) {
   const [models, setModels] = useState(seed);
