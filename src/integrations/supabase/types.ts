@@ -518,8 +518,36 @@ export type Database = {
         }
         Returns: Json
       }
+      merge_canonical_items: {
+        Args: { p_keep: string; p_merge: string }
+        Returns: undefined
+      }
+      merge_vendors: {
+        Args: { p_keep: string; p_merge: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      suggest_item_merges: {
+        Args: never
+        Returns: {
+          keep: string
+          keep_name: string
+          merge: string
+          merge_name: string
+          score: number
+        }[]
+      }
+      suggest_vendor_merges: {
+        Args: never
+        Returns: {
+          keep: string
+          keep_name: string
+          merge: string
+          merge_name: string
+          score: number
+        }[]
+      }
     }
     Enums: {
       line_kind:
