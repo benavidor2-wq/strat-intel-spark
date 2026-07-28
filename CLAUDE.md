@@ -115,9 +115,7 @@ only, always signed in).
 - **XLSX** → `xlsx`/`SheetJS` → deterministic mapper first, LLM fallback
   for unknown layouts
 
-Use the Lovable AI Gateway (`google/gemini-3.6-flash` default) for LLM
-extraction. The key is already in Supabase secrets (`LOVABLE_API_KEY`).
-Never expose it client-side.
+Use the **Gemini API directly** (`google/gemini-3.6-flash`) with the key stored in Supabase secrets (`GEMINI_API_KEY`). The project now runs on an external Supabase project, so the Lovable AI Gateway (`LOVABLE_API_KEY`) is no longer used by the edge functions. Never expose the Gemini key client-side.
 
 ---
 
