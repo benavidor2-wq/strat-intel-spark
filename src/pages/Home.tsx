@@ -1,9 +1,12 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+// CLAUDE_NOTE: /app is auth-gated. This component checks for a Supabase
+// session on mount and redirects unauthenticated visitors back to "/".
+// The header exposes a Sign out button that clears the Supabase session.
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { CanvasTab } from "@/components/canvas/CanvasTab";
 import Glassmorphism from "@/components/designs/Glassmorphism";
 import { LibraryTab } from "@/components/library/LibraryTab";
@@ -12,6 +15,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { AIChatBubble } from "@/components/AIChatBubble";
 import { cn } from "@/lib/utils";
 import { cfoMessages } from "@/data/sampleData";
+import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "canvas" | "library" | "mycfo" | "settings";
 
@@ -22,8 +26,29 @@ const TABS: { id: Tab; label: string; Icon: any }[] = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("canvas");
   const [unreadCount, setUnreadCount] = useState(cfoMessages.filter((m) => m.unread).length);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) navigate("/", { replace: true });
+      else setReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session) navigate("/", { replace: true });
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [navigate]);
+
+  if (!ready) return null;
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    navigate("/", { replace: true });
+  }
+
 
   return (
     <div className="flex h-screen flex-col bg-background">
