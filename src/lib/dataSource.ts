@@ -667,3 +667,122 @@ export const categoryVendors: Record<
 export const cfoMessages: CfoMessage[] = [];
 export const savedModels: SavedModel[] = [];
 export const notifications: Notification[] = [];
+
+// =========================================================================
+// Projects — derived client-side from receipts' custom_fields
+// =========================================================================
+// CLAUDE_NOTE (data)
+// Purpose: power the Projects tab. A "project" is any value found in a
+//   receipt's custom_fields under one of the recognized project-like keys.
+// Source:  cached useReceipts() output (no extra network).
+// Owner:   Projects tab UI.
+const PROJECT_KEYS = ["job site", "project", "job code", "po number"];
+
+function receiptProjectValues(r: Receipt): string[] {
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(r.custom_fields || {})) {
+    if (v == null) continue;
+    const val = String(v).trim();
+    if (!val) continue;
+    if (PROJECT_KEYS.includes(k.toLowerCase().trim())) out.push(val);
+  }
+  return out;
+}
+
+export interface ProjectSummary {
+  value: string;
+  key: string;
+  receiptCount: number;
+  totalSpend: number;
+}
+
+export function useProjects() {
+  const { data: receipts = [], isLoading } = useReceipts();
+  const map = new Map<string, ProjectSummary>();
+  for (const r of receipts) {
+    const seen = new Set<string>();
+    for (const raw of receiptProjectValues(r)) {
+      const key = raw.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const existing = map.get(key);
+      if (existing) {
+        existing.receiptCount += 1;
+        existing.totalSpend += r.total || 0;
+      } else {
+        map.set(key, { value: raw, key, receiptCount: 1, totalSpend: r.total || 0 });
+      }
+    }
+  }
+  const projects = [...map.values()].sort((a, b) => a.value.localeCompare(b.value));
+  return { projects, isLoading };
+}
+
+export interface ProjectLineRow {
+  receiptId: string;
+  date: string;
+  vendor: string;
+  invoiceNo: string;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface ProjectDetail {
+  receipts: Receipt[];
+  lineItems: ProjectLineRow[];
+  totalsByVendor: { vendor: string; total: number; lineCount: number }[];
+  grandTotal: number;
+  lineCount: number;
+  dateRange: { start: string | null; end: string | null };
+}
+
+export function useProjectDetail(projectKey: string | null): ProjectDetail | null {
+  const { data: receipts = [] } = useReceipts();
+  if (!projectKey) return null;
+  const matched = receipts.filter((r) =>
+    receiptProjectValues(r).some((v) => v.toLowerCase() === projectKey),
+  );
+  const lineItems: ProjectLineRow[] = [];
+  const vendorMap = new Map<string, { total: number; lineCount: number }>();
+  let grandTotal = 0;
+  let start: string | null = null;
+  let end: string | null = null;
+  for (const r of matched) {
+    grandTotal += r.total || 0;
+    if (r.date) {
+      if (!start || r.date < start) start = r.date;
+      if (!end || r.date > end) end = r.date;
+    }
+    const vendor = r.merchant || "Unknown vendor";
+    const invoiceNo = (r as any).invoice_no ?? "";
+    for (const li of r.line_items || []) {
+      lineItems.push({
+        receiptId: r.id,
+        date: r.date,
+        vendor,
+        invoiceNo,
+        name: li.name,
+        quantity: li.quantity,
+        unit_price: li.unit_price,
+        total_price: li.total_price,
+      });
+      const v = vendorMap.get(vendor) ?? { total: 0, lineCount: 0 };
+      v.total += li.total_price || 0;
+      v.lineCount += 1;
+      vendorMap.set(vendor, v);
+    }
+  }
+  const totalsByVendor = [...vendorMap.entries()]
+    .map(([vendor, v]) => ({ vendor, total: v.total, lineCount: v.lineCount }))
+    .sort((a, b) => b.total - a.total);
+  return {
+    receipts: matched,
+    lineItems,
+    totalsByVendor,
+    grandTotal,
+    lineCount: lineItems.length,
+    dateRange: { start, end },
+  };
+}
