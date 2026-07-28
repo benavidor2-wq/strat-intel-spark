@@ -7,12 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 // When you wire this, persist to a `saved_models` table keyed by
 // auth.uid(); the shape lives in @/lib/dataSource. Empty state already
 // exists below.
-import { savedModels as seed } from "@/lib/dataSource";
+import { savedModels as seed, useReceipts } from "@/lib/dataSource";
 import { ChartRenderer } from "@/components/canvas/ChartRenderer";
 import { buildChartData } from "@/lib/vizql";
-import { receipts } from "@/lib/dataSource";
 
 export function LibraryTab({ onEdit }: { onEdit?: (m: any) => void }) {
+  const { data: receipts = [] } = useReceipts();
   const [models, setModels] = useState(seed);
   const [preview, setPreview] = useState<any>(null);
 

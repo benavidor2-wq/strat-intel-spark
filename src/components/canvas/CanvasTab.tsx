@@ -8,9 +8,10 @@ import { buildChartData, suggestChartType } from "@/lib/vizql";
 // Today `receipts` is empty; the DataPane / ShelfSystem still render so
 // the layout is visible, but every chart resolves to an empty axis until
 // Supabase-backed receipts land through @/lib/dataSource.
-import { receipts as sampleReceipts } from "@/lib/dataSource";
+import { useReceipts } from "@/lib/dataSource";
 
 export function CanvasTab() {
+  const { data: receipts = [] } = useReceipts();
   const [shelves, setShelves] = useState<Shelves>({
     rows: [{ id: "Vendor", type: "dim" }],
     cols: [{ id: "Total", type: "meas", agg: "SUM" }],
@@ -24,8 +25,8 @@ export function CanvasTab() {
   const effectiveType = manualType ? chartType : suggested;
 
   const chartData = useMemo(
-    () => buildChartData(sampleReceipts, shelves.rows, shelves.cols, filters),
-    [shelves, filters],
+    () => buildChartData(receipts, shelves.rows, shelves.cols, filters),
+    [receipts, shelves, filters],
   );
 
   const dims = [...shelves.rows, ...shelves.cols].filter((p) => p.type === "dim");
@@ -44,10 +45,10 @@ export function CanvasTab() {
           setShelves={(s) => { setShelves(s); setManualType(false); }}
           filters={filters}
           setFilters={setFilters}
-          receipts={sampleReceipts}
+          receipts={receipts}
         />
         <VizCanvas
-          receipts={sampleReceipts}
+          receipts={receipts}
           chartType={effectiveType}
           chartData={chartData}
           dims={dims}
