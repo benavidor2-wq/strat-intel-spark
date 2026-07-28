@@ -1,57 +1,34 @@
-## Goal
+## New tab: Project Overview
 
-Prep the repo for Claude Code (desktop, via MCP) to build the real Invoiciify backend — uploads (PDF/JPEG/DOCX/XLSX), Google Drive ingestion, background parsing jobs — against Supabase. No mock data anywhere; every backend hand-off point documented; one authoritative `CLAUDE.md` you can hand to Claude.
+Add a fourth tab to the `/app` header (after MyCFO, before Settings placement stays as-is) called **Projects** that lets the owner pick a project and see every item purchased for it, grouped by vendor with a per-item breakdown and a grand total.
 
-## What I'll change
+### What the user sees
 
-### 1. Rip out all mock/sample data
+1. **Project picker** at the top — a searchable dropdown of every distinct project value found across receipts' custom fields (Job Site, Project, Job Code, PO Number, merged into one list, deduped case-insensitively).
+2. **Summary strip** — big Grand Total $, receipt count, vendor count, line count, date range.
+3. **Spend by Vendor bar chart** — one bar per vendor on the project, sorted by spend desc.
+4. **Vendor → Items breakdown** — collapsible vendor sections. Each vendor shows its subtotal, then a flat item table (date, item name, qty, unit price, line total) sortable by any column. Every line item on the project appears; nothing is aggregated across lines.
+5. Empty state when no project selected or no matching receipts.
 
-Delete `src/data/mockData.ts` and `src/data/sampleData.js` (299 + 161 lines of fake data). Create `src/lib/dataSource.ts` — the single boundary between the UI and Supabase — that keeps the TypeScript types as the API contract but exports empty arrays for every collection until Claude wires it to the real database.
+### Data wiring (frontend only)
 
-Update every consumer to import from `dataSource` and render empty states:
-- `src/components/designs/Glassmorphism.tsx` — top-level guard: if no data has been ingested yet, render one "MyCFO will appear once invoices are ingested" placeholder instead of the 6 empty report cards
-- `src/components/canvas/CanvasTab.tsx` — Canvas stays visible as an empty scaffold (per your approval)
-- `src/components/library/LibraryTab.tsx` — already has an empty state; just swap the import
-- `src/components/mycfo/MyCFOTab.tsx` — swap imports (this file is currently unused but must still compile)
-- `src/pages/Home.tsx` — swap `cfoMessages` import; unread badge count starts at 0
-- `src/components/NotificationBell.tsx` — swap import; bell shows no notifications
+- New hook in `src/lib/dataSource.ts`: `useProjects()` — reads from the cached `useReceipts()` result, scans each receipt's `custom_fields` for keys matching `job site | project | job code | po number` (case-insensitive), returns a sorted unique list of values with a receipt count per project.
+- New hook `useProjectDetail(projectValue)` — filters cached receipts whose custom_fields contain that value in any of the four keys, flattens their `line_items`, and returns `{ receipts, lineItems, totalsByVendor, grandTotal, dateRange }`.
+- No new Supabase calls, no schema changes, no edge function work. Pure client-side derivation from existing `receipts_full` data already loaded by React Query.
 
-Nothing structural is removed — every tab and card still exists, they just render empty until real data lands.
+### Files
 
-### 2. `CLAUDE_NOTE` cookies audit
+- `src/pages/Home.tsx` — add `projects` to the tab list and route it to the new component.
+- `src/components/projects/ProjectsTab.tsx` — new: picker + summary + chart + vendor/item breakdown.
+- `src/components/projects/ProjectPicker.tsx` — new: shadcn Command combobox.
+- `src/lib/dataSource.ts` — add `useProjects` and `useProjectDetail` selectors.
 
-Every backend hand-off point gets a 4-part cookie:
-1. **Purpose** — what the block does for the user
-2. **Data contract** — the exact type / table / column shape it consumes
-3. **Math** — formulas, thresholds, edge cases (if analytical)
-4. **Owner** — which Pillar (A–F) or feature it belongs to
+### Design
 
-New/upgraded cookies at: `src/lib/dataSource.ts` (top of file — the master contract), every sub-report inside `Glassmorphism.tsx`, `CanvasTab.tsx`, `LibraryTab.tsx`, `Home.tsx` (auth + tab shell), and `NotificationBell.tsx`.
+Reuse existing semantic Tailwind tokens and shadcn primitives (Card, Table, Collapsible, Command). Bar chart via `recharts` (already in the project). Match the glass/neutral aesthetic used by MyCFO and Canvas — no new palette.
 
-### 3. Rewrite `CLAUDE.md` as the Claude-Code handoff
+### Out of scope
 
-Reorganised so Claude Code can start work from a single read:
-- **Repo tour** — stack, routes, key files, tab layout
-- **Auth model** — single-user, signup locked, session handling rules
-- **Data ingestion (new)** — supported formats (PDF, JPEG, DOCX, XLSX), the parse-pipeline contract, and the "long jobs run in the background" rule (queue table + polling from the UI)
-- **Google Drive (new)** — folder-watch model, Drive is a *source* not a target, which Supabase table records ingested files
-- **Backend expectations** — schema is user-defined; Claude must ask before creating tables; RLS + GRANT rules; storage bucket for raw uploads; edge functions for parsing + Drive polling; use the Lovable App connector for Drive (single-user)
-- **6 Logic Pillars** + **Math contracts** (kept, sharpened)
-- **Cookie convention** (kept, sharpened)
-- **Working rules** — no mock data, no invented business logic, always update the cookie when math changes
-- **MCP setup for Claude Desktop** — a copy-pasteable `claude_desktop_config.json` covering:
-  - Supabase MCP (project ref + access token placeholders, read-only recommended for first pass)
-  - GitHub MCP (this repo)
-  - Filesystem MCP (the local clone)
-- **Kickoff prompt** at the very bottom — a copy-pasteable first message to Claude Code that tells it to read this doc, grep `CLAUDE_NOTE`, and ask before running migrations
-
-## What I will NOT do
-
-- Not create any Supabase tables, storage buckets, or edge functions — you're defining the schema.
-- Not touch auth config.
-- Not add the Google Drive App connector yet — the doc lists the exact tool call so Claude runs it after the schema exists.
-- Not build the upload UI yet — empty-state placeholders only; the doc tells Claude to build the flow.
-
-## Deliverable
-
-A mock-data-free repo that still renders (empty everywhere), every `CLAUDE_NOTE` upgraded, and a `CLAUDE.md` you can hand to Claude Code verbatim with an MCP config block and a kickoff prompt at the bottom.
+- No editing of project assignments on receipts.
+- No CSV export in this pass (easy to add later).
+- No changes to ingestion, parsers, or the database.
