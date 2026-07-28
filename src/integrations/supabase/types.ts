@@ -420,6 +420,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_next_uploads: { Args: { p_limit?: number }; Returns: Json[] }
+      claim_upload: { Args: { p_upload_id: string }; Returns: Json }
+      fail_upload: {
+        Args: { p_error: string; p_upload_id: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
