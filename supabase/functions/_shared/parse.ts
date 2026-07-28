@@ -7,6 +7,7 @@ import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 import mammoth from "npm:mammoth@1.8.0";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { Buffer } from "node:buffer";
+import { tryTemplates } from "./templates/index.ts";
 
 // Sentinel error class for LLM budget/rate failures so the UI can show
 // "AI credits exhausted" instead of a raw provider dump.
@@ -52,11 +53,12 @@ const receiptsSchema = {
         type: "object",
         additionalProperties: false,
         required: [
-          "merchant", "invoice_no", "date", "subtotal", "tax", "total",
+          "merchant", "bill_to", "invoice_no", "date", "subtotal", "tax", "total",
           "currency", "category", "custom_fields", "line_items",
         ],
         properties: {
           merchant: { type: ["string", "null"] },
+          bill_to: { type: ["string", "null"], description: "Company the invoice is ADDRESSED TO (bill-to / sold-to), distinct from merchant/seller." },
           invoice_no: { type: ["string", "null"] },
           date: { type: ["string", "null"], description: "YYYY-MM-DD or null" },
           subtotal: { type: ["number", "null"] },
@@ -89,13 +91,20 @@ const receiptsSchema = {
 
 const SYSTEM_PROMPT = `You extract structured invoice/receipt data from documents.
 
+ACCOUNT HOLDER (BUYER, NEVER THE VENDOR):
+- The account holder is "Gilad Avidor Inc" (also seen as GILAD AVIDOR, Gilad Avidor Construction, GA Foundations; billing address 15021 Ventura Blvd #395 / PMB 395, Sherman Oaks CA 91403).
+- This entity is ALWAYS the buyer, NEVER the vendor. Put it in "bill_to", NEVER in "merchant".
+- If the only company name you can find in the document is the account holder (common when the vendor's letterhead is a logo image with no readable text), return merchant: null rather than guessing.
+- Do NOT skip or drop an invoice that is billed to a DIFFERENT company — extract it normally and report that other company's name in "bill_to". Those are flagged downstream as possible misfile/fraud; that's intended.
+
 HARD RULES:
 - NEVER invent a value. If the document does not clearly show a field (date, subtotal, tax, invoice number, etc.), return null. A guessed date silently corrupts every downstream trend chart — a null that gets flagged for review is strictly better than a plausible fabrication.
+- "merchant" is the VENDOR/SELLER (top of the invoice, remit-to). "bill_to" is who the invoice is addressed to (Sold To / Bill To block).
 - Dates MUST be YYYY-MM-DD or null. Do not guess year.
 - Extract EVERY line item, including discounts, freight, shipping, and fees. Return discounts/credits/rebates as NEGATIVE numbers. Do not skip them.
 - If the document contains multiple invoices, return one object per invoice in "receipts".
 - "category" MUST be one of the allowed enum values, or null if unclear.
-- "custom_fields": include business identifiers when the document shows them — PO Number, Project, Work Order, Job Code, Department, Payment Terms, Contract Number. Use whatever label the document uses as the key; omit anything absent.
+- "custom_fields": include business identifiers when the document shows them — PO Number, Project, Work Order, Job Code, Department, Payment Terms, Contract Number, Job Site, Customer Job No, Acct Job No. Use whatever label the document uses as the key; omit anything absent.
 - Do not round or reformat numbers unnecessarily; return them as numbers (e.g. 1234.56, not "$1,234.56").
 - "confidence" is your own 0..1 certainty about the overall extraction.`;
 
@@ -267,11 +276,53 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
   }
   const stripped = text.replace(/\s+/g, "");
   if (stripped.length >= 200) {
+    // 1) Try vendor templates before spending an LLM call.
+    const tpl = tryTemplates(text);
+    if (tpl) {
+      return {
+        receipts: tpl.receipts,
+        parser: tpl.template,
+        confidence: 0.97,
+        extracted: { mode: "template", template: tpl.template, receipt_count: tpl.receipts.length },
+        page_count: pageCount,
+      };
+    }
+
+    // 2) Text-path LLM extraction.
     const { parsed, raw } = await callLLM(
       `Extract all invoices from this PDF text:\n\n${text.slice(0, 200_000)}`,
     );
+    const receipts = parsed.receipts ?? [];
+
+    // 3) Vision escalation: if the text-path couldn't identify a real vendor
+    //    (every merchant is null or equals the account holder — common when
+    //    the letterhead is a logo image with no OCR-able text), re-run the
+    //    file through Gemini Files API vision so the model can read the logo.
+    const noVendor =
+      receipts.length === 0 ||
+      receipts.every((r: any) => !r?.merchant || isAccountHolder(r.merchant));
+    if (noVendor) {
+      try {
+        const vision = await callLLMWithFile(
+          bytes,
+          "application/pdf",
+          "invoice.pdf",
+          "Extract all invoices from this PDF. Pay special attention to logos/letterheads for the vendor name.",
+        );
+        return {
+          receipts: vision.parsed.receipts ?? [],
+          parser: "pdf-text-then-vision",
+          confidence: vision.parsed.confidence ?? null,
+          extracted: { text: raw, vision: vision.raw },
+          page_count: pageCount,
+        };
+      } catch (_) {
+        // Fall through to returning the text-path result rather than failing hard.
+      }
+    }
+
     return {
-      receipts: parsed.receipts ?? [],
+      receipts,
       parser: "pdf-text",
       confidence: parsed.confidence ?? null,
       extracted: raw,
@@ -292,6 +343,16 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
     extracted: raw,
     page_count: pageCount,
   };
+}
+
+// Case-insensitive account-holder detector — mirrors the DB is_self_identity()
+// SQL function so client-side escalation decisions stay in sync.
+function isAccountHolder(name: string): boolean {
+  const n = name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  if (!n) return false;
+  if (n.startsWith("gilad avidor")) return true;
+  if (["ga foundations", "g a foundations", "gafoundations"].includes(n)) return true;
+  return false;
 }
 
 async function parseImage(bytes: Uint8Array, mime: string): Promise<ParseResult> {
