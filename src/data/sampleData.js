@@ -41,7 +41,7 @@ function makeDate(i, total) {
   return d.toISOString().slice(0, 10);
 }
 
-function makeReceipt(i, total) {
+function makeReceipt(i) {
   const merchant = pick(VENDORS);
   const category = pick(CATEGORIES);
   const numItems = intBetween(2, 5);
@@ -58,7 +58,7 @@ function makeReceipt(i, total) {
   subtotal = +subtotal.toFixed(2);
   const tax = +(subtotal * 0.09).toFixed(2);
   const total = +(subtotal + tax).toFixed(2);
-  const date = makeDate(i, total > 0 ? 45 : 45);
+  const date = makeDate(i, 45);
   const poSeq = 100 + i;
   return {
     id: `rcp_${i + 1}`,
@@ -83,7 +83,7 @@ function makeReceipt(i, total) {
   };
 }
 
-export const receipts = Array.from({ length: 45 }, (_, i) => makeReceipt(i, 45));
+export const receipts = Array.from({ length: 45 }, (_, i) => makeReceipt(i));
 
 export const cfoMessages = [
   {
