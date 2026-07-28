@@ -526,8 +526,6 @@ export type Database = {
         Args: { p_keep: string; p_merge: string }
         Returns: undefined
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       suggest_item_merges: {
         Args: never
         Returns: {
