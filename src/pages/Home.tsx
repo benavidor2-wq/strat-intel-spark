@@ -22,15 +22,15 @@ import { supabase } from "@/integrations/supabase/client";
 type Tab = "canvas" | "library" | "mycfo" | "projects" | "settings";
 
 const TABS: { id: Tab; label: string; Icon: any }[] = [
+  { id: "canvas", label: "Canvas", Icon: LayoutDashboard },
   { id: "mycfo", label: "MyCFO", Icon: BrainCircuit },
   { id: "projects", label: "Projects", Icon: FolderKanban },
-  { id: "canvas", label: "Canvas", Icon: LayoutDashboard },
   { id: "library", label: "Library", Icon: BookOpen },
 ];
 
 export default function Home() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("mycfo");
+  const [tab, setTab] = useState<Tab>("canvas");
   const [unreadCount, setUnreadCount] = useState(cfoMessages.filter((m) => m.unread).length);
   const [ready, setReady] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
