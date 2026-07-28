@@ -1,17 +1,8 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Moon, Sun } from "lucide-react";
 
 export function SettingsTab() {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
-
-  const toggleDark = () => {
-    document.documentElement.classList.toggle("dark");
-    setDark(document.documentElement.classList.contains("dark"));
-  };
-
   return (
     <div className="flex flex-1 overflow-hidden">
       <section className="flex-1 overflow-y-auto p-8">
@@ -19,11 +10,6 @@ export function SettingsTab() {
         <div className="max-w-xl space-y-4">
           <SettingRow label="Email notifications" desc="Receive alerts for new CFO insights."><Switch defaultChecked /></SettingRow>
           <SettingRow label="Weekly spend report" desc="A summary emailed every Monday."><Switch defaultChecked /></SettingRow>
-          <SettingRow label="Dark mode" desc="Match your system or choose a theme.">
-            <Button size="sm" variant="outline" onClick={toggleDark}>
-              {dark ? <Sun size={14} className="mr-1" /> : <Moon size={14} className="mr-1" />}{dark ? "Light" : "Dark"}
-            </Button>
-          </SettingRow>
           <SettingRow label="Currency" desc="Default display currency.">
             <Select defaultValue="USD">
               <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
@@ -39,7 +25,7 @@ export function SettingsTab() {
           <div>
             <h3 className="mt-8 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Integrations</h3>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {["QuickBooks", "Xero", "Google Drive", "Slack"].map((i) => (
+              {["QuickBooks"].map((i) => (
                 <div key={i} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
                   <span className="text-sm font-medium">{i}</span>
                   <Button size="sm" variant="outline">Connect</Button>
