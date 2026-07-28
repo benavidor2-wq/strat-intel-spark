@@ -15,7 +15,7 @@ export function SettingsTab() {
   return (
     <div className="flex flex-1 overflow-hidden">
       <section className="flex-1 overflow-y-auto p-8">
-        <h1 className="mb-6 text-2xl font-extrabold tracking-display">{section}</h1>
+        <h1 className="mb-6 text-2xl font-extrabold tracking-display">Preferences</h1>
         {section === "Preferences" && (
           <div className="max-w-xl space-y-4">
             <SettingRow label="Email notifications" desc="Receive alerts for new CFO insights."><Switch defaultChecked /></SettingRow>
