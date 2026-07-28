@@ -153,6 +153,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "line_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts_full"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "line_items_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -252,6 +259,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "receipts_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "receipts_full"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "receipts_upload_id_fkey"
             columns: ["upload_id"]
             isOneToOne: false
@@ -348,6 +362,13 @@ export type Database = {
             referencedRelation: "receipts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "uploads_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts_full"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vendor_aliases: {
@@ -417,11 +438,71 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      receipts_full: {
+        Row: {
+          bill_to: string | null
+          bill_to_is_self: boolean | null
+          category: string | null
+          confidence: number | null
+          created_at: string | null
+          currency: string | null
+          custom_fields: Json | null
+          date: string | null
+          dedupe_key: string | null
+          duplicate_of: string | null
+          filename: string | null
+          id: string | null
+          invoice_no: string | null
+          line_items: Json | null
+          merchant: string | null
+          merchant_raw: string | null
+          needs_review: boolean | null
+          review_reason: string | null
+          subtotal: number | null
+          tax: number | null
+          total: number | null
+          total_variance: number | null
+          updated_at: string | null
+          upload_id: string | null
+          user_id: string | null
+          vendor_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "receipts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       claim_next_uploads: { Args: { p_limit?: number }; Returns: Json[] }
       claim_upload: { Args: { p_upload_id: string }; Returns: Json }
+      dataset_stats: { Args: never; Returns: Json }
       fail_upload: {
         Args: { p_error: string; p_upload_id: string }
         Returns: undefined
