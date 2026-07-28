@@ -92,6 +92,7 @@ export default function Home() {
         {tab === "canvas" && <CanvasTab />}
         {tab === "library" && <LibraryTab onEdit={() => setTab("canvas")} />}
         {tab === "mycfo" && <div className="flex-1 overflow-y-auto"><Glassmorphism /></div>}
+        {tab === "projects" && <ProjectsTab />}
         {tab === "settings" && <SettingsTab />}
       </main>
 
