@@ -316,6 +316,12 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
   } catch (_) {
     text = "";
   }
+  if (isStatement(text)) {
+    return {
+      receipts: [], parser: "statement", confidence: null,
+      extracted: { mode: "statement" }, page_count: pageCount, isStatement: true,
+    };
+  }
   const stripped = text.replace(/\s+/g, "");
   if (stripped.length >= 200) {
     // 1) Try vendor templates before spending an LLM call.
