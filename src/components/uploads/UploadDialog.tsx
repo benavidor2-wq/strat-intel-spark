@@ -1,24 +1,34 @@
 // CLAUDE_NOTE (upload UI)
-// Purpose: single entry point for manual invoice ingestion.
+// Purpose: single entry point for manual invoice ingestion (files OR whole folders).
 // Data contract:
-//   - Writes: uploadInvoices() from @/lib/dataSource — hashes, dedupes,
-//     uploads to `raw-uploads`, inserts uploads row, invokes parse-upload.
-//   - Reads: useUploads() for the live list. Realtime flips the badge
-//     queued -> processing -> complete/needs_review/failed without polling.
-//   - Retry: retryUpload() re-invokes parse-upload; the RPC caps attempts
-//     at 3 and reuses the cached `extracted` blob so it's cheap.
-// Owner: ingestion UI (feeds A–E through Receipts).
-import { useCallback, useRef, useState } from "react";
+//   - Writes: uploadInvoices(files, onProgress) from @/lib/dataSource.
+//   - Reads: useUploads() for the live list.
+//   - Retry: retryUpload() re-invokes parse-upload.
+// Folder upload:
+//   - <input webkitdirectory> yields FileList with nested files.
+//   - Junk (.DS_Store, Thumbs.db, non-invoice extensions) is silently
+//     skipped when the pick came from a folder — folders always contain
+//     noise and listing each junk file drowns the outcome panel. We show
+//     a single "N non-invoice files skipped" summary instead.
+// Progress:
+//   - uploadInvoices reports per-file, so we render "Processed X of N" and
+//     append outcome rows as they complete rather than freezing until the
+//     whole batch finishes.
+// Guardrail:
+//   - Selections over LARGE_SELECTION_THRESHOLD require an inline confirm
+//     since parsing uses AI credits.
+// Owner: ingestion UI.
+import { useCallback, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import {
   Upload as UploadIcon,
+  FolderUp,
   FileText,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
   Clock,
   Loader2,
-  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -30,7 +40,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  ACCEPTED_UPLOAD_TYPES,
   MAX_UPLOAD_BYTES,
   retryUpload,
   uploadInvoices,
@@ -45,6 +54,9 @@ const ACCEPT_ATTR = [
   ".docx", ".xlsx", ".xls", ".csv",
 ].join(",");
 
+const ACCEPTED_EXT_RE = /\.(pdf|jpe?g|png|webp|heic|heif|docx|xlsx|xls|csv)$/i;
+const LARGE_SELECTION_THRESHOLD = 200;
+
 function prettyBytes(n: number | null): string {
   if (!n) return "";
   if (n < 1024) return `${n} B`;
@@ -54,13 +66,35 @@ function prettyBytes(n: number | null): string {
 
 function statusMeta(s: UploadStatus): { label: string; className: string; Icon: any } {
   switch (s) {
-    case "queued":       return { label: "Queued",       className: "bg-muted text-muted-foreground",              Icon: Clock };
-    case "processing":   return { label: "Processing",   className: "bg-indigo-100 text-indigo-700",               Icon: Loader2 };
-    case "complete":     return { label: "Complete",     className: "bg-emerald-100 text-emerald-700",             Icon: CheckCircle2 };
-    case "needs_review": return { label: "Needs review", className: "bg-amber-100 text-amber-700",                 Icon: AlertCircle };
-    case "failed":       return { label: "Failed",       className: "bg-red-100 text-red-700",                     Icon: AlertCircle };
+    case "queued":       return { label: "Queued",       className: "bg-muted text-muted-foreground",  Icon: Clock };
+    case "processing":   return { label: "Processing",   className: "bg-indigo-100 text-indigo-700",   Icon: Loader2 };
+    case "complete":     return { label: "Complete",     className: "bg-emerald-100 text-emerald-700", Icon: CheckCircle2 };
+    case "needs_review": return { label: "Needs review", className: "bg-amber-100 text-amber-700",     Icon: AlertCircle };
+    case "failed":       return { label: "Failed",       className: "bg-red-100 text-red-700",         Icon: AlertCircle };
   }
 }
+
+/** Coerce anything into a string so the UI can never print "[object Object]". */
+function reasonText(r: unknown): string {
+  if (typeof r === "string") return r;
+  if (r == null) return "Rejected.";
+  if (r instanceof Error) return r.message;
+  if (typeof r === "object") {
+    const o = r as Record<string, unknown>;
+    for (const k of ["message", "error_description", "error", "hint", "details", "code"]) {
+      const v = o[k];
+      if (typeof v === "string" && v) return v;
+    }
+    try { return JSON.stringify(r); } catch { /* noop */ }
+  }
+  return String(r);
+}
+
+type Pending = {
+  files: File[];
+  skippedJunk: number;
+  fromFolder: boolean;
+};
 
 export function UploadDialog({
   open,
@@ -69,26 +103,28 @@ export function UploadDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const filesInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [outcomes, setOutcomes] = useState<UploadOutcome[]>([]);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
   const [retrying, setRetrying] = useState<Record<string, boolean>>({});
   const { data: uploads = [] } = useUploads(50);
 
-  const handleFiles = useCallback(async (list: FileList | File[]) => {
-    const files = Array.from(list);
-    if (!files.length) return;
-
-    // Client-side gate: give quick feedback for the obvious rejects before
-    // paying for hash/upload round trips.
-    const preflight: UploadOutcome[] = [];
+  /** Split a raw file list into { toIngest, skippedJunk, preflightRejects }.
+   *  Folder picks silently drop non-invoice files; explicit multi-file picks
+   *  still surface each rejection so the owner sees the mistake. */
+  const triage = useCallback((raw: File[], fromFolder: boolean) => {
     const toIngest: File[] = [];
-    for (const f of files) {
-      const typeOk = ACCEPTED_UPLOAD_TYPES.includes(f.type) ||
-        /\.(pdf|jpe?g|png|webp|heic|heif|docx|xlsx|xls|csv)$/i.test(f.name);
-      if (!typeOk) {
-        preflight.push({ file: f.name, status: "rejected", reason: "Unsupported file type." });
+    const preflight: UploadOutcome[] = [];
+    let skippedJunk = 0;
+    for (const f of raw) {
+      const extOk = ACCEPTED_EXT_RE.test(f.name);
+      if (!extOk) {
+        if (fromFolder) skippedJunk += 1;
+        else preflight.push({ file: f.name, status: "rejected", reason: "Unsupported file type." });
         continue;
       }
       if (f.size > MAX_UPLOAD_BYTES) {
@@ -97,24 +133,89 @@ export function UploadDialog({
       }
       toIngest.push(f);
     }
+    return { toIngest, preflight, skippedJunk };
+  }, []);
 
+  const runIngest = useCallback(async (files: File[], preflight: UploadOutcome[], skippedJunk: number) => {
     setOutcomes(preflight);
-    if (!toIngest.length) return;
-
+    setProgress({ done: 0, total: files.length });
     setBusy(true);
     try {
-      const results = await uploadInvoices(toIngest);
-      setOutcomes([...preflight, ...results]);
+      const live: UploadOutcome[] = [...preflight];
+      await uploadInvoices(files, (o, done, total) => {
+        live.push(o);
+        setOutcomes([...live]);
+        setProgress({ done, total });
+      });
+      if (skippedJunk > 0) {
+        // Note it once, at the end, so the panel isn't a wall of noise.
+        setOutcomes((prev) => [
+          ...prev,
+          { file: `${skippedJunk} non-invoice file${skippedJunk === 1 ? "" : "s"} skipped`, status: "rejected", reason: "Skipped folder contents that aren't PDF/image/Office/CSV." },
+        ]);
+      }
     } finally {
       setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
+      setProgress(null);
+      if (filesInputRef.current) filesInputRef.current.value = "";
+      if (folderInputRef.current) folderInputRef.current.value = "";
     }
   }, []);
 
-  const onDrop = (e: React.DragEvent) => {
+  const handleRawFiles = useCallback((list: FileList | File[], fromFolder: boolean) => {
+    const arr = Array.from(list);
+    if (!arr.length) return;
+    const { toIngest, preflight, skippedJunk } = triage(arr, fromFolder);
+    if (!toIngest.length) {
+      setOutcomes(preflight);
+      if (skippedJunk > 0) {
+        setOutcomes((prev) => [
+          ...prev,
+          { file: `${skippedJunk} non-invoice file${skippedJunk === 1 ? "" : "s"} skipped`, status: "rejected", reason: "Skipped folder contents that aren't PDF/image/Office/CSV." },
+        ]);
+      }
+      return;
+    }
+    if (toIngest.length >= LARGE_SELECTION_THRESHOLD) {
+      setPending({ files: toIngest, skippedJunk, fromFolder });
+      setOutcomes(preflight);
+      return;
+    }
+    void runIngest(toIngest, preflight, skippedJunk);
+  }, [triage, runIngest]);
+
+  // Drag-and-drop: use webkitGetAsEntry to descend into dropped folders.
+  const collectEntry = async (entry: any, out: File[]): Promise<void> => {
+    if (!entry) return;
+    if (entry.isFile) {
+      await new Promise<void>((resolve) => entry.file((f: File) => { out.push(f); resolve(); }, () => resolve()));
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const readAll = () => new Promise<any[]>((resolve) => reader.readEntries(resolve, () => resolve([])));
+      // readEntries returns in batches; keep going until empty.
+      while (true) {
+        const batch = await readAll();
+        if (!batch.length) break;
+        for (const e of batch) await collectEntry(e, out);
+      }
+    }
+  };
+
+  const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    if (e.dataTransfer.files?.length) void handleFiles(e.dataTransfer.files);
+    const items = e.dataTransfer.items;
+    let fromFolder = false;
+    if (items && items.length && (items[0] as any).webkitGetAsEntry) {
+      const out: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const entry = (items[i] as any).webkitGetAsEntry?.();
+        if (entry?.isDirectory) fromFolder = true;
+        if (entry) await collectEntry(entry, out);
+      }
+      if (out.length) { handleRawFiles(out, fromFolder); return; }
+    }
+    if (e.dataTransfer.files?.length) handleRawFiles(e.dataTransfer.files, false);
   };
 
   const doRetry = async (id: string) => {
@@ -127,6 +228,18 @@ export function UploadDialog({
       setRetrying((r) => ({ ...r, [id]: false }));
     }
   };
+
+  const confirmPending = () => {
+    if (!pending) return;
+    const p = pending;
+    setPending(null);
+    void runIngest(p.files, [], p.skippedJunk);
+  };
+
+  const progressPct = useMemo(() => {
+    if (!progress || !progress.total) return 0;
+    return Math.round((progress.done / progress.total) * 100);
+  }, [progress]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -146,28 +259,77 @@ export function UploadDialog({
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
           className={cn(
-            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-8 text-center transition-colors",
-            dragOver ? "border-primary bg-primary/5" : "border-border bg-muted/30 hover:bg-muted/50",
+            "flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition-colors",
+            dragOver ? "border-primary bg-primary/5" : "border-border bg-muted/30",
           )}
         >
           <UploadIcon size={28} className="text-muted-foreground" />
-          <div className="text-sm font-semibold">Drop files here or click to browse</div>
-          <div className="text-xs text-muted-foreground">Multiple files supported</div>
+          <div className="text-sm font-semibold">Drop files or a folder here</div>
+          <div className="text-xs text-muted-foreground">Or pick from your computer:</div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => filesInputRef.current?.click()}>
+              <UploadIcon size={14} className="mr-1.5" /> Upload files
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => folderInputRef.current?.click()}>
+              <FolderUp size={14} className="mr-1.5" /> Upload folder
+            </Button>
+          </div>
           <input
-            ref={inputRef}
+            ref={filesInputRef}
             type="file"
             multiple
             hidden
             accept={ACCEPT_ATTR}
-            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+            onChange={(e) => e.target.files && handleRawFiles(e.target.files, false)}
+          />
+          {/* React doesn't type webkitdirectory; set it imperatively. */}
+          <input
+            ref={(el) => {
+              folderInputRef.current = el;
+              if (el) {
+                el.setAttribute("webkitdirectory", "");
+                el.setAttribute("directory", "");
+              }
+            }}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => e.target.files && handleRawFiles(e.target.files, true)}
           />
         </div>
 
-        {busy && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 size={12} className="animate-spin" /> Hashing and uploading…
+        {/* Large-selection confirmation */}
+        {pending && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+            <div className="mb-2 flex items-start gap-2">
+              <AlertCircle size={14} className="mt-0.5 shrink-0" />
+              <div>
+                You're about to upload <strong>{pending.files.length.toLocaleString()} files</strong>
+                {pending.skippedJunk > 0 && ` (${pending.skippedJunk} non-invoice files will be skipped)`}.
+                Parsing runs in the background and uses AI credits. Continue?
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={confirmPending}>Continue</Button>
+              <Button size="sm" variant="ghost" onClick={() => setPending(null)}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Progress */}
+        {busy && progress && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 size={12} className="animate-spin" />
+                Processed {progress.done.toLocaleString()} of {progress.total.toLocaleString()}
+              </span>
+              <span className="font-semibold">{progressPct}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+            </div>
           </div>
         )}
 
@@ -177,7 +339,7 @@ export function UploadDialog({
             <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               This batch
             </div>
-            <ul className="space-y-1.5 text-xs">
+            <ul className="max-h-56 space-y-1.5 overflow-y-auto pr-1 text-xs">
               {outcomes.map((o, i) => (
                 <li key={i} className="flex items-start gap-2">
                   {o.status === "queued" && <Clock size={12} className="mt-0.5 text-muted-foreground" />}
@@ -188,7 +350,7 @@ export function UploadDialog({
                     <div className="text-muted-foreground">
                       {o.status === "queued" && "Queued for parsing"}
                       {o.status === "duplicate" && `Already ingested ${formatDistanceToNow(new Date(o.ingested_at), { addSuffix: true })} — skipped`}
-                      {o.status === "rejected" && o.reason}
+                      {o.status === "rejected" && reasonText((o as any).reason)}
                     </div>
                   </div>
                 </li>
@@ -265,7 +427,7 @@ function UploadRowItem({
       {row.status === "failed" && row.error_message && (
         <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-red-50 p-2 text-[11px] text-red-700">
           <AlertCircle size={11} className="mt-0.5 shrink-0" />
-          <span className="flex-1">{row.error_message}</span>
+          <span className="flex-1">{reasonText(row.error_message)}</span>
         </div>
       )}
       {row.status === "needs_review" && (
