@@ -289,7 +289,21 @@ type ParseResult = {
   confidence: number | null;
   extracted: any;
   page_count: number | null;
+  isStatement?: boolean;
 };
+
+// Monthly statements / remittance advice look like invoices but list dozens
+// of transactions and a giant "TOTAL DUE" — ingesting one would double-count
+// every invoice it summarizes. Detect from text BEFORE any LLM spend.
+function isStatement(text: string): boolean {
+  if (!text) return false;
+  const t = text.toUpperCase();
+  if (t.includes("REMITTANCE ADVICE")) return true;
+  if (t.includes("STATEMENT OF ACCOUNT")) return true;
+  const aging = /\b1\s*-\s*30\s*DAYS\b/.test(t) && /\b31\s*-\s*60\s*DAYS\b/.test(t);
+  if (aging) return true;
+  return false;
+}
 
 async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
   let pageCount: number | null = null;
@@ -301,6 +315,12 @@ async function parsePdf(bytes: Uint8Array): Promise<ParseResult> {
     text = Array.isArray(out.text) ? out.text.join("\n") : String(out.text ?? "");
   } catch (_) {
     text = "";
+  }
+  if (isStatement(text)) {
+    return {
+      receipts: [], parser: "statement", confidence: null,
+      extracted: { mode: "statement" }, page_count: pageCount, isStatement: true,
+    };
   }
   const stripped = text.replace(/\s+/g, "");
   if (stripped.length >= 200) {
@@ -402,6 +422,12 @@ async function parseDocx(bytes: Uint8Array): Promise<ParseResult> {
   // mammoth expects a Node Buffer under Deno's npm compat; a raw Uint8Array
   // throws "Can't find end of central directory".
   const { value: text } = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
+  if (isStatement(text)) {
+    return {
+      receipts: [], parser: "statement", confidence: null,
+      extracted: { mode: "statement" }, page_count: null, isStatement: true,
+    };
+  }
   const { parsed, raw } = await callLLM(
     `Extract all invoices from this Word document text:\n\n${text.slice(0, 200_000)}`,
   );
@@ -671,6 +697,14 @@ export async function processClaimed(
       if (dlErr || !file) throw new Error(`download failed: ${dlErr?.message ?? "no file"}`);
       const bytes = new Uint8Array(await file.arrayBuffer());
       parseResult = await dispatchParse(bytes, job.mime_type, job.filename);
+    }
+
+    if (parseResult.isStatement) {
+      await sb.rpc("skip_upload", {
+        p_upload_id: job.id,
+        p_reason: "Looks like a monthly statement / remittance advice, not an invoice — excluded from spend.",
+      });
+      return { upload_id: job.id, ok: true, result: { skipped: true, reason: "statement" } };
     }
 
     const { data: ingest, error: ingErr } = await sb.rpc("ingest_receipts", {

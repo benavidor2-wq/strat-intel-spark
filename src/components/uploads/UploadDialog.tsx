@@ -24,6 +24,7 @@ import {
   Upload as UploadIcon,
   FolderUp,
   FileText,
+  FileX,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
@@ -66,11 +67,12 @@ function prettyBytes(n: number | null): string {
 
 function statusMeta(s: UploadStatus): { label: string; className: string; Icon: any } {
   switch (s) {
-    case "queued":       return { label: "Queued",       className: "bg-muted text-muted-foreground",  Icon: Clock };
-    case "processing":   return { label: "Processing",   className: "bg-indigo-100 text-indigo-700",   Icon: Loader2 };
-    case "complete":     return { label: "Complete",     className: "bg-emerald-100 text-emerald-700", Icon: CheckCircle2 };
-    case "needs_review": return { label: "Needs review", className: "bg-amber-100 text-amber-700",     Icon: AlertCircle };
-    case "failed":       return { label: "Failed",       className: "bg-red-100 text-red-700",         Icon: AlertCircle };
+    case "queued":       return { label: "Queued",             className: "bg-muted text-muted-foreground",  Icon: Clock };
+    case "processing":   return { label: "Processing",         className: "bg-indigo-100 text-indigo-700",   Icon: Loader2 };
+    case "complete":     return { label: "Complete",           className: "bg-emerald-100 text-emerald-700", Icon: CheckCircle2 };
+    case "needs_review": return { label: "Needs review",       className: "bg-amber-100 text-amber-700",     Icon: AlertCircle };
+    case "failed":       return { label: "Failed",             className: "bg-red-100 text-red-700",         Icon: AlertCircle };
+    case "skipped":      return { label: "Statement — skipped", className: "bg-slate-100 text-slate-600",    Icon: FileX };
   }
 }
 
@@ -436,6 +438,12 @@ function UploadRowItem({
           <span className="flex-1">
             Parsed, but something needs a human look — open the receipt to review before it feeds the pillars.
           </span>
+        </div>
+      )}
+      {row.status === "skipped" && row.error_message && (
+        <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-slate-100 p-2 text-[11px] text-slate-600">
+          <FileX size={11} className="mt-0.5 shrink-0" />
+          <span className="flex-1">{reasonText(row.error_message)}</span>
         </div>
       )}
     </li>

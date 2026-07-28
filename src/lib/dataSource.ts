@@ -213,7 +213,7 @@ export interface SavedModel {
 // Upload row shape (mirrors public.uploads)
 // =========================================================================
 
-export type UploadStatus = "queued" | "processing" | "complete" | "needs_review" | "failed";
+export type UploadStatus = "queued" | "processing" | "complete" | "needs_review" | "failed" | "skipped";
 
 export interface UploadRow {
   id: string;

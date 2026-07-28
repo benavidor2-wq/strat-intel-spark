@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      drive_config: {
+        Row: {
+          created_at: string
+          files_seen: number
+          folder_id: string | null
+          folder_name: string | null
+          id: string
+          last_error: string | null
+          last_polled_at: string | null
+          page_cursor: string | null
+          provider: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          files_seen?: number
+          folder_id?: string | null
+          folder_name?: string | null
+          id?: string
+          last_error?: string | null
+          last_polled_at?: string | null
+          page_cursor?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          files_seen?: number
+          folder_id?: string | null
+          folder_name?: string | null
+          id?: string
+          last_error?: string | null
+          last_polled_at?: string | null
+          page_cursor?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       item_aliases: {
         Row: {
           alias: string
@@ -531,6 +576,24 @@ export type Database = {
       }
       normalize_item: { Args: { t: string }; Returns: string }
       normalize_vendor: { Args: { t: string }; Returns: string }
+      pillar_arbitrage: { Args: never; Returns: Json }
+      pillar_integrity: {
+        Args: never
+        Returns: {
+          amount: number
+          date: string
+          description: string
+          id: string
+          receipt_id: string
+          severity: string
+          type: string
+          vendor: string
+        }[]
+      }
+      pillar_price_drift: { Args: never; Returns: Json }
+      pillar_recurring_items: { Args: never; Returns: Json }
+      pillar_spending_trends: { Args: never; Returns: Json }
+      pillar_vendor_bloat: { Args: never; Returns: Json }
       resolve_canonical_item: {
         Args: {
           p_category?: string
@@ -546,6 +609,10 @@ export type Database = {
       }
       safe_date: { Args: { t: string }; Returns: string }
       safe_num: { Args: { j: Json; k: string }; Returns: number }
+      skip_upload: {
+        Args: { p_reason: string; p_upload_id: string }
+        Returns: undefined
+      }
       suggest_item_merges: {
         Args: never
         Returns: {
@@ -583,6 +650,7 @@ export type Database = {
         | "complete"
         | "needs_review"
         | "failed"
+        | "skipped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -726,6 +794,7 @@ export const Constants = {
         "complete",
         "needs_review",
         "failed",
+        "skipped",
       ],
     },
   },
