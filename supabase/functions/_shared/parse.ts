@@ -6,6 +6,16 @@ import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 import mammoth from "npm:mammoth@1.8.0";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { Buffer } from "node:buffer";
+
+// Sentinel error class for LLM budget/rate failures so the UI can show
+// "AI credits exhausted" instead of a raw provider dump.
+class LlmBudgetError extends Error {
+  constructor(public readonly kind: "credits_exhausted" | "rate_limited", message: string) {
+    super(message);
+    this.name = "LlmBudgetError";
+  }
+}
 
 export const CATEGORIES = [
   "Materials", "Tools & Equipment", "Subcontractors", "Professional Services",
@@ -100,7 +110,7 @@ async function callLLM(
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": LOVABLE_API_KEY,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
         model: LLM_MODEL,
@@ -116,6 +126,18 @@ async function callLLM(
     });
     if (!res.ok) {
       const body = await res.text();
+      if (res.status === 402) {
+        throw new LlmBudgetError(
+          "credits_exhausted",
+          "AI credits exhausted — add credits in your workspace billing settings before retrying.",
+        );
+      }
+      if (res.status === 429) {
+        throw new LlmBudgetError(
+          "rate_limited",
+          "AI Gateway rate limit hit — wait a minute and retry.",
+        );
+      }
       throw new Error(`LLM ${res.status}: ${body.slice(0, 500)}`);
     }
     const raw = await res.json();
@@ -199,7 +221,9 @@ async function parseImage(bytes: Uint8Array, mime: string): Promise<ParseResult>
 }
 
 async function parseDocx(bytes: Uint8Array): Promise<ParseResult> {
-  const { value: text } = await mammoth.extractRawText({ buffer: bytes });
+  // mammoth expects a Node Buffer under Deno's npm compat; a raw Uint8Array
+  // throws "Can't find end of central directory".
+  const { value: text } = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
   const { parsed, raw } = await callLLM(
     `Extract all invoices from this Word document text:\n\n${text.slice(0, 200_000)}`,
   );
@@ -387,9 +411,10 @@ async function parseSpreadsheet(bytes: Uint8Array, mime: string): Promise<ParseR
 // ------ Helpers -------------------------------------------------------------
 
 function base64Encode(bytes: Uint8Array): string {
-  // Chunked to avoid stack overflow on large files.
+  // Small chunks — spreading ~32k args into fromCharCode overflows the call
+  // stack on multi-page scans. 8k stays comfortably under every runtime's cap.
   let s = "";
-  const chunk = 0x8000;
+  const chunk = 0x2000;
   for (let i = 0; i < bytes.length; i += chunk) {
     s += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
