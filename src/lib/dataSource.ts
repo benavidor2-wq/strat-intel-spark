@@ -50,6 +50,16 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+type DataBoundaryClient = {
+  from: (relation: string) => any;
+  rpc: (fn: string, args?: Record<string, unknown>) => any;
+};
+
+// The generated Cloud types are empty until the ingestion schema exists in the
+// connected backend. Keep that looseness contained to this data boundary rather
+// than editing auto-generated Supabase files or scattering casts in components.
+const dataClient = supabase as unknown as DataBoundaryClient;
+
 // ---- Pillar A: Invoice Integrity ----------------------------------------
 export interface IntegrityAlert {
   id: string;
@@ -270,8 +280,8 @@ export function useReceipts() {
       const rows: any[] = [];
       for (let from = 0; ; from += PAGE_SIZE) {
         const to = from + PAGE_SIZE - 1;
-        const { data, error } = await supabase
-          .from("receipts_full" as any)
+        const { data, error } = await dataClient
+          .from("receipts_full")
           .select("*")
           .is("duplicate_of", null)
           .not("date", "is", null)
@@ -314,7 +324,7 @@ export function useUploads(limit = 50) {
     queryKey: ["uploads", limit],
     staleTime: 30_000,
     queryFn: async (): Promise<UploadRow[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await dataClient
         .from("uploads")
         .select(
           "id, filename, mime_type, byte_size, status, source, attempts, error_message, parser, confidence, page_count, receipt_id, receipt_count, created_at, processed_at",
@@ -337,7 +347,7 @@ export function useDatasetStats() {
     queryKey: ["dataset_stats"],
     staleTime: 60_000,
     queryFn: async (): Promise<DatasetStats> => {
-      const { data, error } = await supabase.rpc("dataset_stats");
+      const { data, error } = await dataClient.rpc("dataset_stats");
       if (error) throw error;
       const s: any = data ?? {};
       return {
@@ -519,7 +529,7 @@ export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
       const hash = await sha256Hex(bytes);
 
       // Dedupe pre-check — cheap and avoids wasting a storage write + LLM call.
-      const { data: existing, error: dupErr } = await supabase
+      const { data: existing, error: dupErr } = await dataClient
         .from("uploads")
         .select("id, created_at")
         .eq("content_sha256", hash)
@@ -546,7 +556,7 @@ export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
         .upload(storagePath, file, { contentType: mime, upsert: false });
       if (upErr) throw upErr;
 
-      const { data: inserted, error: insErr } = await supabase
+      const { data: inserted, error: insErr } = await dataClient
         .from("uploads")
         .insert({
           storage_path: storagePath,
@@ -565,7 +575,7 @@ export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
         // Delete the orphan we just uploaded so the bucket doesn't leak.
         if ((insErr as any).code === "23505") {
           await supabase.storage.from("raw-uploads").remove([storagePath]);
-          const { data: prior } = await supabase
+          const { data: prior } = await dataClient
             .from("uploads")
             .select("id, created_at")
             .eq("content_sha256", hash)
