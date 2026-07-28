@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon } from "lucide-react";
 import { CanvasTab } from "@/components/canvas/CanvasTab";
-import { MyCFOTab } from "@/components/mycfo/MyCFOTab";
+import Glassmorphism from "@/components/designs/Glassmorphism";
 import { LibraryTab } from "@/components/library/LibraryTab";
 import { SettingsTab } from "@/components/settings/SettingsTab";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -66,7 +66,7 @@ export default function Home() {
       <main className="flex flex-1 overflow-hidden">
         {tab === "canvas" && <CanvasTab />}
         {tab === "library" && <LibraryTab onEdit={() => setTab("canvas")} />}
-        {tab === "mycfo" && <MyCFOTab onUnreadChange={setUnreadCount} />}
+        {tab === "mycfo" && <div className="flex-1 overflow-y-auto"><Glassmorphism /></div>}
         {tab === "settings" && <SettingsTab />}
       </main>
 
