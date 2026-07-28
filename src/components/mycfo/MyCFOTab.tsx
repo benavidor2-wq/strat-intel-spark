@@ -1,0 +1,167 @@
+import { useState } from "react";
+import { BrainCircuit, Sparkles, RefreshCw, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { cfoMessages as seed } from "@/data/sampleData";
+import { ChartRenderer } from "@/components/canvas/ChartRenderer";
+import { receipts as sampleReceipts } from "@/data/sampleData";
+import { formatDistanceToNow } from "date-fns";
+
+function scoreTint(s: number) {
+  if (s >= 75) return "bg-emerald-500";
+  if (s >= 50) return "bg-amber-500";
+  return "bg-red-500";
+}
+
+export function MyCFOTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
+  const [messages, setMessages] = useState(seed);
+  const [selectedId, setSelectedId] = useState<string | null>(seed[0]?.id ?? null);
+  const [guided, setGuided] = useState<null | string>(null);
+  const selected = messages.find((m) => m.id === selectedId) || null;
+  const unreadCount = messages.filter((m) => m.unread).length;
+
+  const openMsg = (id: string) => {
+    setSelectedId(id);
+    setMessages((ms) => {
+      const next = ms.map((m) => (m.id === id ? { ...m, unread: false } : m));
+      onUnreadChange?.(next.filter((m) => m.unread).length);
+      return next;
+    });
+  };
+
+  const startGuided = () => setGuided("proposing");
+
+  return (
+    <div className="flex flex-1 overflow-hidden">
+      {/* Inbox */}
+      <aside className="flex w-[360px] shrink-0 flex-col border-r border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border p-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wider">CFO Inbox</h2>
+            {unreadCount > 0 && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">{unreadCount}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="ghost" onClick={startGuided}><Sparkles size={14} className="mr-1" />New</Button>
+            <Button size="icon" variant="ghost"><RefreshCw size={14} /></Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {messages.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center p-8 text-center text-muted-foreground">
+              <BrainCircuit size={40} className="mb-3 opacity-40" />
+              <div className="text-sm">No insights yet.</div>
+            </div>
+          ) : (
+            messages.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => openMsg(m.id)}
+                className={cn(
+                  "flex w-full items-start gap-3 border-b border-border/60 p-4 text-left transition-colors hover:bg-muted/50",
+                  selectedId === m.id && "bg-primary/5",
+                )}
+              >
+                <span className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full", scoreTint(m.health_score))} />
+                <div className="min-w-0 flex-1">
+                  <div className={cn("truncate text-sm", m.unread && "font-semibold")}>{m.subject}</div>
+                  <div className="mt-0.5 truncate text-xs text-muted-foreground">{m.spend_dna} · {m.top_impact_metric}</div>
+                  <div className="mt-1 text-[10px] uppercase text-muted-foreground">
+                    {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </aside>
+
+      {/* Detail */}
+      <section className="flex-1 overflow-y-auto p-8">
+        {guided ? (
+          <GuidedAnalysis onDone={() => setGuided(null)} />
+        ) : selected ? (
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-6 flex items-center gap-3">
+              <Button size="icon" variant="ghost" className="md:hidden" onClick={() => setSelectedId(null)}><ArrowLeft size={16} /></Button>
+              <span className={cn("h-2.5 w-2.5 rounded-full", scoreTint(selected.health_score))} />
+              <span className="text-xs font-semibold uppercase text-muted-foreground">
+                Health {selected.health_score} · {formatDistanceToNow(new Date(selected.created_at), { addSuffix: true })}
+              </span>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-display">{selected.subject}</h1>
+            <p className="mt-4 text-muted-foreground">{selected.summary}</p>
+
+            <h3 className="mt-8 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Strategic insights</h3>
+            <ul className="mt-3 space-y-2">
+              {selected.insights.map((i, k) => (
+                <li key={k} className="rounded-xl border border-border bg-card p-3 text-sm">{i}</li>
+              ))}
+            </ul>
+
+            <h3 className="mt-8 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Auto-generated chart</h3>
+            <div className="mt-3 rounded-2xl border border-border bg-card p-4">
+              <ChartRenderer
+                type="bar"
+                data={sampleReceipts.slice(0, 6).map((r) => ({ Vendor: r.merchant, Total: r.total }))}
+                dims={[{ id: "Vendor" }]}
+                meas={[{ id: "Total" }]}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
+            <BrainCircuit size={48} className="mb-3 opacity-40" />
+            <div className="text-sm">Select a message to open it.</div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function GuidedAnalysis({ onDone }: { onDone: () => void }) {
+  const [step, setStep] = useState<"proposing" | "clarifying" | "generating" | "complete">("proposing");
+  return (
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-4 text-xs font-semibold uppercase text-primary">New AI Analysis</div>
+      <h1 className="text-3xl font-extrabold tracking-display">What should I analyze?</h1>
+
+      {step === "proposing" && (
+        <div className="mt-6 space-y-3">
+          {["Vendor concentration & consolidation savings", "Price drift across last 90 days", "Payment terms & cash-flow optimization"].map((p) => (
+            <button key={p} onClick={() => setStep("clarifying")} className="glass-widget block w-full rounded-2xl p-4 text-left hover:border-primary/40">
+              <div className="text-sm font-semibold">{p}</div>
+              <div className="mt-1 text-xs text-muted-foreground">Proposed by Invoiciify · click to run</div>
+            </button>
+          ))}
+        </div>
+      )}
+      {step === "clarifying" && (
+        <div className="mt-6 space-y-3">
+          <p className="text-sm text-muted-foreground">One quick question: which time window?</p>
+          {["Last 30 days", "Last 90 days", "Year to date"].map((o) => (
+            <button key={o} onClick={() => { setStep("generating"); setTimeout(() => setStep("complete"), 900); }}
+              className="block w-full rounded-xl border border-border p-3 text-left text-sm hover:bg-muted">
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+      {step === "generating" && (
+        <div className="mt-8 text-center text-sm text-muted-foreground">
+          <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          Generating insights…
+        </div>
+      )}
+      {step === "complete" && (
+        <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/5 p-4">
+          <div className="text-sm font-semibold">Analysis complete</div>
+          <div className="mt-1 text-sm text-muted-foreground">Your new insight has been added to the inbox.</div>
+          <Button className="mt-3 rounded-full" onClick={onDone}>Back to inbox</Button>
+        </div>
+      )}
+    </div>
+  );
+}

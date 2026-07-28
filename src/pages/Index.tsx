@@ -1,5 +1,4 @@
-import Glassmorphism from "@/components/designs/Glassmorphism";
-
+import Website from "./Website";
 export default function Index() {
-  return <Glassmorphism />;
+  return <Website />;
 }
