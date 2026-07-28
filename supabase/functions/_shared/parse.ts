@@ -25,9 +25,10 @@ export const CATEGORIES = [
   "Taxes & Fees", "Repairs & Maintenance", "Other",
 ] as const;
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const LLM_MODEL = "google/gemini-3.6-flash";
-const LLM_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const LLM_MODEL = "gemini-3.6-flash";
+const LLM_URL = `https://generativelanguage.googleapis.com/v1beta/models/${LLM_MODEL}:generateContent`; // uses native Gemini parts
+const LOVABLE_AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions"; // kept as reference only
 
 export function serviceClient(): SupabaseClient {
   return createClient(
