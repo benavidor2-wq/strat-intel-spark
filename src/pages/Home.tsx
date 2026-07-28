@@ -13,8 +13,9 @@ import { LibraryTab } from "@/components/library/LibraryTab";
 import { SettingsTab } from "@/components/settings/SettingsTab";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIChatBubble } from "@/components/AIChatBubble";
+import { UploadDialog } from "@/components/uploads/UploadDialog";
 import { cn } from "@/lib/utils";
-import { cfoMessages } from "@/lib/dataSource";
+import { cfoMessages, useInstallRealtime } from "@/lib/dataSource";
 import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "canvas" | "library" | "mycfo" | "settings";
@@ -30,6 +31,8 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("canvas");
   const [unreadCount, setUnreadCount] = useState(cfoMessages.filter((m) => m.unread).length);
   const [ready, setReady] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  useInstallRealtime();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -76,9 +79,11 @@ export default function Home() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
+            <Upload size={14} className="mr-1" />Upload Invoice
+          </Button>
           {tab === "canvas" && (
             <>
-              <Button variant="outline" size="sm"><Upload size={14} className="mr-1" />Upload Invoice</Button>
               <Button size="sm"><Save size={14} className="mr-1" />Save</Button>
               <Button variant="ghost" size="sm">Save as New</Button>
             </>
@@ -88,6 +93,8 @@ export default function Home() {
           <Button size="icon" variant="ghost" onClick={signOut} title="Sign out"><LogOut size={18} /></Button>
         </div>
       </header>
+
+      <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
 
       <main className="flex flex-1 overflow-hidden">
         {tab === "canvas" && <CanvasTab />}
