@@ -496,19 +496,52 @@ async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
 }
 
 // CLAUDE_NOTE (data)
+// Purpose: extract a human-readable string from anything a Supabase call
+//   can throw. `PostgrestError` / `StorageError` / `FunctionsError` are
+//   plain objects, not Error instances, so a bare `String(e)` yields
+//   "[object Object]" and the UI shows garbage. Try known message-ish
+//   fields in order, then fall back to JSON.
+function errText(e: unknown): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    for (const k of ["message", "error_description", "error", "hint", "details", "code"]) {
+      const v = o[k];
+      if (typeof v === "string" && v) return v;
+    }
+    try { return JSON.stringify(e); } catch { /* noop */ }
+  }
+  return String(e);
+}
+
+// CLAUDE_NOTE (data)
 // Purpose: end-to-end ingestion write path — hash, dedupe, upload, insert,
 //   fire-and-forget parse. Never writes to receipts/line_items directly;
 //   only the `ingest_receipts` RPC (called from the edge function) does.
 // Source of truth: uniqueness is enforced by uploads.content_sha256 (per
 //   user). This function's pre-check just avoids paying storage + LLM for
 //   an obvious duplicate; the 23505 branch handles the race.
+// Progress: for large selections (folder uploads of hundreds/thousands),
+//   the dialog needs live feedback. `onProgress` fires after each file with
+//   the per-file outcome and a running (done/total) counter so the UI can
+//   append rows and update a "Processed X of N" line without waiting for
+//   the whole batch to finish.
 // Owner: ingestion.
-export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
+export type UploadProgress = (o: UploadOutcome, done: number, total: number) => void;
+
+export async function uploadInvoices(
+  files: File[],
+  onProgress?: UploadProgress,
+): Promise<UploadOutcome[]> {
+  const total = files.length;
   const { data: userRes, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userRes.user) {
-    return files.map((f) => ({ file: f.name, status: "rejected", reason: "Not signed in." }));
+    const results = files.map<UploadOutcome>((f) => ({ file: f.name, status: "rejected", reason: "Not signed in." }));
+    results.forEach((r, i) => onProgress?.(r, i + 1, total));
+    return results;
   }
   const uid = userRes.user.id;
+
 
   const results: UploadOutcome[] = [];
 
