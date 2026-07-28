@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, BookOpen, BrainCircuit, Upload, Save, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { CanvasTab } from "@/components/canvas/CanvasTab";
 import Glassmorphism from "@/components/designs/Glassmorphism";
 import { LibraryTab } from "@/components/library/LibraryTab";
@@ -13,6 +15,15 @@ import { AIChatBubble } from "@/components/AIChatBubble";
 import { cn } from "@/lib/utils";
 import { cfoMessages } from "@/data/sampleData";
 
+// CLAUDE_NOTE: Single-user local auth. This app is built for the owner only —
+// no backend auth, no Supabase, no multi-user support. Credentials below are
+// hardcoded and gate the dashboard via a sessionStorage flag ("invoiciify_auth").
+// To change the login, edit AUTH_USER / AUTH_PASS. Do not re-introduce Supabase
+// auth or a signup flow without an explicit request.
+const AUTH_USER = "admin";
+const AUTH_PASS = "invoiciify";
+const AUTH_KEY = "invoiciify_auth";
+
 type Tab = "canvas" | "library" | "mycfo" | "settings";
 
 const TABS: { id: Tab; label: string; Icon: any }[] = [
@@ -21,9 +32,73 @@ const TABS: { id: Tab; label: string; Icon: any }[] = [
   { id: "mycfo", label: "MyCFO", Icon: BrainCircuit },
 ];
 
+function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (username === AUTH_USER && password === AUTH_PASS) {
+      sessionStorage.setItem(AUTH_KEY, "1");
+      onSuccess();
+    } else {
+      setError("Invalid username or password");
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm space-y-6 rounded-2xl border border-border bg-card p-8 shadow-lg"
+      >
+        <div className="flex flex-col items-center gap-3">
+          <Link to="/"><Logo /></Link>
+          <h1 className="text-lg font-semibold">Sign in</h1>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            autoFocus
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <Button type="submit" className="w-full">Log in</Button>
+      </form>
+    </div>
+  );
+}
+
 export default function Home() {
+  const [authed, setAuthed] = useState(false);
   const [tab, setTab] = useState<Tab>("canvas");
-  const [unreadCount, setUnreadCount] = useState(cfoMessages.filter((m) => m.unread).length);
+  const [unreadCount] = useState(cfoMessages.filter((m) => m.unread).length);
+
+  useEffect(() => {
+    setAuthed(sessionStorage.getItem(AUTH_KEY) === "1");
+  }, []);
+
+  if (!authed) return <LoginScreen onSuccess={() => setAuthed(true)} />;
+
+  const logout = () => {
+    sessionStorage.removeItem(AUTH_KEY);
+    setAuthed(false);
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -60,6 +135,7 @@ export default function Home() {
           )}
           <NotificationBell />
           <Button size="icon" variant="ghost" onClick={() => setTab("settings")}><SettingsIcon size={18} /></Button>
+          <Button size="icon" variant="ghost" onClick={logout} title="Log out"><LogOut size={18} /></Button>
         </div>
       </header>
 
