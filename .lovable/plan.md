@@ -1,101 +1,61 @@
+# Split into two projects
 
+Goal: this project becomes the app-only Invoiciify (routed at `/app`, backend intact). A remixed sibling project becomes the marketing site (landing page at `/`, no backend).
 
-# Spending Patterns Redesign — Updated (Zones 1 & 5 removed)
+Since Lovable can only write into the *current* project, the split happens in two phases: you remix in the UI, then I clean up each side from inside its own project.
 
-## Page Structure
+---
 
-### Zone 2 — Variance Decomposition Bar (now top of page)
-A single horizontal stacked bar showing **Last Month → This Month** broken into 4 segments:
+## Phase 1 — You do this in the Lovable UI
+
+1. Open this project's title menu (top-left) → **Remix this project**.
+2. Name the remix something like `invoiciify-marketing`.
+3. Leave this project as-is until Phase 2 is approved — we don't want to delete the landing page here before the remix exists.
+
+Result: two identical projects, each with its own URL, chat, and (empty on the remix) Lovable Cloud backend.
+
+---
+
+## Phase 2a — Clean up THIS project (app only)
+
+Scope of edits, all frontend:
+
+- `src/App.tsx`: remove the `/` route that renders `Website`. Make `/app` (or `/`) render `Home` directly. Redirect unknown paths to the app.
+- Delete `src/pages/Website.tsx` and any landing-only assets it imports (hero image, marketing-only sections) that nothing else uses.
+- Remove `framer-motion` from `package.json` **only if** nothing in the app tab uses it. I'll grep first before removing.
+- Update `index.html` `<title>` + meta description to app-only copy ("Invoiciify — Invoice analytics dashboard").
+- Leave Lovable Cloud, `sampleData`, `vizql`, `Glassmorphism` MyCFO hub, recharts, lodash all in place.
+
+## Phase 2b — Clean up the REMIX project (marketing only)
+
+I can't touch the remix from here. Once you open the remix and send me a message inside it, I'll:
+
+- Keep `src/pages/Website.tsx` unchanged so the landing page looks identical.
+- `src/App.tsx`: route `/` → `Website`, drop the `/app` route.
+- Delete `src/pages/Home.tsx`, `src/components/canvas/**`, `src/components/mycfo/**` (if present), `src/components/designs/Glassmorphism.tsx`, `src/data/sampleData.js`, `src/data/mockData.ts`, `src/lib/vizql.js`, `AIChatBubble`, `NotificationBell` — anything the landing page doesn't import.
+- Remove now-unused deps: `recharts`, `lodash`, `@types/lodash`, and the Lovable Cloud client files if the landing page doesn't call the backend.
+- Update `index.html` title/meta to marketing copy.
+- Leave CTA buttons as-is (per your answer).
+
+Before deleting anything I'll run an import graph from `Website.tsx` and only remove files with zero remaining references.
+
+---
+
+## What each project ends up with
 
 ```text
-[ Baseline spend ][ + Volume (Growth) ][ + Price Drift (Waste) ][ + New Vendors ]
-   $245K              +$31K green         +$16K red               +$4K indigo
+THIS project (app)              REMIX project (marketing)
+├── /  or /app → Home           ├── / → Website
+├── Canvas / Library / MyCFO    ├── Landing hero, features, pricing
+├── Glassmorphism strategic hub ├── No backend, no charts
+├── sampleData + vizql          ├── Framer-motion + shadcn only
+└── Lovable Cloud backend       └── Static site
 ```
 
-- Hover any segment → tooltip explains the math (units × unit price delta).
-- Click a segment → filters Zone 3 & 4 to only commodities driving that segment.
+## Notes
 
-### Zone 3 — Growth vs. Waste Quadrant Map
-A 2×2 scatter plot. Each dot = one commodity (vendor + product).
+- No shared package — each project owns its own copy, per your answer ("connection does not matter").
+- CTAs stay pointing wherever they point today; you'll rewire them after publishing.
+- Publishing: each project publishes to its own `*.lovable.app` URL independently.
 
-```text
-                  PRICE DRIFT (Waste) ↑
-                  │
-   QUIET LEAK     │   ACTIVE BLEED
-   (low vol,      │   (high vol,
-    high price)   │    high price) ← biggest fix targets
-   ───────────────┼───────────────→  VOLUME CHANGE
-   STABLE         │   HEALTHY GROWTH
-   (low vol,      │   (high vol,
-    flat price)   │    flat price) ← what "good" looks like
-                  │
-```
-
-- **X-axis**: Volume change % (MoM)
-- **Y-axis**: Unit-price drift % vs 90-day average
-- **Bubble size**: Total $ spent on that commodity this month
-- **Color**: Emerald (price flat or down) → Amber (3–10% drift) → Red (>10% drift)
-- **Pulse animation**: commodities with active integrity alerts
-- **Hover**: "Copper Wire from MetalWorks — bought 11% more units AND paid 15.7% more per kg. $4.2K of the increase is waste."
-- **Click**: opens drill-down drawer pre-filtered to that commodity.
-
-### Zone 4 — Inertia Strip (Recurring vs. Discretionary)
-A compact two-row visualization below the quadrant:
-
-**Row A — Operational Inertia (Recurring)**
-Horizontal track of commodities the engine identified as recurring (matching interval pattern). Shows: cadence (monthly/weekly), last 3 invoice unit-prices as sparkline, drift indicator.
-
-**Row B — Discretionary (One-Off)**
-Same layout for invoices that broke pattern this month. These are the "new commitments" worth reviewing.
-
-This visualizes the **"Operational Inertia" pattern recognition** concept — predictable intervals on top, variable spend below.
-
-### Drill-Down Drawer (right side, opens from Zone 3 or 4)
-When a commodity is selected:
-
-- **Decomposition**: "$13.4K spent. $8.2K explained by volume (+15% units). $3.1K explained by unit-price drift (+12%). $2.1K baseline."
-- **Last 4 invoices** with unit price, qty, total — sparkline showing price trajectory
-- **Verdict**: Growth / Mixed / Waste with one-line reasoning
-- **Action button**: *"Find arbitrage alternatives"* or *"Negotiate with vendor"*
-
-## Visual & Interaction Rules
-
-- **Color semantics** (consistent across all zones):
-  - Emerald `#22c55e` = Growth / Healthy
-  - Indigo `#6366f1` = Baseline / Neutral
-  - Amber = Watch (3–10% drift)
-  - Red = Waste / Fix now (>10% drift or active alert)
-- **No line charts** — replaced by Variance Bar + Quadrant Map + Inertia Strip.
-- **Single source of truth**: every zone reacts to the same selected commodity.
-- **Stupid-simple framing**: each zone answers one English question (Where did the change come from, Which commodities are bleeding, What's recurring vs new).
-
-## Technical Implementation
-
-- **File**: rewrite Spending Patterns section in `src/components/designs/Glassmorphism.tsx` (replace current Efficiency Ring + Bubble Map block).
-- **Data layer** — extend `src/data/mockData.ts`:
-  - `commodityVariance`: per-commodity object `{ product, vendor, lastMonthQty, thisMonthQty, lastUnitPrice, thisUnitPrice, baseline90d, isRecurring, cadence }`
-  - Derived in component memo: `volumeDelta`, `priceDelta`, `growthDollars`, `wasteDollars`, `quadrant`.
-- **Charts**:
-  - Zone 2: Recharts `BarChart` stacked + custom tooltip.
-  - Zone 3: Recharts `ScatterChart` with `ReferenceLine` at x=0 and y=0 for quadrant cross-hairs; absolute-positioned quadrant labels.
-  - Zone 4: flex layout of mini cards with inline SVG sparklines (no Recharts needed).
-- **State**: single `useState` for `selectedCommodityId` and `selectedSegment`. Zones derive via `useMemo`.
-- **Drawer**: reuse existing `Dialog` from `src/components/ui/dialog.tsx`.
-- **Animations**: keep existing `risk-pulse` keyframe.
-- **Remove**: Efficiency Ring doughnut, Discovery Bubble Map, AI Narrative block, leftover `groupedMatrix` / `matrixMode` references.
-- **Backend cookies** (kept as `// CLAUDE_NOTE` comments):
-  - Pillar B Price Drift → Waste segment math.
-  - Pillar C Lazy Tax → drawer "arbitrage alternatives" CTA.
-  - Pillar A Integrity alerts → red pulse on quadrant dots.
-  - Pillar E recurring-pattern detector → drives Zone 4 Row A.
-
-## What Stays vs Goes
-
-| Keeps | Removes |
-|---|---|
-| Color tokens (emerald, indigo, amber, red) | Efficiency Ring doughnut |
-| `risk-pulse` animation | Discovery Bubble Map |
-| Dialog drill-down pattern | AI Narrative banner (Zone 1) |
-| Existing `mockData.ts` interfaces | Semantic Dimension pills (Zone 5) |
-| Glassmorphism card styling | Any line/area chart for spend over time |
-
+Reply **"remix done"** once Phase 1 is complete and I'll execute Phase 2a here. Phase 2b happens from inside the remix.
