@@ -500,8 +500,10 @@ export type Database = {
       }
     }
     Functions: {
+      canonicalize_custom_fields: { Args: { p: Json }; Returns: Json }
       claim_next_uploads: { Args: { p_limit?: number }; Returns: Json[] }
       claim_upload: { Args: { p_upload_id: string }; Returns: Json }
+      classify_line: { Args: { p_name: string }; Returns: string }
       dataset_stats: { Args: never; Returns: Json }
       fail_upload: {
         Args: { p_error: string; p_upload_id: string }
@@ -509,15 +511,16 @@ export type Database = {
       }
       ingest_receipts: {
         Args: {
-          p_confidence: number
-          p_extracted: Json
-          p_page_count: number
-          p_parser: string
+          p_confidence?: number
+          p_extracted?: Json
+          p_page_count?: number
+          p_parser?: string
           p_receipts: Json
           p_upload_id: string
         }
         Returns: Json
       }
+      is_self_identity: { Args: { t: string }; Returns: boolean }
       merge_canonical_items: {
         Args: { p_keep: string; p_merge: string }
         Returns: undefined
@@ -526,6 +529,23 @@ export type Database = {
         Args: { p_keep: string; p_merge: string }
         Returns: undefined
       }
+      normalize_item: { Args: { t: string }; Returns: string }
+      normalize_vendor: { Args: { t: string }; Returns: string }
+      resolve_canonical_item: {
+        Args: {
+          p_category?: string
+          p_name: string
+          p_uom?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      resolve_vendor: {
+        Args: { p_category?: string; p_name: string; p_user_id: string }
+        Returns: string
+      }
+      safe_date: { Args: { t: string }; Returns: string }
+      safe_num: { Args: { j: Json; k: string }; Returns: number }
       suggest_item_merges: {
         Args: never
         Returns: {
