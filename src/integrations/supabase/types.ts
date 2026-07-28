@@ -33,7 +33,7 @@ export type Database = {
           normalized_name: string
           uom?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           category?: string | null
@@ -62,7 +62,7 @@ export type Database = {
           created_at?: string
           id?: string
           normalized_alias: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           alias?: string
@@ -116,7 +116,7 @@ export type Database = {
           total_price?: number | null
           unit_price?: number | null
           uom?: string | null
-          user_id: string
+          user_id?: string
           vendor_id?: string | null
         }
         Update: {
@@ -220,7 +220,7 @@ export type Database = {
           total_variance?: number | null
           updated_at?: string
           upload_id?: string | null
-          user_id: string
+          user_id?: string
           vendor_id?: string | null
         }
         Update: {
@@ -328,7 +328,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["upload_status"]
           storage_path: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           attempts?: number
@@ -385,7 +385,7 @@ export type Database = {
           created_at?: string
           id?: string
           normalized_alias: string
-          user_id: string
+          user_id?: string
           vendor_id: string
         }
         Update: {
@@ -423,7 +423,7 @@ export type Database = {
           id?: string
           normalized_name: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           category?: string | null

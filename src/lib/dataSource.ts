@@ -496,32 +496,69 @@ async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
 }
 
 // CLAUDE_NOTE (data)
+// Purpose: extract a human-readable string from anything a Supabase call
+//   can throw. `PostgrestError` / `StorageError` / `FunctionsError` are
+//   plain objects, not Error instances, so a bare `String(e)` yields
+//   "[object Object]" and the UI shows garbage. Try known message-ish
+//   fields in order, then fall back to JSON.
+function errText(e: unknown): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    for (const k of ["message", "error_description", "error", "hint", "details", "code"]) {
+      const v = o[k];
+      if (typeof v === "string" && v) return v;
+    }
+    try { return JSON.stringify(e); } catch { /* noop */ }
+  }
+  return String(e);
+}
+
+// CLAUDE_NOTE (data)
 // Purpose: end-to-end ingestion write path — hash, dedupe, upload, insert,
 //   fire-and-forget parse. Never writes to receipts/line_items directly;
 //   only the `ingest_receipts` RPC (called from the edge function) does.
 // Source of truth: uniqueness is enforced by uploads.content_sha256 (per
 //   user). This function's pre-check just avoids paying storage + LLM for
 //   an obvious duplicate; the 23505 branch handles the race.
+// Progress: for large selections (folder uploads of hundreds/thousands),
+//   the dialog needs live feedback. `onProgress` fires after each file with
+//   the per-file outcome and a running (done/total) counter so the UI can
+//   append rows and update a "Processed X of N" line without waiting for
+//   the whole batch to finish.
 // Owner: ingestion.
-export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
+export type UploadProgress = (o: UploadOutcome, done: number, total: number) => void;
+
+export async function uploadInvoices(
+  files: File[],
+  onProgress?: UploadProgress,
+): Promise<UploadOutcome[]> {
+  const total = files.length;
   const { data: userRes, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userRes.user) {
-    return files.map((f) => ({ file: f.name, status: "rejected", reason: "Not signed in." }));
+    const results = files.map<UploadOutcome>((f) => ({ file: f.name, status: "rejected", reason: "Not signed in." }));
+    results.forEach((r, i) => onProgress?.(r, i + 1, total));
+    return results;
   }
   const uid = userRes.user.id;
 
+
   const results: UploadOutcome[] = [];
+  const push = (o: UploadOutcome) => {
+    results.push(o);
+    onProgress?.(o, results.length, total);
+  };
 
   for (const file of files) {
     try {
       const ext = fileExt(file.name);
       const mime = inferMime(file);
       if (!ACCEPTED_UPLOAD_TYPES.includes(mime)) {
-        results.push({ file: file.name, status: "rejected", reason: `Unsupported file type (${mime || ext || "unknown"}).` });
+        push({ file: file.name, status: "rejected", reason: `Unsupported file type (${mime || ext || "unknown"}).` });
         continue;
       }
       if (file.size > MAX_UPLOAD_BYTES) {
-        results.push({ file: file.name, status: "rejected", reason: `File is larger than 50 MB.` });
+        push({ file: file.name, status: "rejected", reason: `File is larger than 50 MB.` });
         continue;
       }
 
@@ -534,9 +571,9 @@ export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
         .select("id, created_at")
         .eq("content_sha256", hash)
         .maybeSingle();
-      if (dupErr && dupErr.code !== "PGRST116") throw dupErr;
+      if (dupErr && (dupErr as any).code !== "PGRST116") throw dupErr;
       if (existing) {
-        results.push({
+        push({
           file: file.name,
           status: "duplicate",
           existing_upload_id: (existing as any).id,
@@ -570,9 +607,6 @@ export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
         .single();
 
       if (insErr) {
-        // Race on the unique (user_id, content_sha256) constraint — someone
-        // (another tab, the sweeper's ghost) just wrote the same file.
-        // Delete the orphan we just uploaded so the bucket doesn't leak.
         if ((insErr as any).code === "23505") {
           await supabase.storage.from("raw-uploads").remove([storagePath]);
           const { data: prior } = await dataClient
@@ -580,7 +614,7 @@ export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
             .select("id, created_at")
             .eq("content_sha256", hash)
             .maybeSingle();
-          results.push({
+          push({
             file: file.name,
             status: "duplicate",
             existing_upload_id: (prior as any)?.id ?? "",
@@ -588,32 +622,27 @@ export async function uploadInvoices(files: File[]): Promise<UploadOutcome[]> {
           });
           continue;
         }
-        // Any other insert failure: clean up the object.
         await supabase.storage.from("raw-uploads").remove([storagePath]);
         throw insErr;
       }
 
       const uploadId = (inserted as any).id as string;
 
-      // Fire-and-forget the parser. The pg_cron sweeper (every 2 min) covers
-      // a dropped invoke, so we don't await — the UI advances via Realtime
-      // on the uploads row.
       supabase.functions
         .invoke("parse-upload", { body: { upload_id: uploadId } })
         .catch((e) => {
-          // Non-fatal — the sweeper will pick it up. Log for diagnosis.
-          console.warn("parse-upload invoke failed (sweeper will retry):", e);
+          console.warn("parse-upload invoke failed (sweeper will retry):", errText(e));
         });
 
-      results.push({ file: file.name, status: "queued", upload_id: uploadId });
+      push({ file: file.name, status: "queued", upload_id: uploadId });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      results.push({ file: file.name, status: "rejected", reason: msg });
+      push({ file: file.name, status: "rejected", reason: errText(e) });
     }
   }
 
   return results;
 }
+
 
 // CLAUDE_NOTE (data)
 // Purpose: on-demand retry for a failed upload. Cheap because the RPC
