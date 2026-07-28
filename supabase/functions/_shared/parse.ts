@@ -242,11 +242,31 @@ async function callLLM(
       const m = String(text).match(/\{[\s\S]*\}$/);
       parsed = m ? JSON.parse(m[0]) : { receipts: [], confidence: 0 };
     }
+    // Gemini responseSchema can't express open-key objects, so custom_fields
+    // is returned as an array of {key,value} pairs — fold back to an object
+    // that ingest_receipts expects. Only touches LLM output; vendor templates
+    // already produce a plain object and go through a different path.
+    if (parsed && Array.isArray(parsed.receipts)) {
+      for (const r of parsed.receipts) {
+        if (r && Array.isArray(r.custom_fields)) {
+          const obj: Record<string, string> = {};
+          for (const it of r.custom_fields) {
+            const k = it?.key;
+            const v = it?.value;
+            if (typeof k === "string" && k.trim() && !(k in obj)) {
+              obj[k] = typeof v === "string" ? v : v == null ? "" : String(v);
+            }
+          }
+          r.custom_fields = obj;
+        }
+      }
+    }
     return { parsed, raw };
   } finally {
     clearTimeout(to);
   }
 }
+
 
 async function callLLMWithFile(
   bytes: Uint8Array,
