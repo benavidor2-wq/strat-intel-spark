@@ -440,6 +440,12 @@ function UploadRowItem({
           </span>
         </div>
       )}
+      {row.status === "skipped" && row.error_message && (
+        <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-slate-100 p-2 text-[11px] text-slate-600">
+          <FileX size={11} className="mt-0.5 shrink-0" />
+          <span className="flex-1">{reasonText(row.error_message)}</span>
+        </div>
+      )}
     </li>
   );
 }
