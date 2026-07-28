@@ -47,11 +47,6 @@ export default function Home() {
 
   if (!ready) return null;
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate("/", { replace: true });
-  }
-
 
   return (
     <div className="flex h-screen flex-col bg-background">
