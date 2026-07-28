@@ -240,20 +240,8 @@ async function callLLMWithFile(
   const fileUri = await uploadGeminiFile(bytes, mime, displayName);
   return callLLM([
     { type: "text", text: prompt },
-    { type: "file", file: { filename: displayName, file_data: fileUri } },
+    { type: "file_ref", mime_type: mime, file_uri: fileUri },
   ]);
-}
-
-// We must rewrite the file part inline for Gemini because the content pipeline
-// only accepts a URI from the Files API, not a base64 file_data payload.
-function rewriteGeminiFilePart(content: any, fileUri: string): any[] {
-  if (!Array.isArray(content)) return content;
-  return content.map((item: any) => {
-    if (item?.type === "file") {
-      return { type: "file_ref", file_uri: fileUri };
-    }
-    return item;
-  });
 }
 
 // ------ Format-specific parsers ---------------------------------------------
