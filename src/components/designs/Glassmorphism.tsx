@@ -1196,6 +1196,10 @@ function VendorReport() {
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  const { vendorMonthlySpend, spendByCategory, vendorProducts, categoryVendors } = useVendorAggregates();
+  const { data: vendorConsolidation = [] } = useVendorBloat();
+  const { data: priceDriftItems = [] } = usePriceDrift();
+
   const vendorTotal = vendorMonthlySpend.reduce((s, v) => s + v.monthlySpend, 0);
   const categoryTotal = spendByCategory.reduce((s, v) => s + v.monthlySpend, 0);
   const vendorColors = [danger, purple, warn, green, "#60a5fa", "#f472b6", "#fbbf24", "#34d399"];
@@ -1218,6 +1222,7 @@ function VendorReport() {
   const categoryDetail = selectedCategory ? categoryVendors[selectedCategory] : null;
   const categoryConsolidation = selectedCategory ? vendorConsolidation.find(v => v.category === selectedCategory) : null;
   const vendorDriftItems = selectedVendor ? priceDriftItems.filter(p => p.vendor === selectedVendor) : [];
+
 
   return (
     <div>
