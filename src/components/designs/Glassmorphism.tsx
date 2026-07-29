@@ -6,16 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 // empty; the early-return in Glassmorphism() below shows an empty state
 // until Claude Code wires these to Supabase.
 import {
-  integrityAlerts,
-  priceDriftItems,
-  arbitrageOpportunities,
-  spendingTrends,
-  vendorConsolidation,
-  vendorMonthlySpend,
-  spendByCategory,
-  summaryStats,
-  vendorProducts,
-  categoryVendors,
+  useIntegrityAlerts,
+  usePriceDrift,
+  useArbitrage,
+  useVendorBloat,
+  useSpendingTrends,
+  useRecurringItems,
+  useVendorAggregates,
+  useSummaryStats,
   useHasAnyData,
   type IntegrityAlert,
   type PriceDriftItem,
@@ -37,12 +35,12 @@ const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl s
 
 type PillarKey = "arbitrage" | "priceDrift" | "spending" | "vendor" | "integrity";
 
-const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string; badge: number | string | null }[] = [
-  { key: "arbitrage", label: "Vendor Arbitrage & Best Pricing", icon: Zap, color: purple, badge: 4 },
-  { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple, badge: 3 },
-  { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple, badge: null },
-  { key: "vendor", label: "Vendor Consolidation", icon: Users, color: purple, badge: 3 },
-  { key: "integrity", label: "Anomaly & Risk", icon: Shield, color: purple, badge: 2 },
+const PILLAR_META: { key: PillarKey; label: string; icon: typeof Zap; color: string }[] = [
+  { key: "arbitrage", label: "Vendor Arbitrage & Best Pricing", icon: Zap, color: purple },
+  { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple },
+  { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple },
+  { key: "vendor", label: "Vendor Consolidation", icon: Users, color: purple },
+  { key: "integrity", label: "Anomaly & Risk", icon: Shield, color: purple },
 ];
 
 export default function Glassmorphism() {
@@ -76,9 +74,21 @@ export default function Glassmorphism() {
     );
   }
 
-  const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
-  const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
+  // CLAUDE_NOTE: pillar card badges are real counts from the RPCs, not
+  // hardcoded placeholders. Null = no badge shown.
+  const { data: alerts = [] } = useIntegrityAlerts();
+  const { data: drift = [] } = usePriceDrift();
+  const { data: arb = [] } = useArbitrage();
+  const { data: bloat = [] } = useVendorBloat();
+  const { data: recurring = [] } = useRecurringItems();
 
+  const badges: Record<PillarKey, number | null> = {
+    arbitrage: arb.length || null,
+    priceDrift: drift.filter((d) => d.status !== "stable").length || null,
+    spending: recurring.length || null,
+    vendor: bloat.filter((b) => b.vendorCount > b.industryAvg).length || null,
+    integrity: alerts.length || null,
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f0fdf4 50%, #eef2ff 100%)", color: textPrimary }}>
@@ -93,8 +103,9 @@ export default function Glassmorphism() {
 
         {/* Pillar Cards */}
         <div className="max-w-[1400px] mx-auto px-8 pt-6 grid grid-cols-5 gap-3 mb-6">
-          {pillars.map((p, i) => {
+          {PILLAR_META.map((p, i) => {
             const isActive = active === p.key;
+            const badge = badges[p.key];
             return (
               <motion.button
                 key={p.key}
@@ -104,9 +115,9 @@ export default function Glassmorphism() {
                 onClick={() => setActive(p.key)}
                 className={`${glass} p-4 text-left cursor-pointer transition-all relative ${isActive ? "ring-2 ring-indigo-400 bg-white/90" : "hover:bg-white/80"}`}
               >
-                {p.badge !== null && (
+                {badge !== null && (
                   <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: purple }}>
-                    {p.badge}
+                    {badge}
                   </div>
                 )}
                 <p.icon size={16} style={{ color: purple }} />
@@ -310,6 +321,9 @@ function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { na
 //   annualSavings  = monthlySavings * 12
 // Backend: source from invoice_lines joined to vendors; expire opportunities at contractEnd.
 function ArbitrageReport() {
+  const { data: arbitrageOpportunities = [], isLoading } = useArbitrage();
+  if (isLoading) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>Loading…</div>;
+  if (!arbitrageOpportunities.length) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>No arbitrage opportunities detected.</div>;
   return (
     <div className="grid gap-3">
       {arbitrageOpportunities.map((opp) => (
@@ -408,6 +422,10 @@ function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClo
 // Selection state is local-only; no persistence required.
 function PriceDriftReport() {
   const [selectedItem, setSelectedItem] = useState<PriceDriftItem | null>(null);
+  const { data: priceDriftItems = [], isLoading } = usePriceDrift();
+  if (isLoading) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>Loading…</div>;
+  if (!priceDriftItems.length) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>No price drift detected across the catalog.</div>;
+
 
   return (
     <div className={`${glass} p-6`}>
@@ -458,725 +476,153 @@ function PriceDriftReport() {
 }
 
 
+// CLAUDE_NOTE (Pillar E — Operational Inertia)
+// Purpose: show the two things we can honestly derive from purchase invoices:
+//   1) monthly COST cadence (SpendingTrend.costs)
+//   2) recurring-purchase list with burn rate + total spend
+// Data:    useSpendingTrends() + useRecurringItems(). Both RPCs already return
+//   the exact shape used here.
+// Math:    server-side. Client just renders. Revenue / margin / current stock
+//   / days-remaining are deliberately NOT rendered — this app never sees
+//   revenue or on-hand inventory.
+// Owner:   Pillar E.
 function SpendingReport() {
-  // CLAUDE_NOTE: Pillar B Price Drift → drives the Waste segment math (unit-price delta × this-month qty).
-  // CLAUDE_NOTE: Pillar C Lazy Tax → powers the drawer "Find arbitrage alternatives" CTA.
-  // CLAUDE_NOTE: Pillar A Integrity alerts → red pulse animation on quadrant dots.
-  // CLAUDE_NOTE: Pillar E recurring-pattern detector → drives Zone 4 Row A (Operational Inertia).
+  const { data: trends = [], isLoading: trendsLoading } = useSpendingTrends();
+  const { data: recurring = [], isLoading: recurringLoading } = useRecurringItems();
 
-  type Commodity = {
-    id: string;
-    product: string;
-    vendor: string;
-    lastMonthQty: number;
-    thisMonthQty: number;
-    lastUnitPrice: number;
-    thisUnitPrice: number;
-    baseline90d: number;
-    isRecurring: boolean;
-    cadence?: "weekly" | "monthly" | "quarterly";
-    riskAlert: boolean;
-    priceHistory: number[]; // last 4 unit prices, oldest → newest
-  };
-
-  const commodities: Commodity[] = [
-    { id: "copper-wire", product: "Copper Wire (kg)", vendor: "MetalWorks", lastMonthQty: 450, thisMonthQty: 500, lastUnitPrice: 10.5, thisUnitPrice: 11.8, baseline90d: 10.2, isRecurring: true, cadence: "monthly", riskAlert: true, priceHistory: [9.9, 10.1, 10.5, 11.8] },
-    { id: "diesel", product: "Diesel Fuel (L)", vendor: "FuelDirect", lastMonthQty: 2800, thisMonthQty: 3000, lastUnitPrice: 1.75, thisUnitPrice: 1.89, baseline90d: 1.72, isRecurring: true, cadence: "monthly", riskAlert: true, priceHistory: [1.70, 1.75, 1.82, 1.89] },
-    { id: "steel-rebar", product: "Steel Rebar (ton)", vendor: "SteelCo", lastMonthQty: 20, thisMonthQty: 15, lastUnitPrice: 855, thisUnitPrice: 892, baseline90d: 845, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [838, 840, 855, 892] },
-    { id: "lubricant", product: "Industrial Lubricant", vendor: "ChemSupply", lastMonthQty: 100, thisMonthQty: 120, lastUnitPrice: 41, thisUnitPrice: 42, baseline90d: 40.5, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [40, 40.5, 41, 42] },
-    { id: "cement", product: "Cement (bag)", vendor: "BuildMat", lastMonthQty: 350, thisMonthQty: 400, lastUnitPrice: 8.2, thisUnitPrice: 8.4, baseline90d: 8.2, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [8.15, 8.2, 8.2, 8.4] },
-    { id: "gloves", product: "Nitrile Gloves (box)", vendor: "MedSupply", lastMonthQty: 180, thisMonthQty: 240, lastUnitPrice: 9.2, thisUnitPrice: 9.2, baseline90d: 9.3, isRecurring: false, riskAlert: false, priceHistory: [9.4, 9.3, 9.2, 9.2] },
-    { id: "paper", product: "A4 Copier Paper", vendor: "BulkSupply", lastMonthQty: 100, thisMonthQty: 100, lastUnitPrice: 4.8, thisUnitPrice: 4.8, baseline90d: 4.85, isRecurring: true, cadence: "monthly", riskAlert: false, priceHistory: [4.9, 4.85, 4.8, 4.8] },
-    { id: "cable-ties", product: "Cable Ties (1000pk)", vendor: "CableCo", lastMonthQty: 30, thisMonthQty: 50, lastUnitPrice: 19.5, thisUnitPrice: 19.5, baseline90d: 19.8, isRecurring: false, riskAlert: false, priceHistory: [20, 19.8, 19.5, 19.5] },
-    { id: "saas-seats", product: "CloudLedger Seats", vendor: "CloudLedger", lastMonthQty: 42, thisMonthQty: 42, lastUnitPrice: 78, thisUnitPrice: 92, baseline90d: 80, isRecurring: true, cadence: "monthly", riskAlert: true, priceHistory: [76, 78, 78, 92] },
-    { id: "freight-route", product: "Freight Route NW", vendor: "Northline", lastMonthQty: 28, thisMonthQty: 34, lastUnitPrice: 1180, thisUnitPrice: 1195, baseline90d: 1175, isRecurring: true, cadence: "weekly", riskAlert: false, priceHistory: [1170, 1175, 1180, 1195] },
-    { id: "consult", product: "Strategy Consulting (hr)", vendor: "PeakAdvisors", lastMonthQty: 0, thisMonthQty: 60, lastUnitPrice: 0, thisUnitPrice: 285, baseline90d: 285, isRecurring: false, riskAlert: false, priceHistory: [0, 0, 0, 285] },
-    { id: "safety-helmets", product: "Safety Helmets", vendor: "SafetyFirst", lastMonthQty: 40, thisMonthQty: 50, lastUnitPrice: 33.5, thisUnitPrice: 34, baseline90d: 33.5, isRecurring: false, riskAlert: false, priceHistory: [33.5, 33.5, 33.5, 34] },
-  ];
-
-  type Derived = Commodity & {
-    thisMonthSpend: number;
-    lastMonthSpend: number;
-    volumeDeltaPct: number; // % change in qty MoM
-    priceDeltaPct: number; // % drift vs 90-day baseline
-    spendDelta: number;
-    growthDollars: number; // attributable to volume change at last month's unit price
-    wasteDollars: number;  // attributable to unit-price drift at this month's qty
-    newVendorDollars: number; // brand-new spend (no last-month basis)
-    quadrant: "active-bleed" | "quiet-leak" | "healthy-growth" | "stable";
-    verdict: "Growth" | "Mixed" | "Waste" | "Stable";
-  };
-
-  const derived: Derived[] = commodities.map((c) => {
-    const thisMonthSpend = c.thisMonthQty * c.thisUnitPrice;
-    const lastMonthSpend = c.lastMonthQty * c.lastUnitPrice;
-    const isNew = c.lastMonthQty === 0 && c.lastUnitPrice === 0;
-    const volumeDeltaPct = isNew ? 100 : ((c.thisMonthQty - c.lastMonthQty) / c.lastMonthQty) * 100;
-    const priceDeltaPct = ((c.thisUnitPrice - c.baseline90d) / c.baseline90d) * 100;
-    // CLAUDE_NOTE: variance decomposition — growth = qtyDelta × lastUnitPrice; waste = priceDrift × thisQty
-    const growthDollars = isNew ? 0 : (c.thisMonthQty - c.lastMonthQty) * c.lastUnitPrice;
-    const wasteDollars = isNew ? 0 : (c.thisUnitPrice - c.baseline90d) * c.thisMonthQty;
-    const newVendorDollars = isNew ? thisMonthSpend : 0;
-    const spendDelta = thisMonthSpend - lastMonthSpend;
-    let quadrant: Derived["quadrant"];
-    if (priceDeltaPct > 3 && volumeDeltaPct > 5) quadrant = "active-bleed";
-    else if (priceDeltaPct > 3 && volumeDeltaPct <= 5) quadrant = "quiet-leak";
-    else if (priceDeltaPct <= 3 && volumeDeltaPct > 5) quadrant = "healthy-growth";
-    else quadrant = "stable";
-    let verdict: Derived["verdict"];
-    if (priceDeltaPct > 5 && volumeDeltaPct > 5) verdict = "Mixed";
-    else if (priceDeltaPct > 3) verdict = "Waste";
-    else if (volumeDeltaPct > 5) verdict = "Growth";
-    else verdict = "Stable";
-    return { ...c, thisMonthSpend, lastMonthSpend, volumeDeltaPct, priceDeltaPct, spendDelta, growthDollars, wasteDollars, newVendorDollars, quadrant, verdict };
-  });
-
-  const baseline = derived.reduce((s, d) => s + d.lastMonthSpend, 0);
-  const totalGrowth = derived.reduce((s, d) => s + Math.max(0, d.growthDollars), 0);
-  const totalWaste = derived.reduce((s, d) => s + Math.max(0, d.wasteDollars), 0);
-  const totalNewVendor = derived.reduce((s, d) => s + d.newVendorDollars, 0);
-  const totalThisMonth = derived.reduce((s, d) => s + d.thisMonthSpend, 0);
-
-  type SegmentKey = "all" | "growth" | "waste" | "new";
-  const [selectedSegment, setSelectedSegment] = useState<SegmentKey>("all");
-  const [selectedCommodityId, setSelectedCommodityId] = useState<string | null>(null);
-  const [commodityFilter, setCommodityFilter] = useState<string>("all");
-  const [filterOpen, setFilterOpen] = useState(false);
-  type VarianceSegment = "baseline" | "growth" | "waste" | "newVendor";
-  const [drillSegment, setDrillSegment] = useState<VarianceSegment | null>(null);
-  const [groupBy, setGroupBy] = useState<"commodity" | "vendor">("commodity");
-  // Spend-movement detail dialog (Zone 4 row click)
-  type SpendDetail = {
-    title: string;
-    subtitle: string;
-    spendHistory: number[];
-    thisMonthSpend: number;
-    lastMonthSpend: number;
-    dollarDelta: number;
-    pctDelta: number;
-    riskAlert: boolean;
-    commodityId: string | null;
-  };
-  const [spendDetail, setSpendDetail] = useState<SpendDetail | null>(null);
-  const selected = derived.find((d) => d.id === selectedCommodityId) ?? null;
-
-  // Variance bar data — single stacked row
-  const varianceData = [{
-    name: "MoM",
-    baseline,
-    growth: totalGrowth,
-    waste: totalWaste,
-    newVendor: totalNewVendor,
-  }];
-
-  // Filter helper
-  const matchesSegment = (d: Derived) =>
-    selectedSegment === "all" ||
-    (selectedSegment === "growth" && d.growthDollars > 500) ||
-    (selectedSegment === "waste" && d.wasteDollars > 200) ||
-    (selectedSegment === "new" && d.newVendorDollars > 0);
-
-  const matchesCommodity = (d: Derived) => commodityFilter === "all" || d.id === commodityFilter;
-
-  const visible = derived.filter((d) => matchesSegment(d) && matchesCommodity(d));
-
-  // Color by price drift
-  const driftColor = (priceDeltaPct: number) => {
-    if (priceDeltaPct > 10) return "hsl(var(--destructive))";
-    if (priceDeltaPct > 3) return "hsl(var(--risk-high))";
-    return "hsl(var(--finance-emerald))";
-  };
-
-  // Bubble radius for scatter (z value)
-  const maxSpend = Math.max(...derived.map((d) => d.thisMonthSpend));
-
-  // Sparkline component
-  const Sparkline = ({ data, drift }: { data: number[]; drift: number }) => {
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-    const w = 60;
-    const h = 20;
-    const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ");
-    const stroke = driftColor(drift);
-    return (
-      <svg width={w} height={h} className="overflow-visible">
-        <polyline points={pts} fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-        {data.map((v, i) => (
-          <circle key={i} cx={(i / (data.length - 1)) * w} cy={h - ((v - min) / range) * h} r={i === data.length - 1 ? 2.5 : 1.5} fill={stroke} />
-        ))}
-      </svg>
-    );
-  };
-
-  const recurring = derived.filter((d) => d.isRecurring);
-  const discretionary = derived.filter((d) => !d.isRecurring);
-
-  // Segment styles
-  const segmentTabs: { key: SegmentKey; label: string; color: string }[] = [
-    { key: "all", label: "All", color: "hsl(var(--finance-indigo))" },
-    { key: "growth", label: "Volume (Growth)", color: "hsl(var(--finance-emerald))" },
-    { key: "waste", label: "Price Drift (Waste)", color: "hsl(var(--destructive))" },
-    { key: "new", label: "New Vendors", color: "hsl(var(--finance-indigo-soft))" },
-  ];
+  const totalCost = trends.reduce((s, t) => s + t.costs, 0);
+  const monthsCovered = trends.length;
+  const avgMonthly = monthsCovered ? totalCost / monthsCovered : 0;
+  const lastTwo = trends.slice(-2);
+  const mom =
+    lastTwo.length === 2 && lastTwo[0].costs > 0
+      ? ((lastTwo[1].costs - lastTwo[0].costs) / lastTwo[0].costs) * 100
+      : null;
 
   return (
-    <div className={`${glass} p-6`}>
-      {/* ZONE 2: Variance Decomposition Bar */}
-      <section className="mb-6 rounded-2xl border border-finance-indigo/15 bg-card/70 px-5 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Variance decomposition</div>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">Where did this month's spend actually come from? Volume change vs. unit-price drift.</p>
+    <div className="grid gap-4">
+      {/* KPI strip */}
+      <div className={`${glass} p-5`}>
+        <div className="mb-4 flex items-center gap-2">
+          <TrendingDown size={14} style={{ color: purple }} />
+          <h3 className="text-sm font-semibold" style={{ color: textPrimary }}>Spending cadence</h3>
+          <span className="text-[10px] uppercase tracking-widest ml-2" style={{ color: textSecondary }}>
+            Cost only — revenue and margin are not tracked
+          </span>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          <KPI label="Total spend" value={`$${Math.round(totalCost).toLocaleString()}`} tint={purple} />
+          <KPI label="Avg / month" value={`$${Math.round(avgMonthly).toLocaleString()}`} tint={purple} />
+          <KPI
+            label="MoM change"
+            value={mom == null ? "—" : `${mom >= 0 ? "+" : ""}${mom.toFixed(1)}%`}
+            tint={mom == null ? textSecondary : mom >= 0 ? danger : green}
+          />
+          <KPI label="Recurring items" value={String(recurring.length)} tint={purple} />
+        </div>
+      </div>
+
+      {/* Monthly cost trend */}
+      <div className={`${glass} p-5`}>
+        <div className="mb-3 text-sm font-semibold" style={{ color: textPrimary }}>Monthly cost trend</div>
+        {trendsLoading ? (
+          <div className="p-8 text-center text-sm" style={{ color: textSecondary }}>Loading…</div>
+        ) : trends.length === 0 ? (
+          <div className="p-8 text-center text-sm" style={{ color: textSecondary }}>No spending history yet.</div>
+        ) : (
+          <div className="h-72 w-full">
+            <ResponsiveContainer>
+              <AreaChart data={trends} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                <defs>
+                  <linearGradient id="costFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={purple} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={purple} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                <XAxis dataKey="period" tick={{ fontSize: 11, fill: textSecondary }} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: textSecondary }}
+                  tickFormatter={(v) => `$${Math.round((v as number) / 1000)}k`}
+                />
+                <RechartsTooltip
+                  formatter={(v: number) => [`$${v.toLocaleString()}`, "Cost"]}
+                />
+                <Area type="monotone" dataKey="costs" stroke={purple} strokeWidth={2} fill="url(#costFill)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-          <div className="flex items-baseline gap-3 text-xs">
-            <div>
-              <span className="text-muted-foreground">Last month </span>
-              <span className="font-mono font-bold text-foreground">${(baseline / 1000).toFixed(0)}K</span>
-            </div>
-            <span className="text-muted-foreground">→</span>
-            <div>
-              <span className="text-muted-foreground">This month </span>
-              <span className="font-mono font-bold text-foreground">${(totalThisMonth / 1000).toFixed(0)}K</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-2 h-[44px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <RechartsBarChart
-              data={varianceData}
-              layout="vertical"
-              stackOffset="sign"
-              margin={{ top: 2, right: 4, bottom: 2, left: 4 }}
-              onClick={(state: { activeTooltipIndex?: number; activePayload?: Array<{ dataKey?: string }> } | null) => {
-                const key = state?.activePayload?.[0]?.dataKey as VarianceSegment | undefined;
-                if (key) setDrillSegment(key);
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <XAxis type="number" hide domain={[0, baseline + totalGrowth + totalWaste + totalNewVendor]} />
-              <YAxis type="category" dataKey="name" hide />
-              <RechartsBar dataKey="baseline" stackId="v" fill="hsl(215 20% 55%)" radius={[6, 0, 0, 6]} cursor="pointer">
-                <LabelList dataKey="baseline" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={10} fontWeight={700} />
-              </RechartsBar>
-              <RechartsBar dataKey="growth" stackId="v" fill="hsl(var(--finance-emerald))" cursor="pointer">
-                <LabelList dataKey="growth" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={10} fontWeight={700} />
-              </RechartsBar>
-              <RechartsBar dataKey="waste" stackId="v" fill="hsl(var(--destructive))" cursor="pointer">
-                <LabelList dataKey="waste" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--destructive-foreground))" fontSize={10} fontWeight={700} />
-              </RechartsBar>
-              <RechartsBar dataKey="newVendor" stackId="v" fill="hsl(var(--finance-indigo))" radius={[0, 6, 6, 0]} cursor="pointer">
-                <LabelList dataKey="newVendor" position="center" formatter={(v: number) => { const pct = (v / (baseline + totalGrowth + totalWaste + totalNewVendor)) * 100; return pct >= 6 ? `${pct.toFixed(0)}%` : ""; }} fill="hsl(var(--background))" fontSize={10} fontWeight={700} />
-              </RechartsBar>
-            </RechartsBarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Compact inline color legend — clickable to drill down */}
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-          <button onClick={() => setDrillSegment("baseline")} className="flex items-center gap-1.5 transition hover:text-foreground">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "hsl(215 20% 55%)" }} />
-            <span className="font-semibold text-foreground">Baseline</span>
-            <span className="text-muted-foreground">recurring carried over</span>
-          </button>
-          <button onClick={() => setDrillSegment("growth")} className="flex items-center gap-1.5 transition hover:text-foreground">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-finance-emerald" />
-            <span className="font-semibold text-foreground">Volume</span>
-            <span className="text-muted-foreground">more units, same price</span>
-          </button>
-          <button onClick={() => setDrillSegment("waste")} className="flex items-center gap-1.5 transition hover:text-foreground">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-destructive" />
-            <span className="font-semibold text-foreground">Price Drift</span>
-            <span className="text-muted-foreground">same units cost more</span>
-          </button>
-          <button onClick={() => setDrillSegment("newVendor")} className="flex items-center gap-1.5 transition hover:text-foreground">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-finance-indigo" />
-            <span className="font-semibold text-foreground">New Vendors</span>
-            <span className="text-muted-foreground">first-time spend</span>
-          </button>
-        </div>
-
-      </section>
-
-
-
-      {/* ZONE 4: Monthly spend movement per commodity
-          CLAUDE_NOTE: spendHistory should come from Pillar E (recurring-pattern detector)
-          summing invoice line totals per calendar month for the trailing 4 months.
-          For now we synthesize it from priceHistory × thisMonthQty as a placeholder. */}
-      <section className="relative rounded-2xl border border-finance-indigo/15 bg-card/70 p-5">
-        {/* CLAUDE_NOTE: groupBy toggle. When "vendor", aggregate across commodities for the same vendor.
-            Reminder: a single commodity may be sourced from multiple vendors — when grouping by commodity,
-            back-end should sum spend across all vendors for that product key (not just one vendor row). */}
-        <div className="absolute right-5 top-5 inline-flex rounded-xl border border-finance-indigo/30 bg-card/80 p-1 text-xs font-semibold shadow-sm">
-          <button
-            onClick={() => setGroupBy("commodity")}
-            className={`rounded-lg px-4 py-2 transition ${groupBy === "commodity" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            By commodity
-          </button>
-          <button
-            onClick={() => setGroupBy("vendor")}
-            className={`rounded-lg px-4 py-2 transition ${groupBy === "vendor" ? "bg-finance-indigo text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            By vendor
-          </button>
-        </div>
-
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3 pr-44">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Monthly spend movement</div>
-            <p className="mt-1 text-xs text-muted-foreground">How much each {groupBy} grew or dropped month-over-month. Sparkline shows total spend over the last 4 months.</p>
-          </div>
-          {/* Sort logic preserved in render below: rows are sorted by pctDelta desc (biggest % change first) */}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
-          {(() => {
-            // CLAUDE_NOTE: Aggregation layer. In production, run this server-side over the invoice ledger
-            // grouped by either product key (commodity) or vendor key. A commodity sold by multiple vendors
-            // should sum across vendors when groupBy === "commodity"; here mock data has 1 vendor per commodity.
-            type Row = {
-              id: string;
-              title: string;
-              subtitle: string;
-              thisMonthSpend: number;
-              lastMonthSpend: number;
-              priceHistory: number[]; // average unit price per period
-              thisMonthQty: number;
-              riskAlert: boolean;
-              commodityId: string | null; // null when vendor row aggregates multiple commodities
-            };
-
-            let rows: Row[] = [];
-            if (groupBy === "commodity") {
-              rows = derived.map((d) => ({
-                id: `c-${d.id}`,
-                title: d.product,
-                subtitle: d.vendor,
-                thisMonthSpend: d.thisMonthSpend,
-                lastMonthSpend: d.lastMonthSpend,
-                priceHistory: d.priceHistory,
-                thisMonthQty: d.thisMonthQty,
-                riskAlert: d.riskAlert,
-                commodityId: d.id,
-              }));
-            } else {
-              const byVendor = new Map<string, Derived[]>();
-              derived.forEach((d) => {
-                const arr = byVendor.get(d.vendor) ?? [];
-                arr.push(d);
-                byVendor.set(d.vendor, arr);
-              });
-              rows = Array.from(byVendor.entries()).map(([vendor, items]) => {
-                const thisMonthSpend = items.reduce((s, x) => s + x.thisMonthSpend, 0);
-                const lastMonthSpend = items.reduce((s, x) => s + x.lastMonthSpend, 0);
-                // Build a 4-period spend history by summing each item's synthesized spend per period.
-                const periods = items[0]?.priceHistory.length ?? 4;
-                const spendHistory = Array.from({ length: periods }, (_, i) =>
-                  items.reduce((s, x) => s + (x.priceHistory[i] ?? 0) * x.thisMonthQty, 0),
-                );
-                return {
-                  id: `v-${vendor}`,
-                  title: vendor,
-                  subtitle: `${items.length} ${items.length === 1 ? "commodity" : "commodities"}`,
-                  thisMonthSpend,
-                  lastMonthSpend,
-                  priceHistory: spendHistory.map((s) => (items[0]?.thisMonthQty ? s / items[0].thisMonthQty : s)), // placeholder; real spendHistory used below
-                  thisMonthQty: 1,
-                  riskAlert: items.some((x) => x.riskAlert),
-                  commodityId: items.length === 1 ? items[0].id : null,
-                };
-              });
-            }
-
-            return rows
-              .map((r) => {
-                const spendHistory = groupBy === "commodity"
-                  ? r.priceHistory.map((p) => p * r.thisMonthQty)
-                  : r.priceHistory.map((p) => p * r.thisMonthQty); // vendor rows already store summed spend / qty=1
-                const dollarDelta = r.thisMonthSpend - r.lastMonthSpend;
-                const pctDelta = r.lastMonthSpend > 0
-                  ? ((r.thisMonthSpend - r.lastMonthSpend) / r.lastMonthSpend) * 100
-                  : 100;
-                return { r, spendHistory, dollarDelta, pctDelta };
-              })
-              .sort((a, b) => b.pctDelta - a.pctDelta)
-              .map(({ r, spendHistory, dollarDelta, pctDelta }) => {
-                const up = pctDelta >= 0;
-                const tone = up ? "hsl(var(--finance-emerald))" : "hsl(var(--destructive))";
-                return (
-                  <button
-                    key={r.id}
-                    onClick={() => setSpendDetail({
-                      title: r.title,
-                      subtitle: r.subtitle,
-                      spendHistory,
-                      thisMonthSpend: r.thisMonthSpend,
-                      lastMonthSpend: r.lastMonthSpend,
-                      dollarDelta,
-                      pctDelta,
-                      riskAlert: r.riskAlert,
-                      commodityId: r.commodityId,
-                    })}
-                    className="flex items-center gap-2 rounded-lg border border-border bg-card/80 px-2.5 py-2 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <span className="truncate text-xs font-semibold text-foreground">{r.title}</span>
-                        {r.riskAlert && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive animate-risk-pulse" />}
-                      </div>
-                      <div className="truncate text-[10px] text-muted-foreground">{r.subtitle}</div>
-                    </div>
-
-                    <Sparkline data={spendHistory} drift={pctDelta} />
-
-                    <div className="flex shrink-0 flex-col items-end leading-tight">
-                      <span className="font-mono text-xs font-bold text-foreground">
-                        {up ? "+" : ""}${(dollarDelta / 1000).toFixed(1)}K
-                      </span>
-                      <span className="font-mono text-[9px] text-foreground">
-                        {up ? "+" : ""}{pctDelta.toFixed(1)}%
-                      </span>
-                    </div>
-                  </button>
-                );
-              });
-          })()}
-        </div>
-      </section>
-
-
-      {/* DRILL-DOWN DRAWER */}
-      <AnimatePresence>
-        {selected && createPortal(
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex justify-end bg-foreground/30" onClick={() => setSelectedCommodityId(null)}>
-            <motion.aside
-              initial={{ x: 420, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 420, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 260, damping: 28 }}
-              className="h-full w-full max-w-md overflow-y-auto border-l border-border bg-card p-6 text-card-foreground shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
-                    <span className="h-2 w-2 rounded-full" style={{ background: driftColor(selected.priceDeltaPct) }} />
-                    {selected.vendor}
-                  </div>
-                  <h4 className="mt-1 text-lg font-semibold">{selected.product}</h4>
-                </div>
-                <button onClick={() => setSelectedCommodityId(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
-              </div>
-
-              {/* Verdict */}
-              <div
-                className="mb-4 rounded-xl border p-3"
-                style={{
-                  borderColor: selected.verdict === "Waste" ? "hsl(var(--destructive) / 0.3)" : selected.verdict === "Growth" ? "hsl(var(--finance-emerald) / 0.3)" : "hsl(var(--border))",
-                  background: selected.verdict === "Waste" ? "hsl(var(--destructive) / 0.08)" : selected.verdict === "Growth" ? "hsl(var(--finance-emerald) / 0.08)" : "hsl(var(--muted) / 0.4)",
-                }}
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: selected.verdict === "Waste" ? "hsl(var(--destructive))" : selected.verdict === "Growth" ? "hsl(var(--finance-emerald))" : "hsl(var(--muted-foreground))" }}>Verdict</div>
-                <div className="mt-1 text-lg font-bold text-foreground">{selected.verdict}</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {selected.verdict === "Growth" && `Volume up ${selected.volumeDeltaPct.toFixed(0)}% with unit price flat — you're scaling efficiently.`}
-                  {selected.verdict === "Waste" && `Unit price drifted ${selected.priceDeltaPct.toFixed(1)}% above 90-day average. This is fixable.`}
-                  {selected.verdict === "Mixed" && `Volume AND unit price are both up — partly scaling, partly leaking.`}
-                  {selected.verdict === "Stable" && `Both volume and unit price are within normal bands. No action needed.`}
-                </p>
-              </div>
-
-              {/* Decomposition */}
-              <div className="mb-4">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Spend decomposition</div>
-                <div className="space-y-2 rounded-xl bg-muted/40 p-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Total this month</span>
-                    <span className="font-mono font-bold text-foreground">${selected.thisMonthSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-border pt-2">
-                    <span className="text-muted-foreground">Baseline (last month)</span>
-                    <span className="font-mono text-foreground">${selected.lastMonthSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-finance-emerald">+ Volume change</span>
-                    <span className="font-mono font-semibold text-finance-emerald">{selected.growthDollars >= 0 ? "+" : ""}${selected.growthDollars.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-destructive">+ Price drift</span>
-                    <span className="font-mono font-semibold text-destructive">{selected.wasteDollars >= 0 ? "+" : ""}${selected.wasteDollars.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Last 4 invoices (synthetic from priceHistory) */}
-              <div className="mb-4">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Unit-price trajectory</div>
-                <div className="rounded-xl border border-border p-3">
-                  <div className="flex items-end justify-between gap-3">
-                    <div className="space-y-1">
-                      {selected.priceHistory.map((p, i) => (
-                        <div key={i} className="flex items-center gap-3 text-xs">
-                          <span className="w-12 text-muted-foreground">Inv {selected.priceHistory.length - i}</span>
-                          <span className="font-mono font-semibold text-foreground">${p.toFixed(2)}</span>
-                        </div>
-                      )).reverse()}
-                    </div>
-                    <Sparkline data={selected.priceHistory} drift={selected.priceDeltaPct} />
-                  </div>
-                  <div className="mt-2 flex items-center justify-between border-t border-border pt-2 text-xs">
-                    <span className="text-muted-foreground">90-day baseline</span>
-                    <span className="font-mono text-foreground">${selected.baseline90d.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="space-y-2">
-                {selected.verdict === "Waste" || selected.verdict === "Mixed" ? (
-                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-3 text-sm font-bold text-destructive-foreground shadow-lg shadow-destructive/20 transition hover:opacity-90">
-                    <Zap size={14} /> Find arbitrage alternatives
-                  </button>
-                ) : (
-                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-finance-indigo px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-finance-indigo/20 transition hover:opacity-90">
-                    <CheckCircle2 size={14} /> Lock in current rate
-                  </button>
-                )}
-                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">
-                  Negotiate with {selected.vendor}
-                </button>
-              </div>
-            </motion.aside>
-          </motion.div>,
-          document.body,
         )}
-      </AnimatePresence>
+      </div>
 
-      {/* SPEND MOVEMENT DETAIL DIALOG (Zone 4 row click)
-          CLAUDE_NOTE: spendHistory comes from Pillar E aggregation. Period labels follow the
-          selected `period` state (monthly/quarterly/yearly). Backend should return the trailing
-          4 buckets of total spend per row id. */}
-      {spendDetail && createPortal(
-        (() => {
-          const sd = spendDetail;
-          const up = sd.pctDelta >= 0;
-          const tone = up ? "hsl(var(--finance-emerald))" : "hsl(var(--destructive))";
-          const periodUnit = "month";
-          const labels = Array.from({ length: sd.spendHistory.length }, (_, i) => {
-            const offset = sd.spendHistory.length - 1 - i;
-            return offset === 0 ? `This ${periodUnit}` : `-${offset} ${periodUnit}${offset > 1 ? "s" : ""}`;
-          });
-          const max = Math.max(...sd.spendHistory);
-          const min = Math.min(...sd.spendHistory);
-          const range = max - min || 1;
-          const w = 320;
-          const h = 110;
-          const pts = sd.spendHistory.map((v, i) => `${(i / (sd.spendHistory.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ");
-          return (
-            <div
-              className="fixed inset-0 z-[1000] flex items-center justify-center bg-foreground/40 p-4"
-              onClick={() => setSpendDetail(null)}
-            >
-              <div
-                className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-start justify-between gap-3 border-b border-border p-5">
-                  <div>
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
-                      <span className="h-2 w-2 rounded-full" style={{ background: tone }} />
-                      Spend movement
-                      {sd.riskAlert && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-risk-pulse" />}
-                    </div>
-                    <h4 className="mt-1 text-lg font-semibold text-foreground">{sd.title}</h4>
-                    <div className="text-xs text-muted-foreground">{sd.subtitle}</div>
-                  </div>
-                  <button onClick={() => setSpendDetail(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted">
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="space-y-4 p-5">
-                  <div className="flex items-baseline justify-between rounded-xl bg-muted/40 p-3">
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">This {periodUnit}</div>
-                      <div className="font-mono text-lg font-bold text-foreground">${sd.thisMonthSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">vs prev</div>
-                      <div className="font-mono text-lg font-bold" style={{ color: tone }}>
-                        {up ? "+" : ""}${(sd.dollarDelta / 1000).toFixed(1)}K
-                      </div>
-                      <div className="font-mono text-[10px]" style={{ color: tone }}>
-                        {up ? "+" : ""}{sd.pctDelta.toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">
-                      Last {sd.spendHistory.length} {periodUnit}s
-                    </div>
-                    <div className="rounded-xl border border-border p-3">
-                      <svg width="100%" height={h + 20} viewBox={`0 0 ${w} ${h + 20}`} className="overflow-visible">
-                        <polyline points={pts} fill="none" stroke={tone} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                        {sd.spendHistory.map((v, i) => {
-                          const cx = (i / (sd.spendHistory.length - 1)) * w;
-                          const cy = h - ((v - min) / range) * h;
-                          return (
-                            <g key={i}>
-                              <circle cx={cx} cy={cy} r={i === sd.spendHistory.length - 1 ? 4 : 3} fill={tone} />
-                              <text x={cx} y={cy - 8} textAnchor="middle" className="fill-foreground font-mono" fontSize="9" fontWeight={700}>
-                                ${(v / 1000).toFixed(1)}K
-                              </text>
-                              <text x={cx} y={h + 14} textAnchor="middle" className="fill-muted-foreground" fontSize="9">
-                                {labels[i]}
-                              </text>
-                            </g>
-                          );
-                        })}
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Breakdown</div>
-                    <div className="space-y-1 rounded-xl border border-border p-3 text-xs">
-                      {sd.spendHistory.map((v, i) => {
-                        const prev = i > 0 ? sd.spendHistory[i - 1] : null;
-                        const delta = prev != null ? v - prev : 0;
-                        const pct = prev && prev > 0 ? (delta / prev) * 100 : 0;
-                        const dUp = delta >= 0;
-                        return (
-                          <div key={i} className="flex items-center justify-between border-b border-border/60 py-1 last:border-b-0">
-                            <span className="text-muted-foreground">{labels[i]}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="font-mono font-semibold text-foreground">${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                              <span className="w-16 text-right font-mono text-[10px]" style={{ color: prev == null ? "hsl(var(--muted-foreground))" : dUp ? "hsl(var(--finance-emerald))" : "hsl(var(--destructive))" }}>
-                                {prev == null ? "—" : `${dUp ? "+" : ""}${pct.toFixed(1)}%`}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          );
-        })(),
-        document.body,
-      )}
-
-
-      <AnimatePresence>
-        {drillSegment && createPortal(
-          (() => {
-            const meta = {
-              baseline:  { title: "Baseline spend",       subtitle: "Recurring spend carried over from last month",            color: "hsl(215 20% 55%)",              total: baseline,        explainer: "This is the floor. Every commodity you bought last month at last month's unit price." },
-              growth:    { title: "Volume (Growth)",      subtitle: "You bought more units at the same unit price",            color: "hsl(var(--finance-emerald))",   total: totalGrowth,     explainer: "Healthy: extra spend is explained by buying more, not by paying more per unit. This is your business scaling." },
-              waste:     { title: "Price Drift (Waste)",  subtitle: "Same units now cost more vs. 90-day average",             color: "hsl(var(--destructive))",       total: totalWaste,      explainer: "Fixable: same volume, higher unit price. Likely vendor inflation, surcharges, or expired pricing tiers." },
-              newVendor: { title: "New Vendor spend",     subtitle: "First-time vendor invoices with no prior-month basis",    color: "hsl(var(--finance-indigo))",    total: totalNewVendor,  explainer: "New commitments worth reviewing. Make sure these are intentional and have approved budgets." },
-            }[drillSegment];
-
-            const rows = derived
-              .map((d) => {
-                const value =
-                  drillSegment === "baseline"  ? d.lastMonthSpend :
-                  drillSegment === "growth"    ? Math.max(0, d.growthDollars) :
-                  drillSegment === "waste"     ? Math.max(0, d.wasteDollars) :
-                                                 d.newVendorDollars;
-                return { d, value };
-              })
-              .filter((r) => r.value > 0)
-              .sort((a, b) => b.value - a.value);
-
-            const totalForPct = rows.reduce((s, r) => s + r.value, 0) || 1;
-
-            return (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex justify-end bg-foreground/30" onClick={() => setDrillSegment(null)}>
-                <motion.aside
-                  initial={{ x: 460, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 460, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 28 }}
-                  className="h-full w-full max-w-md overflow-y-auto border-l border-border bg-card p-6 text-card-foreground shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: meta.color }}>
-                        <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} />
-                        Variance segment
-                      </div>
-                      <h4 className="mt-1 text-lg font-semibold">{meta.title}</h4>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{meta.subtitle}</p>
-                    </div>
-                    <button onClick={() => setDrillSegment(null)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
-                  </div>
-
-                  <div className="mb-4 rounded-xl border p-3" style={{ borderColor: `${meta.color.replace("))", ") / 0.3)")}`, background: `${meta.color.replace("))", ") / 0.08)")}` }}>
-                    <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: meta.color }}>Total</div>
-                    <div className="mt-1 font-mono text-2xl font-bold text-foreground">${meta.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">{meta.explainer}</p>
-                  </div>
-
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="text-[10px] font-semibold uppercase tracking-widest text-finance-indigo">Top contributors</div>
-                    <div className="text-[10px] text-muted-foreground">{rows.length} commodit{rows.length === 1 ? "y" : "ies"}</div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {rows.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No commodities contribute to this segment.</div>
-                    )}
-                    {rows.map(({ d, value }) => {
-                      const pct = (value / totalForPct) * 100;
-                      return (
-                        <button
-                          key={d.id}
-                          onClick={() => { setSelectedCommodityId(d.id); setDrillSegment(null); }}
-                          className="w-full rounded-xl border border-border bg-card/80 p-3 text-left transition hover:border-finance-indigo/40 hover:bg-muted/40"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="truncate text-sm font-semibold text-foreground">{d.product}</div>
-                              <div className="truncate text-[11px] text-muted-foreground">{d.vendor}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-mono text-sm font-bold" style={{ color: meta.color }}>${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                              <div className="text-[10px] text-muted-foreground">{pct.toFixed(0)}% of segment</div>
-                            </div>
-                          </div>
-                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: meta.color }} />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.aside>
-              </motion.div>
-            );
-          })(),
-          document.body,
+      {/* Recurring-purchase list */}
+      <div className={`${glass} p-5`}>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-sm font-semibold" style={{ color: textPrimary }}>Recurring purchases</div>
+          <div className="text-[10px] uppercase tracking-widest" style={{ color: textSecondary }}>
+            Stock &amp; days-remaining not tracked
+          </div>
+        </div>
+        {recurringLoading ? (
+          <div className="p-8 text-center text-sm" style={{ color: textSecondary }}>Loading…</div>
+        ) : recurring.length === 0 ? (
+          <div className="p-8 text-center text-sm" style={{ color: textSecondary }}>
+            No recurring purchase patterns detected yet.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl" style={{ background: "rgba(0,0,0,0.02)" }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200/50 text-left text-[10px] uppercase tracking-wider" style={{ color: textSecondary }}>
+                  <th className="px-5 py-3">Product</th>
+                  <th className="px-5 py-3 text-right">Burn rate / mo</th>
+                  <th className="px-5 py-3 text-right">Buys</th>
+                  <th className="px-5 py-3 text-right">Total spend</th>
+                  <th className="px-5 py-3">Suggested action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recurring.map((it) => (
+                  <tr key={it.id} className="border-b border-gray-100/50">
+                    <td className="px-5 py-3.5 font-medium" style={{ color: textPrimary }}>{it.product}</td>
+                    <td className="px-5 py-3.5 text-right font-mono" style={{ color: textPrimary }}>
+                      {it.burnRate.toFixed(1)}
+                    </td>
+                    <td className="px-5 py-3.5 text-right font-mono" style={{ color: textSecondary }}>{it.buys}</td>
+                    <td className="px-5 py-3.5 text-right font-mono font-semibold" style={{ color: purple }}>
+                      ${Math.round(it.totalSpend).toLocaleString()}
+                    </td>
+                    <td className="px-5 py-3.5 text-xs" style={{ color: textSecondary }}>{it.suggestedAction || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
-// CLAUDE_NOTE: Pillar D — Vendor Bloat / Consolidation report.
+
+function KPI({ label, value, tint }: { label: string; value: string; tint: string }) {
+  return (
+    <div className="rounded-xl px-4 py-3" style={{ background: "rgba(0,0,0,0.03)" }}>
+      <div className="text-[10px] uppercase tracking-widest" style={{ color: textSecondary }}>{label}</div>
+      <div className="mt-1 font-mono text-lg font-bold" style={{ color: tint }}>{value}</div>
+    </div>
+  );
+}
+
 // vendorMonthlySpend & spendByCategory are aggregations over the current month.
 // Click handlers cross-link vendor ↔ category for drill-down. Backend should ship both views
 // so the UI does not have to re-aggregate client-side.
 function VendorReport() {
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const { vendorMonthlySpend, spendByCategory, vendorProducts, categoryVendors } = useVendorAggregates();
+  const { data: vendorConsolidation = [] } = useVendorBloat();
+  const { data: priceDriftItems = [] } = usePriceDrift();
 
   const vendorTotal = vendorMonthlySpend.reduce((s, v) => s + v.monthlySpend, 0);
   const categoryTotal = spendByCategory.reduce((s, v) => s + v.monthlySpend, 0);
@@ -1200,6 +646,7 @@ function VendorReport() {
   const categoryDetail = selectedCategory ? categoryVendors[selectedCategory] : null;
   const categoryConsolidation = selectedCategory ? vendorConsolidation.find(v => v.category === selectedCategory) : null;
   const vendorDriftItems = selectedVendor ? priceDriftItems.filter(p => p.vendor === selectedVendor) : [];
+
 
   return (
     <div>
@@ -1505,7 +952,8 @@ function getBackendHandoffSteps(alert: IntegrityAlert) {
 // Severity drives the risk-pulse animation upstream (quadrant dots in SpendingReport).
 // Backend: alerts table keyed by anomaly_id; investigation steps persist as investigation_events.
 function IntegrityReport() {
-  const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
+  const { data: integrityAlerts = [] } = useIntegrityAlerts();
+  const [selectedAlertId, setSelectedAlertId] = useState<string | undefined>(undefined);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const filteredAlerts = severityFilter === "all" ? integrityAlerts : integrityAlerts.filter((alert) => alert.severity === severityFilter);
   const selectedAlert = integrityAlerts.find((alert) => alert.id === selectedAlertId) ?? filteredAlerts[0] ?? integrityAlerts[0];
