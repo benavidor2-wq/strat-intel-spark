@@ -422,6 +422,10 @@ function PriceDriftInvoicePanel({ item, onClose }: { item: PriceDriftItem; onClo
 // Selection state is local-only; no persistence required.
 function PriceDriftReport() {
   const [selectedItem, setSelectedItem] = useState<PriceDriftItem | null>(null);
+  const { data: priceDriftItems = [], isLoading } = usePriceDrift();
+  if (isLoading) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>Loading…</div>;
+  if (!priceDriftItems.length) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>No price drift detected across the catalog.</div>;
+
 
   return (
     <div className={`${glass} p-6`}>
