@@ -83,7 +83,7 @@ const receiptsSchema = {
               properties: {
                 name: { type: "string" },
                 sku: { type: "string", nullable: true },
-                uom: { type: "string", nullable: true },
+                uom: { type: "string", nullable: true, description: "Canonical unit of measure for this line (EA, LB, TON, CY, CF, FT, SF, YD, GAL, OZ, HR, MIN, LD, BAG, SK, BOX, CASE, RL, SHEET, PC). null only when the line has no unit (services/flat fees)." },
                 quantity: { type: "number", nullable: true },
                 unit_price: { type: "number", nullable: true },
                 total_price: { type: "number", nullable: true },
