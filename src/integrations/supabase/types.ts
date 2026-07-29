@@ -130,6 +130,7 @@ export type Database = {
       line_items: {
         Row: {
           canonical_item_id: string | null
+          canonical_uom: string | null
           created_at: string
           id: string
           line_kind: Database["public"]["Enums"]["line_kind"]
@@ -148,6 +149,7 @@ export type Database = {
         }
         Insert: {
           canonical_item_id?: string | null
+          canonical_uom?: string | null
           created_at?: string
           id?: string
           line_kind?: Database["public"]["Enums"]["line_kind"]
@@ -166,6 +168,7 @@ export type Database = {
         }
         Update: {
           canonical_item_id?: string | null
+          canonical_uom?: string | null
           created_at?: string
           id?: string
           line_kind?: Database["public"]["Enums"]["line_kind"]
@@ -569,6 +572,7 @@ export type Database = {
       }
     }
     Functions: {
+      canonical_uom: { Args: { u: string }; Returns: string }
       canonicalize_custom_fields: { Args: { p: Json }; Returns: Json }
       claim_next_uploads: { Args: { p_limit?: number }; Returns: Json[] }
       claim_upload: { Args: { p_upload_id: string }; Returns: Json }
