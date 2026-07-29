@@ -35,12 +35,12 @@ const glass = "backdrop-blur-xl bg-white/70 border border-white/80 rounded-2xl s
 
 type PillarKey = "arbitrage" | "priceDrift" | "spending" | "vendor" | "integrity";
 
-const pillars: { key: PillarKey; label: string; icon: typeof Zap; color: string; badge: number | string | null }[] = [
-  { key: "arbitrage", label: "Vendor Arbitrage & Best Pricing", icon: Zap, color: purple, badge: 4 },
-  { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple, badge: 3 },
-  { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple, badge: null },
-  { key: "vendor", label: "Vendor Consolidation", icon: Users, color: purple, badge: 3 },
-  { key: "integrity", label: "Anomaly & Risk", icon: Shield, color: purple, badge: 2 },
+const PILLAR_META: { key: PillarKey; label: string; icon: typeof Zap; color: string }[] = [
+  { key: "arbitrage", label: "Vendor Arbitrage & Best Pricing", icon: Zap, color: purple },
+  { key: "priceDrift", label: "Price Drift", icon: TrendingDown, color: purple },
+  { key: "spending", label: "Spending Patterns", icon: TrendingDown, color: purple },
+  { key: "vendor", label: "Vendor Consolidation", icon: Users, color: purple },
+  { key: "integrity", label: "Anomaly & Risk", icon: Shield, color: purple },
 ];
 
 export default function Glassmorphism() {
