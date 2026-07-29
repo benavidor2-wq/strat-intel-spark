@@ -74,9 +74,21 @@ export default function Glassmorphism() {
     );
   }
 
-  const criticalCount = integrityAlerts.filter((a) => a.severity === "critical").length;
-  const highCount = integrityAlerts.filter((a) => a.severity === "high").length;
+  // CLAUDE_NOTE: pillar card badges are real counts from the RPCs, not
+  // hardcoded placeholders. Null = no badge shown.
+  const { data: alerts = [] } = useIntegrityAlerts();
+  const { data: drift = [] } = usePriceDrift();
+  const { data: arb = [] } = useArbitrage();
+  const { data: bloat = [] } = useVendorBloat();
+  const { data: recurring = [] } = useRecurringItems();
 
+  const badges: Record<PillarKey, number | null> = {
+    arbitrage: arb.length || null,
+    priceDrift: drift.filter((d) => d.status !== "stable").length || null,
+    spending: recurring.length || null,
+    vendor: bloat.filter((b) => b.vendorCount > b.industryAvg).length || null,
+    integrity: alerts.length || null,
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f0fdf4 50%, #eef2ff 100%)", color: textPrimary }}>
@@ -91,8 +103,9 @@ export default function Glassmorphism() {
 
         {/* Pillar Cards */}
         <div className="max-w-[1400px] mx-auto px-8 pt-6 grid grid-cols-5 gap-3 mb-6">
-          {pillars.map((p, i) => {
+          {PILLAR_META.map((p, i) => {
             const isActive = active === p.key;
+            const badge = badges[p.key];
             return (
               <motion.button
                 key={p.key}
@@ -102,9 +115,9 @@ export default function Glassmorphism() {
                 onClick={() => setActive(p.key)}
                 className={`${glass} p-4 text-left cursor-pointer transition-all relative ${isActive ? "ring-2 ring-indigo-400 bg-white/90" : "hover:bg-white/80"}`}
               >
-                {p.badge !== null && (
+                {badge !== null && (
                   <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: purple }}>
-                    {p.badge}
+                    {badge}
                   </div>
                 )}
                 <p.icon size={16} style={{ color: purple }} />
