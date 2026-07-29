@@ -771,12 +771,13 @@ export function useVendorBloat() {
     queryFn: async (): Promise<VendorConsolidation[]> => {
       const { data, error } = await dataClient.rpc("pillar_vendor_bloat");
       if (error) throw error;
-      return (data ?? []).map((r: any) =>
-        coerceNum<VendorConsolidation>(
-          { category: r.category ?? "", ...r },
-          ["vendorCount", "industryAvg", "redundancyScore", "potentialSavings"],
-        ),
-      );
+      return (data ?? []).map((r: any) => ({
+        category: r.category ?? "",
+        vendorCount: num(r.vendorCount),
+        industryAvg: num(r.industryAvg),
+        redundancyScore: num(r.redundancyScore),
+        potentialSavings: num(r.potentialSavings),
+      }));
     },
   });
 }
