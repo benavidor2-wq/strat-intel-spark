@@ -321,6 +321,9 @@ function QtyPopover({ monthlyQty, vendors }: { monthlyQty: number; vendors: { na
 //   annualSavings  = monthlySavings * 12
 // Backend: source from invoice_lines joined to vendors; expire opportunities at contractEnd.
 function ArbitrageReport() {
+  const { data: arbitrageOpportunities = [], isLoading } = useArbitrage();
+  if (isLoading) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>Loading…</div>;
+  if (!arbitrageOpportunities.length) return <div className={`${glass} p-6 text-sm`} style={{ color: textSecondary }}>No arbitrage opportunities detected.</div>;
   return (
     <div className="grid gap-3">
       {arbitrageOpportunities.map((opp) => (
