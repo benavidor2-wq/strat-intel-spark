@@ -135,21 +135,28 @@ export interface SpendByCategory {
 }
 
 // ---- Pillar E: Operational Inertia --------------------------------------
+// CLAUDE_NOTE (Pillar E shape)
+// This app never sees revenue or on-hand inventory — those can't come from
+// purchase invoices. The RPCs return `currentStock` / `daysRemaining` as
+// null, and `revenue` / `margin` as 0. The UI must NOT render those as if
+// real numbers. Cost cadence (`burnRate`, `buys`, `totalSpend`) is real.
 export interface InventoryItem {
   id: string;
   product: string;
   burnRate: number;
-  currentStock: number;
-  daysRemaining: number;
+  buys: number;
+  totalSpend: number;
+  currentStock: number | null;
+  daysRemaining: number | null;
   bulkDiscount: number;
   suggestedAction: string;
 }
 
 export interface SpendingTrend {
   period: string;
-  revenue: number;
+  revenue: number; // always 0 — not tracked
   costs: number;
-  margin: number;
+  margin: number; // always 0 — not tracked
 }
 
 // ---- Raw ingestion (Receipts feed every pillar) --------------------------
