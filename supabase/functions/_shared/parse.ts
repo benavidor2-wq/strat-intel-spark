@@ -105,6 +105,12 @@ ACCOUNT HOLDER (BUYER, NEVER THE VENDOR):
 - If the only company name you can find in the document is the account holder (common when the vendor's letterhead is a logo image with no readable text), return merchant: null rather than guessing.
 - Do NOT skip or drop an invoice that is billed to a DIFFERENT company — extract it normally and report that other company's name in "bill_to". Those are flagged downstream as possible misfile/fraud; that's intended.
 
+MERCHANT IS A COMPANY, NOT A PERSON (critical):
+- "merchant" is the SELLER COMPANY / STORE — the business at the top of the invoice, or the "remit to" / "pay to" business. It is an organization, never a human being.
+- NEVER promote a person's name to "merchant". Names shown as the orderer, "sold by", salesperson, cashier, clerk, driver, "picked up by", "taken by", "ordered by", "received by", "customer", or a signature line are NOT the vendor. Building-materials counter tickets (e.g. Ace, hardware stores) frequently show only the employee or buyer who picked up the order — that person is NOT the seller.
+- A "Customer Number", "Account Number", "Cust #", or "Acct #" identifies the BUYER's account at that store — it never identifies the vendor. Do not turn it or its associated name into a merchant.
+- If the only names you can read are people, with no company/store name, logo, or remit-to business anywhere, return merchant: null so it is flagged for review. A null merchant is strictly better than inventing a vendor from a person's name.
+
 HARD RULES:
 - NEVER invent a value. If the document does not clearly show a field (date, subtotal, tax, invoice number, etc.), return null. A guessed date silently corrupts every downstream trend chart — a null that gets flagged for review is strictly better than a plausible fabrication.
 - "merchant" is the VENDOR/SELLER (top of the invoice, remit-to). "bill_to" is who the invoice is addressed to (Sold To / Bill To block).
@@ -112,9 +118,16 @@ HARD RULES:
 - Extract EVERY line item, including discounts, freight, shipping, and fees. Return discounts/credits/rebates as NEGATIVE numbers. Do not skip them.
 - If the document contains multiple invoices, return one object per invoice in "receipts".
 - "category" MUST be one of the allowed enum values, or null if unclear.
-- "custom_fields": include business identifiers when the document shows them — PO Number, Project, Work Order, Job Code, Department, Payment Terms, Contract Number, Job Site, Customer Job No, Acct Job No. Use whatever label the document uses as the key; omit anything absent.
+- "custom_fields": include business identifiers when the document shows them — PO Number, Project, Work Order, Job Code, Department, Payment Terms, Contract Number, Job Site, Customer Job No, Acct Job No, Customer Number. Use whatever label the document uses as the key; omit anything absent.
 - Do not round or reformat numbers unnecessarily; return them as numbers (e.g. 1234.56, not "$1,234.56").
-- "confidence" is your own 0..1 certainty about the overall extraction.`;
+- "confidence" is your own 0..1 certainty about the overall extraction.
+
+LINE-ITEM UNIT ECONOMICS (needed for price comparison across vendors and time):
+- For every PRODUCT line, capture "uom" (unit of measure) whenever the invoice shows a unit column or states one. Normalize to a short canonical code from this set: EA (each), LB (pound), TON, CY (cubic yard), CF (cubic foot), FT (linear foot), SF (square foot), YD, GAL, OZ, HR (hour), MIN, LD (load), BAG, SK (sack), BOX, CASE, RL (roll), SHEET, PC (piece).
+- "unit_price" MUST be the price of ONE uom, and quantity x unit_price MUST reconcile to total_price. If the invoice gives an extended/line total but no unit price, derive it: unit_price = total_price / quantity.
+- If the quantity or pack size is embedded in the DESCRIPTION rather than a quantity column (e.g. "25 TONS OF 3/4 GRAVEL", "55 LB BAG", "8\" X 10' PIPE"), still populate quantity, uom, and unit_price so the price is expressed per comparable unit. When the item is sold as a whole delivered unit (one load, one bag), set uom to that unit (LD, BAG) and quantity to the COUNT of those units — do not leave uom null in that case.
+- Only leave uom null when the line genuinely has no unit of measure (lump-sum services, flat fees, labor billed as a single amount).`;
+
 
 type GeminiPart =
   | { text: string }
