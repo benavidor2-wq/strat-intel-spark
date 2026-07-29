@@ -1528,7 +1528,8 @@ function getBackendHandoffSteps(alert: IntegrityAlert) {
 // Severity drives the risk-pulse animation upstream (quadrant dots in SpendingReport).
 // Backend: alerts table keyed by anomaly_id; investigation steps persist as investigation_events.
 function IntegrityReport() {
-  const [selectedAlertId, setSelectedAlertId] = useState(integrityAlerts[0]?.id);
+  const { data: integrityAlerts = [] } = useIntegrityAlerts();
+  const [selectedAlertId, setSelectedAlertId] = useState<string | undefined>(undefined);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const filteredAlerts = severityFilter === "all" ? integrityAlerts : integrityAlerts.filter((alert) => alert.severity === severityFilter);
   const selectedAlert = integrityAlerts.find((alert) => alert.id === selectedAlertId) ?? filteredAlerts[0] ?? integrityAlerts[0];
