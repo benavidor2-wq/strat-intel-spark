@@ -660,49 +660,306 @@ export async function retryUpload(uploadId: string): Promise<void> {
 }
 
 // =========================================================================
-// EMPTY EXPORTS — pillar derivations, deliberately unwired.
-// Deriving A/B/C/D/E from receipts is the next phase. The pillar pages
-// already handle an empty state.
+// Pillar hooks — thin wrappers over the pillar_* RPCs
 // =========================================================================
+// CLAUDE_NOTE (pillars)
+// Purpose: fetch each pillar's already-shaped output. The RPCs return the
+//   TypeScript shapes above 1:1 — no client-side math, just JSON coercion
+//   for numeric fields so `.toFixed()` / arithmetic never blow up.
+// Cache:  staleTime 5 minutes; also invalidated by the receipts Realtime
+//   listener since new receipts change every pillar's output.
+// Owner: A–E.
 
-export const integrityAlerts: IntegrityAlert[] = [];
-export const priceDriftItems: PriceDriftItem[] = [];
-export const arbitrageOpportunities: ArbitrageOpportunity[] = [];
-export const inventoryItems: InventoryItem[] = [];
-export const spendingTrends: SpendingTrend[] = [];
-export const vendorConsolidation: VendorConsolidation[] = [];
-export const spendByCategory: SpendByCategory[] = [];
-export const vendorMonthlySpend: VendorMonthlySpend[] = [];
+const PILLAR_STALE_MS = 5 * 60_000;
 
-export const summaryStats = {
-  totalAnomalies: 0,
-  criticalAlerts: 0,
-  totalLazyTax: 0,
-  inflationLeaks: 0,
-  vendorBloatScore: 0,
-  marginErosion: 0,
-  totalPotentialSavings: 0,
-  activeVendors: 0,
-  industryAvgVendors: 0,
-};
+function coerceNum<T extends Record<string, unknown>>(row: T, keys: (keyof T)[]): T {
+  const out: any = { ...row };
+  for (const k of keys) out[k] = num(row[k]);
+  return out;
+}
 
-export const vendorProducts: Record<
-  string,
-  {
-    products: string[];
-    category: string;
-    recentInvoices: { invoiceNo: string; date: string; product: string; amount: number; qty: number }[];
+export function useIntegrityAlerts() {
+  return useQuery({
+    queryKey: ["pillar", "integrity"],
+    staleTime: PILLAR_STALE_MS,
+    queryFn: async (): Promise<IntegrityAlert[]> => {
+      const { data, error } = await dataClient.rpc("pillar_integrity");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        id: String(r.id ?? ""),
+        type: r.type,
+        severity: r.severity,
+        vendor: r.vendor ?? "",
+        amount: num(r.amount),
+        description: r.description ?? "",
+        date: r.date ?? "",
+      }));
+    },
+  });
+}
+
+export function usePriceDrift() {
+  return useQuery({
+    queryKey: ["pillar", "price_drift"],
+    staleTime: PILLAR_STALE_MS,
+    queryFn: async (): Promise<PriceDriftItem[]> => {
+      const { data, error } = await dataClient.rpc("pillar_price_drift");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        id: String(r.id ?? ""),
+        product: r.product ?? "",
+        vendor: r.vendor ?? "",
+        currentPrice: num(r.currentPrice),
+        avg90Day: num(r.avg90Day),
+        driftPercent: num(r.driftPercent),
+        status: r.status,
+        recentInvoice: {
+          invoiceNo: r.recentInvoice?.invoiceNo ?? "",
+          date: r.recentInvoice?.date ?? "",
+          unitPrice: num(r.recentInvoice?.unitPrice),
+          qty: num(r.recentInvoice?.qty),
+          total: num(r.recentInvoice?.total),
+        },
+        historicalInvoices: (r.historicalInvoices ?? []).map((h: any) => ({
+          invoiceNo: h.invoiceNo ?? "",
+          date: h.date ?? "",
+          unitPrice: num(h.unitPrice),
+          qty: num(h.qty),
+          total: num(h.total),
+        })),
+      }));
+    },
+  });
+}
+
+export function useArbitrage() {
+  return useQuery({
+    queryKey: ["pillar", "arbitrage"],
+    staleTime: PILLAR_STALE_MS,
+    queryFn: async (): Promise<ArbitrageOpportunity[]> => {
+      const { data, error } = await dataClient.rpc("pillar_arbitrage");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        id: String(r.id ?? ""),
+        product: r.product ?? "",
+        vendors: (r.vendors ?? []).map((v: any) => ({
+          name: v.name ?? "",
+          price: num(v.price),
+          invoiceNo: v.invoiceNo ?? "",
+          invoiceDate: v.invoiceDate ?? "",
+          qty: num(v.qty),
+          total: num(v.total),
+        })),
+        bestPrice: num(r.bestPrice),
+        currentPrice: num(r.currentPrice),
+        lazyTax: num(r.lazyTax),
+        annualSavings: num(r.annualSavings),
+        monthlyQty: num(r.monthlyQty),
+        unit: r.unit ?? "",
+        contractEnd: r.contractEnd ?? "",
+        savingsPerUnit: num(r.savingsPerUnit),
+        monthlySavings: num(r.monthlySavings),
+      }));
+    },
+  });
+}
+
+export function useVendorBloat() {
+  return useQuery({
+    queryKey: ["pillar", "vendor_bloat"],
+    staleTime: PILLAR_STALE_MS,
+    queryFn: async (): Promise<VendorConsolidation[]> => {
+      const { data, error } = await dataClient.rpc("pillar_vendor_bloat");
+      if (error) throw error;
+      return (data ?? []).map((r: any) =>
+        coerceNum<VendorConsolidation>(
+          { category: r.category ?? "", ...r },
+          ["vendorCount", "industryAvg", "redundancyScore", "potentialSavings"],
+        ),
+      );
+    },
+  });
+}
+
+export function useSpendingTrends() {
+  return useQuery({
+    queryKey: ["pillar", "spending_trends"],
+    staleTime: PILLAR_STALE_MS,
+    queryFn: async (): Promise<SpendingTrend[]> => {
+      const { data, error } = await dataClient.rpc("pillar_spending_trends");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        period: r.period ?? "",
+        revenue: num(r.revenue),
+        costs: num(r.costs),
+        margin: num(r.margin),
+      }));
+    },
+  });
+}
+
+export function useRecurringItems() {
+  return useQuery({
+    queryKey: ["pillar", "recurring_items"],
+    staleTime: PILLAR_STALE_MS,
+    queryFn: async (): Promise<InventoryItem[]> => {
+      const { data, error } = await dataClient.rpc("pillar_recurring_items");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        id: String(r.id ?? ""),
+        product: r.product ?? "",
+        burnRate: num(r.burnRate),
+        buys: num(r.buys),
+        totalSpend: num(r.totalSpend),
+        currentStock: r.currentStock == null ? null : num(r.currentStock),
+        daysRemaining: r.daysRemaining == null ? null : num(r.daysRemaining),
+        bulkDiscount: num(r.bulkDiscount),
+        suggestedAction: r.suggestedAction ?? "",
+      }));
+    },
+  });
+}
+
+// =========================================================================
+// Derived aggregates for the Vendor Consolidation view — client-side from
+// the already-cached useReceipts() feed. No new network calls.
+// =========================================================================
+// CLAUDE_NOTE (Pillar D aggregates)
+// Purpose: feed the Vendor pillar's two pie charts + the drill-down panels
+//   without an extra roundtrip. All aggregates live on the last calendar
+//   month present in the data ("current month" = latest yyyy-MM in the
+//   receipts feed) so an empty current month doesn't blank the page.
+// Owner: Pillar D.
+function latestMonth(receipts: Receipt[]): string | null {
+  let latest: string | null = null;
+  for (const r of receipts) {
+    const m = (r.date || "").slice(0, 7);
+    if (!m) continue;
+    if (!latest || m > latest) latest = m;
   }
-> = {};
+  return latest;
+}
 
-export const categoryVendors: Record<
-  string,
-  { vendors: { name: string; spend: number }[]; description: string }
-> = {};
+export interface VendorProductDetail {
+  products: string[];
+  category: string;
+  recentInvoices: { invoiceNo: string; date: string; product: string; amount: number; qty: number }[];
+}
+export interface CategoryVendorDetail {
+  vendors: { name: string; spend: number }[];
+  description: string;
+}
+
+export function useVendorAggregates() {
+  const { data: receipts = [] } = useReceipts();
+  const month = latestMonth(receipts);
+  const inMonth = month ? receipts.filter((r) => (r.date || "").startsWith(month)) : [];
+
+  const vendorSpend = new Map<string, number>();
+  const catSpend = new Map<string, number>();
+  for (const r of inMonth) {
+    const v = r.merchant || "Unknown";
+    const c = r.category || "Uncategorized";
+    vendorSpend.set(v, (vendorSpend.get(v) || 0) + (r.total || 0));
+    catSpend.set(c, (catSpend.get(c) || 0) + (r.total || 0));
+  }
+  const vendorMonthlySpend: VendorMonthlySpend[] = [...vendorSpend.entries()]
+    .map(([vendor, monthlySpend]) => ({ vendor, monthlySpend }))
+    .sort((a, b) => b.monthlySpend - a.monthlySpend);
+  const spendByCategory: SpendByCategory[] = [...catSpend.entries()]
+    .map(([category, monthlySpend]) => ({ category, monthlySpend }))
+    .sort((a, b) => b.monthlySpend - a.monthlySpend);
+
+  const vendorProducts: Record<string, VendorProductDetail> = {};
+  for (const r of receipts) {
+    const v = r.merchant || "Unknown";
+    if (!vendorProducts[v]) vendorProducts[v] = { products: [], category: r.category || "", recentInvoices: [] };
+    for (const li of r.line_items || []) {
+      if (li.name && !vendorProducts[v].products.includes(li.name)) vendorProducts[v].products.push(li.name);
+    }
+    vendorProducts[v].recentInvoices.push({
+      invoiceNo: (r as any).invoice_no ?? r.id.slice(0, 8),
+      date: r.date,
+      product: r.line_items?.[0]?.name ?? "—",
+      amount: r.total,
+      qty: r.line_items?.reduce((s, li) => s + (li.quantity || 0), 0) ?? 0,
+    });
+  }
+  for (const v of Object.keys(vendorProducts)) {
+    vendorProducts[v].recentInvoices = vendorProducts[v].recentInvoices
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      .slice(0, 5);
+    vendorProducts[v].products = vendorProducts[v].products.slice(0, 10);
+  }
+
+  const categoryVendors: Record<string, CategoryVendorDetail> = {};
+  for (const r of receipts) {
+    const c = r.category || "Uncategorized";
+    const v = r.merchant || "Unknown";
+    if (!categoryVendors[c]) categoryVendors[c] = { vendors: [], description: `${c} spend across vendors.` };
+    const existing = categoryVendors[c].vendors.find((x) => x.name === v);
+    if (existing) existing.spend += r.total || 0;
+    else categoryVendors[c].vendors.push({ name: v, spend: r.total || 0 });
+  }
+  for (const c of Object.keys(categoryVendors)) {
+    categoryVendors[c].vendors.sort((a, b) => b.spend - a.spend);
+  }
+
+  return { vendorMonthlySpend, spendByCategory, vendorProducts, categoryVendors, month };
+}
+
+// CLAUDE_NOTE (summary)
+// Purpose: numeric roll-up used for pillar CARD BADGE COUNTS. Pillar-derived
+//   numbers come from the pillar hooks; totals come from the receipts feed.
+export interface SummaryStats {
+  totalAnomalies: number;
+  criticalAlerts: number;
+  totalLazyTax: number;
+  inflationLeaks: number;
+  vendorBloatScore: number;
+  marginErosion: number;
+  totalPotentialSavings: number;
+  activeVendors: number;
+  industryAvgVendors: number;
+}
+
+export function useSummaryStats(): SummaryStats {
+  const { data: receipts = [] } = useReceipts();
+  const { data: alerts = [] } = useIntegrityAlerts();
+  const { data: drift = [] } = usePriceDrift();
+  const { data: arb = [] } = useArbitrage();
+  const { data: bloat = [] } = useVendorBloat();
+
+  const activeVendors = new Set(receipts.map((r) => r.merchant).filter(Boolean)).size;
+  const industryAvgVendors = bloat.length
+    ? Math.round(bloat.reduce((s, b) => s + b.industryAvg, 0) / bloat.length)
+    : 0;
+  return {
+    totalAnomalies: alerts.length,
+    criticalAlerts: alerts.filter((a) => a.severity === "critical").length,
+    totalLazyTax: arb.reduce((s, a) => s + a.lazyTax * a.monthlyQty, 0),
+    inflationLeaks: drift.filter((d) => d.status === "alert").length,
+    vendorBloatScore: bloat.length
+      ? Math.round(bloat.reduce((s, b) => s + b.redundancyScore, 0) / bloat.length)
+      : 0,
+    marginErosion: 0, // not tracked — no revenue data
+    totalPotentialSavings:
+      arb.reduce((s, a) => s + a.annualSavings, 0) +
+      bloat.reduce((s, b) => s + b.potentialSavings, 0),
+    activeVendors,
+    industryAvgVendors,
+  };
+}
+
+// =========================================================================
+// EMPTY PLACEHOLDERS — kept because these UI surfaces aren't wired yet.
+// (MyCFO inbox / saved Canvas models / notification bell)
+// =========================================================================
 
 export const cfoMessages: CfoMessage[] = [];
 export const savedModels: SavedModel[] = [];
 export const notifications: Notification[] = [];
+
 
 // =========================================================================
 // Projects — derived client-side from receipts' custom_fields
