@@ -326,6 +326,30 @@ export type Database = {
           },
         ]
       }
+      self_identities: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          match_type: string
+          pattern: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          match_type?: string
+          pattern: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          match_type?: string
+          pattern?: string
+        }
+        Relationships: []
+      }
       uploads: {
         Row: {
           attempts: number
@@ -575,6 +599,7 @@ export type Database = {
         Returns: undefined
       }
       normalize_item: { Args: { t: string }; Returns: string }
+      normalize_property: { Args: { t: string }; Returns: string }
       normalize_vendor: { Args: { t: string }; Returns: string }
       pillar_arbitrage: { Args: never; Returns: Json }
       pillar_integrity: {
