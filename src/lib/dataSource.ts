@@ -969,7 +969,11 @@ export const notifications: Notification[] = [];
 //   receipt's custom_fields under one of the recognized project-like keys.
 // Source:  cached useReceipts() output (no extra network).
 // Owner:   Projects tab UI.
-const PROJECT_KEYS = ["job site", "project", "job code", "po number"];
+// CLAUDE_NOTE: Jobsite is now normalized upstream into a single canonical
+// `Job Site` custom field, so we group by that alone. Legacy keys
+// ("po number", "project", "job code") caused fragmentation/noise and were
+// dropped intentionally.
+const PROJECT_KEYS = ["job site"];
 
 function receiptProjectValues(r: Receipt): string[] {
   const out: string[] = [];
