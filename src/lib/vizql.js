@@ -22,7 +22,7 @@ export const LINE_ITEM_MEASURES = [
 
 export const CUSTOM_DIMS = [
   "PO Number", "Project", "Work Order", "Job Code", "Department", "Payment Terms", "Contract Number",
-  "Job Site", "Customer Job No", "Acct Job No",
+  "Job Site", "Site Address", "Acct Job No",
 ].map((k) => ({ id: k, field: k, type: "dim", fromCustom: true }));
 
 export const ALL_DIMS = [...DIMENSIONS, ...LINE_ITEM_DIMS, ...CUSTOM_DIMS];
