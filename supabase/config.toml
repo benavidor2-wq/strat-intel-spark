@@ -1,1 +1,4 @@
 project_id = "jcncnciktuakonrjezlr"
+
+[functions.drive-poll]
+verify_jwt = false
