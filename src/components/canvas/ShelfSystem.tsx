@@ -137,28 +137,38 @@ function FilterPopover({
 function CategoricalFilterUI({ pill, filter, onChange, receipts }: any) {
   const values = uniqueValuesFor(receipts, pill.id);
   const [q, setQ] = useState("");
-  const include: string[] = filter?.include || [];
-  const allSelected = include.length === 0 || include.length === values.length;
+  // `include` is authoritative: an empty array means nothing is selected.
+  // Legacy pills without a filter object fall back to "everything selected".
+  const include: string[] = Array.isArray(filter?.include) ? filter.include : values;
+  const allSelected = values.length > 0 && include.length === values.length;
   const filtered = values.filter((v) => v.toLowerCase().includes(q.toLowerCase()));
   return (
     <div className="space-y-2">
       <div className="text-xs font-semibold text-muted-foreground">Filter {pill.id}</div>
       <Input placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} className="h-8" />
-      <div className="flex items-center gap-2 text-xs">
-        <Checkbox checked={allSelected} onCheckedChange={() => onChange({ include: allSelected ? filtered : [] })} />
-        <span>Select all</span>
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <label className="flex items-center gap-2">
+          <Checkbox checked={allSelected} onCheckedChange={(c) => onChange({ ...filter, include: c ? values : [] })} />
+          <span>Select all</span>
+        </label>
+        <button
+          type="button"
+          className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+          onClick={() => onChange({ ...filter, include: [] })}
+        >
+          Clear
+        </button>
       </div>
       <div className="max-h-56 space-y-1.5 overflow-y-auto rounded border border-border p-2">
         {filtered.map((v) => {
-          const checked = include.length === 0 || include.includes(v);
+          const checked = include.includes(v);
           return (
             <label key={v} className="flex items-center gap-2 text-xs">
               <Checkbox
                 checked={checked}
                 onCheckedChange={(c) => {
-                  const base = include.length ? include : values;
-                  const next = c ? Array.from(new Set([...base, v])) : base.filter((x) => x !== v);
-                  onChange({ include: next });
+                  const next = c ? Array.from(new Set([...include, v])) : include.filter((x) => x !== v);
+                  onChange({ ...filter, include: next });
                 }}
               />
               <span className="truncate">{v}</span>
@@ -166,9 +176,15 @@ function CategoricalFilterUI({ pill, filter, onChange, receipts }: any) {
           );
         })}
       </div>
+      {include.length === 0 && (
+        <div className="text-[11px] text-muted-foreground">
+          No values selected — the view stays empty until you pick some or choose “Select all”.
+        </div>
+      )}
     </div>
   );
 }
+
 
 function MeasureFilterUI({ pill, filter, onChange, receipts }: any) {
   const { min, max } = measureRange(receipts, pill.id);
