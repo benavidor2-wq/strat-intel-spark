@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Cloud } from "lucide-react";
+import { GoogleDriveCard } from "@/components/settings/GoogleDriveCard";
 
 export function SettingsTab() {
   return (
@@ -36,18 +36,7 @@ export function SettingsTab() {
 
             <div className="space-y-3">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Integrations</h2>
-              <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Cloud size={20} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">Google Drive</div>
-                    <div className="text-xs text-muted-foreground">Import invoices from a watched folder.</div>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline">Connect</Button>
-              </div>
+              <GoogleDriveCard />
             </div>
           </div>
         </div>
