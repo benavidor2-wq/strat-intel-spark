@@ -1,8 +1,14 @@
 // drive-poll: pull new invoice files from each connected Google Drive folder into
-// the ingest queue. Auth uses the per-user OAuth refresh token on drive_config
-// (set by the drive-oauth-start / drive-oauth-callback flow). This function only
-// DOWNLOADS + ENQUEUES; sweep-uploads does the parsing. Invoked by cron and a
-// manual "Sync now". Always returns 200; per-folder errors go to last_error.
+// the ingest queue. Auth uses the per-user OAuth refresh token on drive_config.
+// This function only DOWNLOADS + ENQUEUES; sweep-uploads parses. Invoked by cron
+// and a manual trigger. Always 200; per-folder errors go to last_error.
+//
+// Hardened for large / deeply-nested folders: each run is BOUNDED — it lists
+// only until it has collected up to MAX_NEW_FILES_PER_RUN not-yet-seen files
+// (or LIST_BUDGET_MS elapses), downloads those, and returns. Progress is
+// recorded every run (last_polled_at, files_seen), and `more:true` in the
+// summary means there is still a backlog for the next run to pick up. This
+// guarantees each invocation finishes well under the runtime wall-clock limit.
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -28,6 +34,10 @@ const SUPPORTED = new Set([
   "text/csv",
 ]);
 
+const MAX_NEW_FILES_PER_RUN = 25;
+const LIST_BUDGET_MS = 45_000;
+const RUN_BUDGET_MS = 115_000;
+
 type DriveFile = { id: string; name: string; mimeType: string; size?: string; modifiedTime?: string };
 
 async function accessTokenFromRefresh(refreshToken: string): Promise<string> {
@@ -45,35 +55,18 @@ async function accessTokenFromRefresh(refreshToken: string): Promise<string> {
   return j.access_token as string;
 }
 
-async function listFolderRecursive(token: string, rootId: string): Promise<DriveFile[]> {
-  const files: DriveFile[] = [];
-  const stack = [rootId];
-  const seen = new Set<string>();
-  while (stack.length) {
-    const folder = stack.pop()!;
-    if (seen.has(folder)) continue;
-    seen.add(folder);
-    let pageToken: string | undefined;
-    do {
-      const params = new URLSearchParams({
-        q: `'${folder}' in parents and trashed=false`,
-        fields: "nextPageToken,files(id,name,mimeType,size,modifiedTime)",
-        pageSize: "1000",
-        supportsAllDrives: "true",
-        includeItemsFromAllDrives: "true",
-      });
-      if (pageToken) params.set("pageToken", pageToken);
-      const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error(`drive list ${res.status}: ${(await res.text()).slice(0, 300)}`);
-      const j = await res.json();
-      for (const f of (j.files ?? []) as DriveFile[]) {
-        if (f.mimeType === "application/vnd.google-apps.folder") stack.push(f.id);
-        else files.push(f);
-      }
-      pageToken = j.nextPageToken;
-    } while (pageToken);
-  }
-  return files;
+async function listPage(token: string, folderId: string, pageToken?: string) {
+  const params = new URLSearchParams({
+    q: `'${folderId}' in parents and trashed=false`,
+    fields: "nextPageToken,files(id,name,mimeType,size,modifiedTime)",
+    pageSize: "1000",
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
+  if (pageToken) params.set("pageToken", pageToken);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`drive list ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  return await res.json();
 }
 
 async function download(token: string, fileId: string): Promise<Uint8Array> {
@@ -94,6 +87,7 @@ function safeName(name: string): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+  const t0 = Date.now();
 
   const sb = serviceClient();
   const { data: configs, error: cfgErr } = await sb
@@ -108,16 +102,44 @@ Deno.serve(async (req) => {
   const summary: unknown[] = [];
   for (const c of configs) {
     try {
+      console.log(`drive-poll: config=${c.id} folder=${c.folder_id} — refreshing token`);
       const token = await accessTokenFromRefresh(c.refresh_token as string);
-      const files = await listFolderRecursive(token, c.folder_id as string);
-      const supported = files.filter((f) => SUPPORTED.has(f.mimeType));
 
       const { data: existing } = await sb.from("uploads").select("external_id").eq("user_id", c.user_id).not("external_id", "is", null);
       const known = new Set((existing ?? []).map((r: { external_id: string }) => r.external_id));
+      console.log(`drive-poll: token ok, ${known.size} files already known — enumerating`);
+
+      const batch: DriveFile[] = [];
+      const stack = [c.folder_id as string];
+      const visited = new Set<string>();
+      let folders = 0, enumerated = 0;
+      let more = false;
+      outer:
+      while (stack.length) {
+        if (Date.now() - t0 > LIST_BUDGET_MS) { more = true; break; }
+        const folder = stack.pop()!;
+        if (visited.has(folder)) continue;
+        visited.add(folder);
+        folders++;
+        let pageToken: string | undefined;
+        do {
+          const j = await listPage(token, folder, pageToken);
+          for (const f of (j.files ?? []) as DriveFile[]) {
+            if (f.mimeType === "application/vnd.google-apps.folder") { stack.push(f.id); continue; }
+            enumerated++;
+            if (SUPPORTED.has(f.mimeType) && !known.has(f.id)) {
+              batch.push(f);
+              if (batch.length >= MAX_NEW_FILES_PER_RUN) { more = true; break outer; }
+            }
+          }
+          pageToken = j.nextPageToken;
+        } while (pageToken);
+      }
+      console.log(`drive-poll: enumerated ${enumerated} files across ${folders} folders; ${batch.length} new this run (more=${more})`);
 
       let added = 0, skipped = 0;
-      for (const f of supported) {
-        if (known.has(f.id)) { skipped++; continue; }
+      for (const f of batch) {
+        if (Date.now() - t0 > RUN_BUDGET_MS) { more = true; break; }
         const bytes = await download(token, f.id);
         const sha = await sha256Hex(bytes);
         const { data: dupe } = await sb.from("uploads").select("id").eq("user_id", c.user_id).eq("content_sha256", sha).maybeSingle();
@@ -149,9 +171,11 @@ Deno.serve(async (req) => {
         last_polled_at: new Date().toISOString(),
         files_seen: (c.files_seen ?? 0) + added,
       }).eq("id", c.id);
-      summary.push({ config: c.id, folder: c.folder_name ?? c.folder_id, listed: files.length, supported: supported.length, added, skipped });
+      console.log(`drive-poll: DONE config=${c.id} added=${added} skipped=${skipped} more=${more}`);
+      summary.push({ config: c.id, folder: c.folder_name ?? c.folder_id, enumerated, folders, added, skipped, more });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error(`drive-poll: ERROR config=${c.id}: ${msg}`);
       await sb.from("drive_config").update({ status: "error", last_error: msg, last_polled_at: new Date().toISOString() }).eq("id", c.id);
       summary.push({ config: c.id, error: msg });
     }
