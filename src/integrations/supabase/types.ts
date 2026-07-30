@@ -645,6 +645,32 @@ export type Database = {
         Args: { p_category?: string; p_name: string; p_user_id: string }
         Returns: string
       }
+      review_queue: {
+        Args: never
+        Returns: {
+          bill_to: string
+          category: string
+          created_at: string
+          currency: string
+          filename: string
+          invoice_no: string
+          is_duplicate: boolean
+          merchant: string
+          mime_type: string
+          receipt_date: string
+          receipt_id: string
+          review_reason: string
+          source: string
+          storage_path: string
+          subtotal: number
+          tax: number
+          total: number
+        }[]
+      }
+      review_resolve: {
+        Args: { p_action: string; p_patch?: Json; p_receipt_id: string }
+        Returns: Json
+      }
       safe_date: { Args: { t: string }; Returns: string }
       safe_num: { Args: { j: Json; k: string }; Returns: number }
       skip_upload: {
