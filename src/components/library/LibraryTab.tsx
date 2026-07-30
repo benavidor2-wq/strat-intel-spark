@@ -3,20 +3,20 @@ import { BookOpen, Pencil, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 // CLAUDE_NOTE (data source)
-// `savedModels` = user-saved Canvas configs (rows/cols/filters/chartType).
-// When you wire this, persist to a `saved_models` table keyed by
-// auth.uid(); the shape lives in @/lib/dataSource. Empty state already
-// exists below.
-import { savedModels as seed, useReceipts } from "@/lib/dataSource";
+// Saved Canvas configs (rows/cols/filters/chartType) live in
+// `public.saved_models` (owner-RLS) and are read/written exclusively through
+// the hooks in @/lib/dataSource. No mock seed.
+import { useSavedModels, useDeleteModel, useReceipts, relativeTime, type SavedModel } from "@/lib/dataSource";
 import { ChartRenderer } from "@/components/canvas/ChartRenderer";
 import { buildChartData } from "@/lib/vizql";
 
-export function LibraryTab({ onEdit }: { onEdit?: (m: any) => void }) {
+export function LibraryTab({ onEdit }: { onEdit?: (m: SavedModel) => void }) {
   const { data: receipts = [] } = useReceipts();
-  const [models, setModels] = useState(seed);
-  const [preview, setPreview] = useState<any>(null);
+  const { data: models = [], isLoading } = useSavedModels();
+  const del = useDeleteModel();
+  const [preview, setPreview] = useState<SavedModel | null>(null);
 
-  if (!models.length) {
+  if (!isLoading && !models.length) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground">
         <BookOpen size={44} className="mb-3 opacity-40" />
@@ -45,15 +45,24 @@ export function LibraryTab({ onEdit }: { onEdit?: (m: any) => void }) {
                 <td className="px-4 py-3 text-muted-foreground">{m.description}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
-                    {m.tags.map((t) => <span key={t} className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{t}</span>)}
+                    {m.tags.map((t) => <span key={t} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">{t}</span>)}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{m.updated_at}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{relativeTime(m.updated_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex gap-1">
                     <Button size="icon" variant="ghost" onClick={() => onEdit?.(m)}><Pencil size={14} /></Button>
                     <Button size="icon" variant="ghost" onClick={() => setPreview(m)}><Eye size={14} /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setModels(models.filter((x) => x.id !== m.id))}><Trash2 size={14} /></Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      disabled={del.isPending}
+                      onClick={() => {
+                        if (window.confirm(`Delete "${m.name}"? This can't be undone.`)) del.mutate(m.id);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -66,7 +75,7 @@ export function LibraryTab({ onEdit }: { onEdit?: (m: any) => void }) {
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>{preview?.name}</DialogTitle></DialogHeader>
           {preview && (() => {
-            const cd = buildChartData(receipts, preview.rows, preview.cols, {});
+            const cd = buildChartData(receipts, preview.rows, preview.cols, preview.filters ?? {});
             return <ChartRenderer type={preview.chartType} data={cd.data} dims={cd.dims} meas={cd.meas} />;
           })()}
         </DialogContent>
