@@ -338,6 +338,48 @@ export type Database = {
           },
         ]
       }
+      saved_models: {
+        Row: {
+          chart_type: string
+          cols: Json
+          created_at: string
+          description: string | null
+          filters: Json
+          id: string
+          name: string
+          rows: Json
+          tags: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart_type?: string
+          cols?: Json
+          created_at?: string
+          description?: string | null
+          filters?: Json
+          id?: string
+          name: string
+          rows?: Json
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          chart_type?: string
+          cols?: Json
+          created_at?: string
+          description?: string | null
+          filters?: Json
+          id?: string
+          name?: string
+          rows?: Json
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       self_identities: {
         Row: {
           created_at: string
