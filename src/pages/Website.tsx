@@ -20,7 +20,7 @@ import { Loader2 } from "lucide-react";
 
 export default function Website() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const mode: "signin" | "signup" = "signin";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
