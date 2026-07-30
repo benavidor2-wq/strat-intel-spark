@@ -954,12 +954,98 @@ export function useSummaryStats(): SummaryStats {
 
 // =========================================================================
 // EMPTY PLACEHOLDERS — kept because these UI surfaces aren't wired yet.
-// (MyCFO inbox / saved Canvas models / notification bell)
+// (notification bell)
 // =========================================================================
 
-export const cfoMessages: CfoMessage[] = [];
-export const savedModels: SavedModel[] = [];
 export const notifications: Notification[] = [];
+
+// =========================================================================
+// Saved Canvas models (public.saved_models, owner-RLS)
+// =========================================================================
+// CLAUDE_NOTE (data)
+// Purpose: persist a Canvas view (chart type + rows/cols/filters) so it can
+//   be re-opened from the Library tab.
+// Data contract: DB columns are snake_case (`chart_type`); the app-wide
+//   `SavedModel` interface uses `chartType`. Mapping happens HERE only.
+// Owner: Library / Canvas UI (not analytical).
+
+function mapSavedModel(row: any): SavedModel {
+  return {
+    id: row.id,
+    name: row.name ?? "",
+    description: row.description ?? "",
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    rows: Array.isArray(row.rows) ? row.rows : [],
+    cols: Array.isArray(row.cols) ? row.cols : [],
+    filters: row.filters ?? {},
+    chartType: row.chart_type ?? "bar",
+  };
+}
+
+export function useSavedModels() {
+  return useQuery({
+    queryKey: ["saved_models"],
+    queryFn: async (): Promise<SavedModel[]> => {
+      const { data, error } = await dataClient
+        .from("saved_models")
+        .select("*")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map(mapSavedModel);
+    },
+    staleTime: 60_000,
+  });
+}
+
+export interface SaveModelInput {
+  id?: string | null;
+  name: string;
+  description?: string;
+  tags?: string[];
+  chartType: string;
+  rows: any[];
+  cols: any[];
+  filters: any;
+}
+
+export function useSaveModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: SaveModelInput): Promise<SavedModel> => {
+      const payload = {
+        name: input.name,
+        description: input.description ?? "",
+        tags: input.tags ?? [],
+        chart_type: input.chartType,
+        rows: input.rows ?? [],
+        cols: input.cols ?? [],
+        filters: input.filters ?? {},
+        updated_at: new Date().toISOString(),
+      };
+      const q = input.id
+        ? dataClient.from("saved_models").update(payload).eq("id", input.id)
+        : dataClient.from("saved_models").insert(payload);
+      const { data, error } = await q.select().single();
+      if (error) throw error;
+      return mapSavedModel(data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["saved_models"] }),
+  });
+}
+
+export function useDeleteModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await dataClient.from("saved_models").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["saved_models"] }),
+  });
+}
+
 
 
 // =========================================================================
