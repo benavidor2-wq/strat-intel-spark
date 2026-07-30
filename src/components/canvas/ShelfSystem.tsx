@@ -215,7 +215,8 @@ function MeasureFilterUI({ pill, filter, onChange, receipts }: any) {
 function DateFilterUI({ pill, filter, onChange, receipts }: any) {
   const [gran, setGran] = useState<string>(pill.granularity || filter?.granularity || "Monthly");
   const periods = datePeriods(receipts, gran);
-  const selected: string[] = filter?.periods || [];
+  const selected: string[] = Array.isArray(filter?.periods) ? filter.periods : periods;
+  const allSelected = periods.length > 0 && selected.length === periods.length;
   return (
     <div className="space-y-3">
       <div className="text-xs font-semibold text-muted-foreground">Filter Date</div>
@@ -227,14 +228,29 @@ function DateFilterUI({ pill, filter, onChange, receipts }: any) {
           </Button>
         ))}
       </div>
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <label className="flex items-center gap-2">
+          <Checkbox
+            checked={allSelected}
+            onCheckedChange={(c) => onChange({ ...filter, granularity: gran, periods: c ? periods : [] })}
+          />
+          <span>Select all</span>
+        </label>
+        <button
+          type="button"
+          className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+          onClick={() => onChange({ ...filter, granularity: gran, periods: [] })}
+        >
+          Clear
+        </button>
+      </div>
       <div className="max-h-40 space-y-1 overflow-y-auto rounded border border-border p-2 text-xs">
         {periods.map((p) => (
           <label key={p} className="flex items-center gap-2">
             <Checkbox
-              checked={selected.length === 0 || selected.includes(p)}
+              checked={selected.includes(p)}
               onCheckedChange={(c) => {
-                const base = selected.length ? selected : periods;
-                const next = c ? Array.from(new Set([...base, p])) : base.filter((x) => x !== p);
+                const next = c ? Array.from(new Set([...selected, p])) : selected.filter((x) => x !== p);
                 onChange({ ...filter, granularity: gran, periods: next });
               }}
             />
@@ -242,6 +258,12 @@ function DateFilterUI({ pill, filter, onChange, receipts }: any) {
           </label>
         ))}
       </div>
+      {selected.length === 0 && (
+        <div className="text-[11px] text-muted-foreground">
+          No periods selected — the view stays empty until you pick some or choose “Select all”.
+        </div>
+      )}
+
       <div>
         <div className="mb-1 text-xs font-semibold text-muted-foreground">Custom range</div>
         <Calendar
