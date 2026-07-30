@@ -212,7 +212,7 @@ export interface SavedModel {
   updated_at: string;
   rows: any[];
   cols: any[];
-  filters: any[];
+  filters: any;
   chartType: string;
 }
 
