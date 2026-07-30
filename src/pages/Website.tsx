@@ -86,13 +86,8 @@ export default function Website() {
               {mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
-          <button
-            type="button"
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
-          >
-            {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
-          </button>
+          {/* Sign-up intentionally removed: single-owner app, no public registration. */}
+
         </div>
         <div className="mt-6 text-xs text-muted-foreground">© 2026 Invoiciify · private workspace</div>
       </div>
