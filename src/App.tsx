@@ -17,7 +17,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Website />} />
+          {/* No public registration: any sign-up route redirects to sign in. */}
+          <Route path="/signup" element={<Navigate to="/" replace />} />
+          <Route path="/register" element={<Navigate to="/" replace />} />
           <Route path="/app" element={<Home />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
