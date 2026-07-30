@@ -40,7 +40,18 @@ export function ShelfSystem({ shelves, setShelves, filters, setFilters, receipts
     };
     next[shelf] = [...next[shelf], pill];
     setShelves(next);
+
+    // New pills start with NO values selected. An explicit empty list is a real
+    // constraint (vizql yields zero rows) until the user picks values or hits
+    // "Select all". Measures keep their unconstrained range default.
+    if (filters[pill.id] === undefined) {
+      const def = findFieldDef(pill.id);
+      if (def && def.type !== "meas") {
+        setFilters({ ...filters, [pill.id]: def.isDate ? { periods: [] } : { include: [] } });
+      }
+    }
   };
+
 
   const removePill = (shelf: Shelf, id: string) => {
     setShelves({ ...shelves, [shelf]: shelves[shelf].filter((p) => p.id !== id) });
