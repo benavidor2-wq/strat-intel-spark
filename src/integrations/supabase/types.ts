@@ -49,6 +49,7 @@ export type Database = {
       }
       drive_config: {
         Row: {
+          connected_email: string | null
           created_at: string
           files_seen: number
           folder_id: string | null
@@ -56,13 +57,16 @@ export type Database = {
           id: string
           last_error: string | null
           last_polled_at: string | null
+          oauth_state: string | null
           page_cursor: string | null
           provider: string
+          refresh_token: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          connected_email?: string | null
           created_at?: string
           files_seen?: number
           folder_id?: string | null
@@ -70,13 +74,16 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_polled_at?: string | null
+          oauth_state?: string | null
           page_cursor?: string | null
           provider?: string
+          refresh_token?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
         Update: {
+          connected_email?: string | null
           created_at?: string
           files_seen?: number
           folder_id?: string | null
@@ -84,8 +91,10 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_polled_at?: string | null
+          oauth_state?: string | null
           page_cursor?: string | null
           provider?: string
+          refresh_token?: string | null
           status?: string
           updated_at?: string
           user_id?: string
