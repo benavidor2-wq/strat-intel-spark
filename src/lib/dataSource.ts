@@ -47,7 +47,7 @@
 // =========================================================================
 
 import { useEffect } from "react";
-import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 type DataBoundaryClient = {
@@ -1083,4 +1083,239 @@ export function useProjectDetail(projectKey: string | null): ProjectDetail | nul
     lineCount: lineItems.length,
     dateRange: { start, end },
   };
+}
+
+// =========================================================================
+// Google Drive connection (Settings) + Review inbox
+// =========================================================================
+// CLAUDE_NOTE (data)
+// Purpose: back the Settings > Google Drive card and the Review inbox.
+// Source:  table `public.drive_config` (one row per user, owner RLS),
+//          edge fns `drive-oauth-start` / `drive-poll`,
+//          RPCs `review_queue()` / `review_resolve()`.
+// Owner:   ingestion UX (not analytical).
+
+export type DriveStatus = "disconnected" | "connecting" | "connected" | "error";
+
+export interface DriveConfig {
+  status: DriveStatus;
+  connected_email: string | null;
+  folder_id: string | null;
+  folder_name: string | null;
+  last_polled_at: string | null;
+  files_seen: number;
+  last_error: string | null;
+}
+
+export function useDriveConfig() {
+  return useQuery({
+    queryKey: ["drive_config"],
+    staleTime: 30_000,
+    queryFn: async (): Promise<DriveConfig | null> => {
+      const { data, error } = await dataClient
+        .from("drive_config")
+        .select("status, connected_email, folder_id, folder_name, last_polled_at, files_seen, last_error")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return { ...(data as any), files_seen: num((data as any).files_seen) } as DriveConfig;
+    },
+  });
+}
+
+/** Accepts a Drive folder URL or a bare ID and returns the ID. */
+export function parseDriveFolderId(input: string): string {
+  const t = (input || "").trim();
+  const m = t.match(/\/folders\/([^/?#]+)/);
+  if (m) return m[1];
+  try {
+    const u = new URL(t);
+    return u.searchParams.get("id") || t;
+  } catch {
+    return t;
+  }
+}
+
+export function useConnectDrive() {
+  return useMutation({
+    mutationFn: async (returnTo: string) => {
+      const { data, error } = await supabase.functions.invoke("drive-oauth-start", {
+        body: { return_to: returnTo },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      if (!url) throw new Error("No authorization URL returned");
+      window.location.assign(url);
+    },
+  });
+}
+
+export function useSyncDriveNow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("drive-poll");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["drive_config"] });
+      qc.invalidateQueries({ queryKey: ["uploads"] });
+      qc.invalidateQueries({ queryKey: ["receipts"] });
+      qc.invalidateQueries({ queryKey: ["dataset_stats"] });
+    },
+  });
+}
+
+export function useDisconnectDrive() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await dataClient
+        .from("drive_config")
+        .update({ status: "disconnected", refresh_token: null })
+        .not("id", "is", null);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drive_config"] }),
+  });
+}
+
+export function useSetDriveFolder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: string) => {
+      const folder_id = parseDriveFolderId(input);
+      const isUrl = /^https?:\/\//i.test(input.trim());
+      const patch: Record<string, unknown> = { folder_id };
+      if (!isUrl) patch.folder_name = input.trim();
+      const { error } = await dataClient.from("drive_config").update(patch).not("id", "is", null);
+      if (error) throw error;
+      return folder_id;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drive_config"] }),
+  });
+}
+
+// ---- Review inbox --------------------------------------------------------
+
+export interface ReviewItem {
+  receipt_id: string;
+  merchant: string | null;
+  invoice_no: string | null;
+  receipt_date: string | null;
+  subtotal: number | null;
+  tax: number | null;
+  total: number | null;
+  currency: string | null;
+  category: string | null;
+  review_reason: string | null;
+  is_duplicate: boolean;
+  bill_to: string | null;
+  filename: string | null;
+  source: string | null;
+  storage_path: string | null;
+  mime_type: string | null;
+  created_at: string | null;
+}
+
+const orNull = (v: unknown): number | null => (v == null ? null : num(v));
+
+export function useReviewQueue() {
+  return useQuery({
+    queryKey: ["review_queue"],
+    staleTime: 30_000,
+    queryFn: async (): Promise<ReviewItem[]> => {
+      const { data, error } = await dataClient.rpc("review_queue");
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        receipt_id: r.receipt_id,
+        merchant: r.merchant ?? null,
+        invoice_no: r.invoice_no ?? null,
+        receipt_date: r.receipt_date ?? null,
+        subtotal: orNull(r.subtotal),
+        tax: orNull(r.tax),
+        total: orNull(r.total),
+        currency: r.currency ?? "USD",
+        category: r.category ?? null,
+        review_reason: r.review_reason ?? null,
+        is_duplicate: !!r.is_duplicate,
+        bill_to: r.bill_to ?? null,
+        filename: r.filename ?? null,
+        source: r.source ?? null,
+        storage_path: r.storage_path ?? null,
+        mime_type: r.mime_type ?? null,
+        created_at: r.created_at ?? null,
+      }));
+    },
+  });
+}
+
+export function useReviewCount() {
+  return useQuery({
+    queryKey: ["review_count"],
+    staleTime: 30_000,
+    queryFn: async (): Promise<number> => {
+      const { count, error } = await dataClient
+        .from("receipts")
+        .select("*", { count: "exact", head: true })
+        .eq("needs_review", true);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
+export type ReviewAction = "approve" | "save" | "not_duplicate" | "confirm_duplicate" | "delete";
+
+export interface ReviewPatch {
+  merchant?: string | null;
+  invoice_no?: string | null;
+  date?: string | null;
+  subtotal?: number | null;
+  tax?: number | null;
+  total?: number | null;
+  category?: string | null;
+}
+
+export function useResolveReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { receiptId: string; action: ReviewAction; patch?: ReviewPatch }) => {
+      const { data, error } = await dataClient.rpc("review_resolve", {
+        p_receipt_id: args.receiptId,
+        p_action: args.action,
+        p_patch: args.patch ?? {},
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      for (const key of [["review_queue"], ["review_count"], ["receipts"], ["dataset_stats"], ["uploads"], ["pillar"]]) {
+        qc.invalidateQueries({ queryKey: key });
+      }
+    },
+  });
+}
+
+/** Signed URL (5 min) for the original uploaded file. */
+export async function getOriginalFileUrl(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage.from("raw-uploads").createSignedUrl(storagePath, 300);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+/** "3 minutes ago" style relative formatter for timestamps. */
+export function relativeTime(iso: string | null | undefined): string {
+  if (!iso) return "never";
+  const then = new Date(iso).getTime();
+  if (!isFinite(then)) return "never";
+  const diff = Date.now() - then;
+  const mins = Math.round(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
+  const days = Math.round(hrs / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }

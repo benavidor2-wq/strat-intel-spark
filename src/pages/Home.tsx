@@ -6,22 +6,24 @@ import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { LayoutDashboard, BookOpen, BrainCircuit, FolderKanban, Upload, Save, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, BookOpen, BrainCircuit, FolderKanban, Upload, Save, Inbox, Settings as SettingsIcon } from "lucide-react";
 import { CanvasTab } from "@/components/canvas/CanvasTab";
 import Glassmorphism from "@/components/designs/Glassmorphism";
 import { LibraryTab } from "@/components/library/LibraryTab";
 import { ProjectsTab } from "@/components/projects/ProjectsTab";
 import { SettingsTab } from "@/components/settings/SettingsTab";
+import { ReviewTab } from "@/components/review/ReviewTab";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AIChatBubble } from "@/components/AIChatBubble";
 import { UploadDialog } from "@/components/uploads/UploadDialog";
 import { cn } from "@/lib/utils";
-import { cfoMessages, useInstallRealtime } from "@/lib/dataSource";
+import { cfoMessages, useInstallRealtime, useReviewCount } from "@/lib/dataSource";
 import { supabase } from "@/integrations/supabase/client";
 
-type Tab = "canvas" | "library" | "mycfo" | "projects" | "settings";
+type Tab = "review" | "canvas" | "library" | "mycfo" | "projects" | "settings";
 
 const TABS: { id: Tab; label: string; Icon: any }[] = [
+  { id: "review", label: "Review", Icon: Inbox },
   { id: "canvas", label: "Canvas", Icon: LayoutDashboard },
   { id: "mycfo", label: "MyCFO", Icon: BrainCircuit },
   { id: "projects", label: "Projects", Icon: FolderKanban },
@@ -34,6 +36,7 @@ export default function Home() {
   const [unreadCount, setUnreadCount] = useState(cfoMessages.filter((m) => m.unread).length);
   const [ready, setReady] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const { data: reviewCount = 0 } = useReviewCount();
   useInstallRealtime();
 
   useEffect(() => {
@@ -65,6 +68,9 @@ export default function Home() {
                   tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}>
                 <Icon size={14} />{label}
+                {id === "review" && reviewCount > 0 && (
+                  <span className="ml-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{reviewCount}</span>
+                )}
                 {id === "mycfo" && unreadCount > 0 && (
                   <>
                     <span className="ml-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{unreadCount}</span>
@@ -89,6 +95,7 @@ export default function Home() {
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
 
       <main className="flex flex-1 overflow-hidden">
+        {tab === "review" && <ReviewTab />}
         {tab === "canvas" && <CanvasTab />}
         {tab === "library" && <LibraryTab onEdit={() => setTab("canvas")} />}
         {tab === "mycfo" && <div className="flex-1 overflow-y-auto"><Glassmorphism /></div>}
