@@ -78,14 +78,17 @@ function applyFilters(rows, allPills, filters) {
         if (f.min != null && val < f.min) return false;
         if (f.max != null && val > f.max) return false;
       } else if (def.isDate) {
-        if (f.periods && f.periods.length) {
+        // An explicit (possibly empty) period list is a real constraint: pills
+        // now start with NOTHING selected, so [] means "no rows" until the user
+        // picks periods or hits Select all.
+        if (Array.isArray(f.periods)) {
           const g = p.granularity || f.granularity || "Monthly";
-          if (!f.periods.includes(dateBucket(val, g))) return false;
+          if (!val || !f.periods.includes(dateBucket(val, g))) return false;
         }
         if (f.range?.from && new Date(val) < new Date(f.range.from)) return false;
         if (f.range?.to && new Date(val) > new Date(f.range.to)) return false;
       } else {
-        if (f.include && f.include.length && !f.include.includes(String(val))) return false;
+        if (Array.isArray(f.include) && !f.include.includes(String(val))) return false;
       }
     }
     return true;
