@@ -17,7 +17,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { AIChatBubble } from "@/components/AIChatBubble";
 import { UploadDialog } from "@/components/uploads/UploadDialog";
 import { cn } from "@/lib/utils";
-import { cfoMessages, useInstallRealtime, useReviewCount } from "@/lib/dataSource";
+import { useInstallRealtime, useReviewCount, type SavedModel } from "@/lib/dataSource";
 import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "review" | "canvas" | "library" | "mycfo" | "projects" | "settings";
@@ -33,7 +33,9 @@ const TABS: { id: Tab; label: string; Icon: any }[] = [
 export default function Home() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("canvas");
-  const [unreadCount, setUnreadCount] = useState(cfoMessages.filter((m) => m.unread).length);
+  const [unreadCount] = useState(0);
+  const [editingModel, setEditingModel] = useState<SavedModel | null>(null);
+  const [saveTick, setSaveTick] = useState(0);
   const [ready, setReady] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const { data: reviewCount = 0 } = useReviewCount();
@@ -86,7 +88,7 @@ export default function Home() {
             <Upload size={14} className="mr-1" />Upload Invoice
           </Button>
           {tab === "canvas" && (
-            <Button size="sm"><Save size={14} className="mr-1" />Save</Button>
+            <Button size="sm" onClick={() => setSaveTick((n) => n + 1)}><Save size={14} className="mr-1" />Save</Button>
           )}
           <Button size="icon" variant="ghost" onClick={() => setTab("settings")}><SettingsIcon size={18} /></Button>
         </div>
@@ -96,8 +98,8 @@ export default function Home() {
 
       <main className="flex flex-1 overflow-hidden">
         {tab === "review" && <ReviewTab />}
-        {tab === "canvas" && <CanvasTab />}
-        {tab === "library" && <LibraryTab onEdit={() => setTab("canvas")} />}
+        {tab === "canvas" && <CanvasTab model={editingModel} saveSignal={saveTick} onSaved={setEditingModel} />}
+        {tab === "library" && <LibraryTab onEdit={(m) => { setEditingModel(m); setTab("canvas"); }} />}
         {tab === "mycfo" && <div className="flex-1 overflow-y-auto"><Glassmorphism /></div>}
         {tab === "projects" && <ProjectsTab />}
         {tab === "settings" && <SettingsTab />}
